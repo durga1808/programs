@@ -1,4 +1,4 @@
-package com.zaga.entity.trace;
+package com.zaga.entity.traces;
 
 public class TraceResourceSpan {
     
