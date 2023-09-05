@@ -1,4 +1,4 @@
-package com.zaga.entity.otelmetric;
+package com.zaga.entity.otelmetric.sum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -1,4 +1,4 @@
-package com.zaga.entity.otelmetric;
+package com.zaga.entity.otelmetric.sum;
 
 import java.util.List;
 
@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class GaugeDataPoint {
-    private List<GaugeDataPointAttribute> attributes;
+public class SumDataPoint {
+    private List<SumDataPointAttribute> attributes;
     private String startTimeUnixNano;
     private String timeUnixNano;
     private String asInt;

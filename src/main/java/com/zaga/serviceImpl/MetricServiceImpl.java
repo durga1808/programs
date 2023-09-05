@@ -1,6 +1,6 @@
 package com.zaga.serviceImpl;
 
-import com.zaga.entity.metrics.MetricMain;
+import com.zaga.entity.otelmetric.MetricMain;
 import com.zaga.repo.MetricRepo;
 import com.zaga.service.MetricService;
 

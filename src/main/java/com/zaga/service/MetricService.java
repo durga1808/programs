@@ -1,6 +1,6 @@
 package com.zaga.service;
 
-import com.zaga.entity.metrics.MetricMain;
+import com.zaga.entity.otelmetric.MetricMain;
 
 import jakarta.enterprise.context.ApplicationScoped;
 

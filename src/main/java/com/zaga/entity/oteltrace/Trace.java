@@ -1,4 +1,4 @@
-package com.zaga.entity.traces;
+package com.zaga.entity.oteltrace;
 
 public class Trace {
     

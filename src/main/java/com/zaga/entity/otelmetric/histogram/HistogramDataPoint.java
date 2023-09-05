@@ -1,6 +1,8 @@
-package com.zaga.entity.otelmetric;
+package com.zaga.entity.otelmetric.histogram;
 
 import java.util.List;
+
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class HistogramDataPoint {
-    private List<HistogramDataPointAttribute> attributes;
+    private List<HistogramDataPoint> attributes;
     private String startTimeUnixNano;
     private String timeUnixNano;
     private String count;

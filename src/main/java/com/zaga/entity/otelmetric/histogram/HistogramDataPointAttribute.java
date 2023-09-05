@@ -1,13 +1,11 @@
-package com.zaga.entity.otelmetric;
-
+package com.zaga.entity.otelmetric.histogram;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class GaugeDataPointAttribute {
+public class HistogramDataPointAttribute {
     private String key;
-    private GaugeDataPointAttributeValue value;
-
+    private HistogramDataPointAttributeValue value;
 }
