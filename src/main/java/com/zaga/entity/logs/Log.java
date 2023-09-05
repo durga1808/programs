@@ -1,5 +1,5 @@
 package com.zaga.entity.logs;
 
-public class LogResourceLog {
+public class Log {
     
 }
