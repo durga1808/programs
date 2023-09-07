@@ -13,6 +13,7 @@ public class TraceProducerService {
         Emitter<OtelTrace> kafkaProducer;
     
         public void sendProductDetails(OtelTrace trace) {
+            System.out.println(trace);
             kafkaProducer.send(trace);
         }
 }
