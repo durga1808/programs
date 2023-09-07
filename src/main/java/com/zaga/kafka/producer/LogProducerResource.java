@@ -21,7 +21,7 @@ public class LogProducerResource {
 
     @POST
     public Response sendLogDetails(OtelLog otelLog){
-        logProducerService.send(otelLog);
+        logProducerService.sendLog(otelLog);
         return Response.ok().build();
     }
 }

@@ -14,7 +14,7 @@ public class LogProducerService {
     @Inject
     @Channel("logData")
     Emitter<OtelLog>  producer;
-    public void sendLogDetails(OtelLog otelLog){
+    public void sendLog(OtelLog otelLog){
         producer.send(otelLog);
     }
 
