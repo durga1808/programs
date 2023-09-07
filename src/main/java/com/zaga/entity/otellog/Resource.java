@@ -1,4 +1,4 @@
-package com.zaga.entity.otelmetric;
+package com.zaga.entity.otellog;
 
 import com.zaga.entity.otellog.resource.Attributes;
 

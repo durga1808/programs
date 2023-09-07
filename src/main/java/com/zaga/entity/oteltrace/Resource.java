@@ -1,6 +1,6 @@
-package com.zaga.entity.otelmetric;
+package com.zaga.entity.oteltrace;
 
-import com.zaga.entity.otellog.resource.Attributes;
+import com.zaga.entity.oteltrace.resource.Attributes;
 
 import lombok.NoArgsConstructor;
 

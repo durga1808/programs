@@ -1,8 +1,7 @@
 package com.zaga.controller;
 
-import com.zaga.entity.otelmetric.OtelMetric;
-import com.zaga.service.MetricService;
-
+import com.zaga.entity.otellog.OtelLog;
+import com.zaga.service.LogService;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -12,23 +11,24 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-@Path("/metrics")
+@Path("/logs")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class MetricController {
-
+public class LogController {
+    
     @Inject
-    MetricService metricService;
-   
+    LogService logService;
+
     @POST
     @Path("/create")
-    public Response createProduvct(OtelMetric metric) {
+    public Response createProduvct(OtelLog logs) {
         try {
             //System.out.println("----------------");
-            metricService.createProduct(metric);
-            return Response.status(200).entity(metric).build();
+            logService.createProduct(logs);
+            return Response.status(200).entity(logs).build();
         } catch (Exception e) {
             return Response.status(500).entity(e.getMessage()).build();
         }
-    }
+    }  
 }
+

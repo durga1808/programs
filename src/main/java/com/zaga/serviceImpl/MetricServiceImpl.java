@@ -1,6 +1,6 @@
 package com.zaga.serviceImpl;
 
-import com.zaga.entity.otelmetric.MetricMain;
+import com.zaga.entity.otelmetric.OtelMetric;
 import com.zaga.repo.MetricRepo;
 import com.zaga.service.MetricService;
 
@@ -15,7 +15,7 @@ public class MetricServiceImpl implements MetricService{
 
 
     @Override
-    public void createProduct(MetricMain metric) {
+    public void createProduct(OtelMetric metric) {
         metricRepo.persist(metric);
     }
     
