@@ -11,16 +11,16 @@ import jakarta.ws.rs.Path;
 
 @ApplicationScoped
 
-@Path("/kafka-consumer")
+// @Path("/kafka-consumer")
 public class TraceConsumerResource {
 
-      @Inject
-    private TraceConsumerService traceConsumerService; 
+    //   @Inject
+    // private TraceConsumerService traceConsumerService; 
 
-    @GET
-    public List<OtelTrace> getTraceDetails() {
-       return traceConsumerService.getDetails();
-    }
+    // @GET
+    // public List<OtelTrace> getTraceDetails() {
+    //    return traceConsumerService.getDetails();
+    // }
     
 }
 

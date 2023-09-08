@@ -23,7 +23,7 @@ public class TraceProducerResource {
     @POST
     public Response sendProductDetails(OtelTrace trace) {
         traceProducerService.sendProductDetails(trace);
-        return Response.ok().build();
+        return Response.status(200).entity(trace).build();
     }
     
 }
