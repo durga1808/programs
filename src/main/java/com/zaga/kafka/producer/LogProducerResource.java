@@ -21,7 +21,13 @@ public class LogProducerResource {
 
     @POST
     public Response sendLogDetails(OtelLog otelLog){
+        try {
+            
+        
         logProducerService.sendLog(otelLog);
-        return Response.ok().build();
+        return Response.status(200).entity(otelLog).build();
+        } catch (Exception e) {
+       return Response.status(400).entity(e.getMessage()).build();
+        }
     }
 }
