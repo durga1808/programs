@@ -24,8 +24,8 @@ private List<OtelTrace> productDetailsList = new ArrayList<>();
         traceService.createProduct(trace);
     }
 
-    // public List<OtelTrace> getDetails() {
-    //     System.out.println("consumerget"+productDetailsList);
-    //     return productDetailsList;
-    // }
+    public List<OtelTrace> getDetails() {
+        System.out.println("consumerget"+productDetailsList);
+        return productDetailsList;
+    }
 }
