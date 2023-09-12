@@ -10,14 +10,10 @@ import jakarta.inject.Inject;
 
 public class MetricConsumerService {
     
-
-
     @Inject
     MetricService metricService;
-
-
-
-      @Incoming("metricData") 
+    
+    @Incoming("metric-in")
     public void consumeProductDetails(OtelMetric metrics) {
         System.out.println("consumer++++++++++++++"+metrics);
        metricService.createProduct(metrics);

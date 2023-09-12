@@ -1,7 +1,5 @@
 package com.zaga.kafka.consumer;
 
-import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
@@ -14,16 +12,10 @@ public class LogConsumerService {
     
       @Inject
       private LogService logService;
-      
-
-   
-   
-    
-  private List<OtelLog> logList = new ArrayList<>();
-
-    @Incoming("logData") 
-    public void consumeProductDetails(OtelLog logs) {
+       
+      @Incoming("logs-in") 
+      public void consumeProductDetails(OtelLog logs) {
         System.out.println("consumer++++++++++++++"+logs);
        logService.createProduct(logs);
-    }
+     }
 }

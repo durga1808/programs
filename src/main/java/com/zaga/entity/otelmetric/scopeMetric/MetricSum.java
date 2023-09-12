@@ -13,5 +13,5 @@ import lombok.NoArgsConstructor;
 public class MetricSum {
     private List<SumDataPoint> dataPoints;
     private int aggregationTemporality;
-    private boolean isMonotonic; 
+    // private boolean isMonotonic;
 }

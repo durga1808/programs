@@ -1,6 +1,8 @@
 package com.zaga.entity.oteltrace;
 
-import com.zaga.entity.oteltrace.resource.Attributes;
+import java.util.List;
+
+import com.zaga.entity.oteltrace.resource.Attribute;
 
 import lombok.NoArgsConstructor;
 
@@ -13,5 +15,5 @@ import lombok.Data;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Resource {
-    private Attributes attributes; 
+    private List<Attribute> attributes;
 }

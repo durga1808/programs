@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LogRecord {
+    private String timeUnixNano;
     private String observedTimeUnixNano;
     private int severityNumber;
     private String severityText;

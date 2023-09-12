@@ -8,4 +8,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Scope {
     private String name;
+    private String version;
 }

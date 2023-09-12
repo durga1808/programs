@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Attributes {
+public class Attribute {
     private String key;
     private Value value;
 }

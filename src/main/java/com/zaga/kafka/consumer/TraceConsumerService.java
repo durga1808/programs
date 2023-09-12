@@ -1,7 +1,5 @@
 package com.zaga.kafka.consumer;
 
-import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
@@ -16,16 +14,10 @@ public class TraceConsumerService {
     TraceService traceService;
     
 
-private List<OtelTrace> productDetailsList = new ArrayList<>();
-
-    @Incoming("product") 
+    @Incoming("trace-in") 
     public void consumeProductDetails(OtelTrace trace) {
-        System.out.println("consumer++++++++++++++"+trace);
+        System.out.println("consumer--+-+-+-+-+-+-+-+"+trace);
         traceService.createProduct(trace);
     }
 
-    public List<OtelTrace> getDetails() {
-        System.out.println("consumerget"+productDetailsList);
-        return productDetailsList;
-    }
 }
