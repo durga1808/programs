@@ -7,4 +7,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class HistogramDataPointAttributeValue {
     private String stringValue;
+    private Integer intValue;
 }

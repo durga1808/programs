@@ -10,12 +10,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class HistogramDataPoint {
-    private List<HistogramDataPoint> attributes;
+    private List<HistogramDataPointAttribute> attributes;
     private String startTimeUnixNano;
     private String timeUnixNano;
     private String count;
     private double sum;
     private List<String> bucketCounts;
+    private List<String> explicitBounds;
     private double min;
     private double max;
 }
