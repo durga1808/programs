@@ -1,19 +1,19 @@
-package com.zaga.kafka.producer;
+// package com.zaga.kafka.producer;
 
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
+// import org.eclipse.microprofile.reactive.messaging.Channel;
+// import org.eclipse.microprofile.reactive.messaging.Emitter;
 
-import com.zaga.entity.oteltrace.OtelTrace;
+// import com.zaga.entity.oteltrace.OtelTrace;
 
-import jakarta.inject.Inject;
+// import jakarta.inject.Inject;
 
-public class TraceProducerService {
-        @Inject
-        @Channel("product") 
-        Emitter<OtelTrace> kafkaProducer;
+// public class TraceProducerService {
+//         @Inject
+//         // @Channel("product") 
+//         Emitter<OtelTrace> kafkaProducer;
     
-        public void sendProductDetails(OtelTrace trace) {
-            System.out.println(trace);
-            kafkaProducer.send(trace);
-        }
-}
+//         public void sendProductDetails(OtelTrace trace) {
+//             System.out.println(trace);
+//             kafkaProducer.send(trace);
+//         }
+// }

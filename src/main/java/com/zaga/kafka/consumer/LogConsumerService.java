@@ -13,7 +13,7 @@ public class LogConsumerService {
       @Inject
       private LogService logService;
        
-      @Incoming("logs-in") 
+      @Incoming("logs-in")
       public void consumeProductDetails(OtelLog logs) {
         System.out.println("consumer++++++++++++++"+logs);
        logService.createProduct(logs);
