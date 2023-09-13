@@ -1,7 +1,8 @@
 package com.zaga.controller;
 
 import com.zaga.entity.oteltrace.OtelTrace;
-import com.zaga.service.TraceService;
+import com.zaga.handler.command.TraceCommandHandler;
+import com.zaga.handler.query.TraceQueryHandler;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -18,14 +19,17 @@ import jakarta.ws.rs.core.Response;
 public class TraceController {
 
     @Inject
-    TraceService traceService;
+    TraceCommandHandler traceCommandHandler;
+
+    @Inject
+    TraceQueryHandler traceQueryHandler;
    
     @POST
     @Path("/create")
     public Response createProduvct(OtelTrace trace) {
         try {
             //System.out.println("----------------");
-            traceService.createProduct(trace);
+            traceCommandHandler.createTraceProduct(trace);
             return Response.status(200).entity(trace).build();
         } catch (Exception e) {
             return Response.status(500).entity(e.getMessage()).build();

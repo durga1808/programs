@@ -1,8 +1,8 @@
 package com.zaga.controller;
 
 import com.zaga.entity.otelmetric.OtelMetric;
-import com.zaga.service.MetricService;
-
+import com.zaga.handler.command.MetricCommandHandler;
+import com.zaga.handler.query.MetricQueryHandler;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -18,14 +18,17 @@ import jakarta.ws.rs.core.Response;
 public class MetricController {
 
     @Inject
-    MetricService metricService;
+    MetricCommandHandler metricCommandHandler;
+
+    @Inject
+    MetricQueryHandler metricQueryHandler;
    
     @POST
     @Path("/create")
     public Response createProduvct(OtelMetric metric) {
         try {
             //System.out.println("----------------");
-            metricService.createProduct(metric);
+            metricCommandHandler.createMetricProduct(metric);
             return Response.status(200).entity(metric).build();
         } catch (Exception e) {
             return Response.status(500).entity(e.getMessage()).build();

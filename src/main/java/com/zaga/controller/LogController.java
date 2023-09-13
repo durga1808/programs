@@ -1,7 +1,8 @@
 package com.zaga.controller;
 
 import com.zaga.entity.otellog.OtelLog;
-import com.zaga.service.LogService;
+import com.zaga.handler.command.LogCommandHandler;
+import com.zaga.handler.query.LogQueryHandler;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -17,14 +18,17 @@ import jakarta.ws.rs.core.Response;
 public class LogController {
     
     @Inject
-    LogService logService;
+    LogCommandHandler logCommandHandler;
+
+    @Inject
+    LogQueryHandler logQueryHandler;
 
     @POST
     @Path("/create")
     public Response createProduvct(OtelLog logs) {
         try {
             //System.out.println("----------------");
-            logService.createProduct(logs);
+            logCommandHandler.createLogProduct(logs);
             return Response.status(200).entity(logs).build();
         } catch (Exception e) {
             return Response.status(500).entity(e.getMessage()).build();

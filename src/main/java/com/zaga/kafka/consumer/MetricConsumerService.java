@@ -4,18 +4,18 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 
 import com.zaga.entity.otelmetric.OtelMetric;
-import com.zaga.service.MetricService;
+import com.zaga.handler.command.MetricCommandHandler;
 
 import jakarta.inject.Inject;
 
 public class MetricConsumerService {
     
     @Inject
-    MetricService metricService;
+    MetricCommandHandler metricCommandHandler;
     
     @Incoming("metric-in")
-    public void consumeProductDetails(OtelMetric metrics) {
+    public void consumeMetricDetails(OtelMetric metrics) {
         System.out.println("consumer++++++++++++++"+metrics);
-       metricService.createProduct(metrics);
+       metricCommandHandler.createMetricProduct(metrics);
     }
 }

@@ -4,18 +4,18 @@ package com.zaga.kafka.consumer;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 import com.zaga.entity.otellog.OtelLog;
-import com.zaga.service.LogService;
+import com.zaga.handler.command.LogCommandHandler;
 
 import jakarta.inject.Inject;
 
 public class LogConsumerService {
     
       @Inject
-      private LogService logService;
+      private LogCommandHandler logCommandHandler;
        
-      @Incoming("logs-in")
-      public void consumeProductDetails(OtelLog logs) {
+      @Incoming("logs-in") 
+      public void consumeLogDetails(OtelLog logs) {
         System.out.println("consumer++++++++++++++"+logs);
-       logService.createProduct(logs);
+       logCommandHandler.createLogProduct(logs);
      }
 }
