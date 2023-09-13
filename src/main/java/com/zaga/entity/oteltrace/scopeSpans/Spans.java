@@ -21,6 +21,6 @@ public class Spans {
     private String startTimeUnixNano;
     private String endTimeUnixNano;
     private List<Attributes> attributes;
-    // private List<Event> events;
     private Map<String, Object> status;
+    private List<Event> events;
 }

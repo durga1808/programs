@@ -1,8 +1,9 @@
 package com.zaga.entity.otelmetric.scopeMetric.histogram;
 
 import java.util.List;
+import java.util.Optional;
 
-
+import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,6 +18,7 @@ public class HistogramDataPoint {
     private double sum;
     private List<String> bucketCounts;
     private List<String> explicitBounds;
+    private List<Exemplar> exemplars;
     private double min;
     private double max;
 }

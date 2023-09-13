@@ -14,5 +14,6 @@ public class SumDataPoint {
     private String timeUnixNano;
     private String asInt;
     private String asDouble;
-    
+    private List<Exemplar> exemplars;
+
 }
