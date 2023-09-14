@@ -1,9 +1,6 @@
 package com.zaga.entity.otelmetric.scopeMetric.histogram;
 
 import java.util.List;
-import java.util.Optional;
-
-import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
