@@ -3,6 +3,8 @@ package com.zaga.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.bson.Document;
+
 import com.zaga.entity.otelmetric.OtelMetric;
 import com.zaga.handler.command.MetricCommandHandler;
 import com.zaga.handler.query.MetricQueryHandler;
@@ -40,8 +42,14 @@ public class MetricController {
         }
     }
 
+    // @GET
+    // public List<Map<String, Object>> getMetricsByServiceName(@QueryParam("serviceName") String serviceName) {
+    //     return metricQueryHandler.getMetricsByServiceName(serviceName);
+    // }
+
     @GET
-    public List<Map<String, Object>> getMetricsByServiceName(@QueryParam("serviceName") String serviceName) {
+    @Path("/getByServiceName")
+    public List<Document> getMetricsByServiceName(@QueryParam("serviceName") String serviceName){
         return metricQueryHandler.getMetricsByServiceName(serviceName);
     }
 }
