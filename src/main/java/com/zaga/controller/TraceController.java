@@ -1,14 +1,22 @@
 package com.zaga.controller;
 
+import java.util.List;
+import java.util.Map;
+
+import org.bson.Document;
+
 import com.zaga.entity.oteltrace.OtelTrace;
 import com.zaga.handler.command.TraceCommandHandler;
 import com.zaga.handler.query.TraceQueryHandler;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -35,6 +43,17 @@ public class TraceController {
             return Response.status(500).entity(e.getMessage()).build();
         }
     }
+    
+   
+    // @GET
+    // public List<Map<String, Object>> getTraceByServiceName(@QueryParam("serviceName") String serviceName) {
+    //     return traceQueryHandler.getTracesByServiceName(serviceName);
+    // }
 
+    @GET
+    @Path("/getByServiceName")
+    public List<Document> getTraceByServiceName(@QueryParam("serviceName") String serviceName){
+        return traceQueryHandler.getTraceByServiceName(serviceName);
+    }         
     
 }
