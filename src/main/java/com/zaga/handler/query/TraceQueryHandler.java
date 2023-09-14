@@ -9,6 +9,7 @@ import java.util.Map;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import com.arjuna.ats.internal.jdbc.drivers.modifiers.list;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
@@ -108,5 +109,87 @@ public class TraceQueryHandler {
 
         return trace;
     }
- 
+
+
+  
+    
+
+    public List<Document> getTraceByStatusCode(Integer statusCode) {
+        List<Document> trace = new ArrayList<>();
+    
+        // Create a query to filter documents where "resourceSpans.resource.attributes.value.intValue" matches the statusCode
+        Bson query = Filters.eq("resourceSpans.scopeSpans.spans.attributes.value.intValue", statusCode);
+    
+        // Perform the query and return the documents
+        try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                trace.add(cursor.next());
+            }
+        }
+    
+        return trace;
+    }
+    
+     public List<Document> getTraceByHttpMethod(String httpMethod) {
+        List<Document> trace = new ArrayList<>();
+    
+        // Create a query to filter documents where "resourceSpans.resource.attributes.value.intValue" matches the statusCode
+        Bson query = Filters.eq("resourceSpans.scopeSpans.spans.attributes.value.stringValue", httpMethod);
+    
+        // Perform the query and return the documents
+        try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                trace.add(cursor.next());
+            }
+        }
+    
+        return trace;
+    }
+     
+    public List<Document> getTraceByServiceNameAndHttpMethod(String serviceName, String httpMethod) {
+        List<Document> trace = new ArrayList<>();
+    
+        // Create a query to filter documents where both service name and HTTP method match
+        Bson query = Filters.and(
+            Filters.eq("resourceSpans.resource.attributes.value.stringValue", serviceName),
+            Filters.eq("resourceSpans.scopeSpans.spans.attributes.value.stringValue", httpMethod)
+        );
+    
+        // Perform the query and return the documents
+        try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                trace.add(cursor.next());
+            }
+        }
+    
+        return trace;
+    }
+    
+    public List<Document> getTraceByServiceNameAndStatusCode(String serviceName, Integer statusCode) {
+        List<Document> trace = new ArrayList<>();
+    
+        // Create a query to filter documents where both status code and service name match
+        Bson query = Filters.and(
+            Filters.eq("resourceSpans.resource.attributes.value.stringValue", serviceName),
+            Filters.eq("resourceSpans.scopeSpans.spans.attributes.value.intValue", statusCode)
+        );
+    
+        // Perform the query and return the documents
+        try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                trace.add(cursor.next());
+            }
+        }
+    
+        return trace;
+    }
+    
+
+
+
+
+  
+    
+
+    
 }
