@@ -14,7 +14,7 @@ public class TraceConsumerService {
     TraceCommandHandler traceCommandHandler;
     
 
-    @Incoming("trace-in") 
+    // @Incoming("trace-in") 
     public void consumeTraceDetails(OtelTrace trace) {
         System.out.println("consumer--+-+-+-+-+-+-+-+"+trace);
         traceCommandHandler.createTraceProduct(trace);

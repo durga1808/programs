@@ -1,14 +1,20 @@
 package com.zaga.controller;
 
+import java.util.List;
+
+import org.bson.Document;
+
 import com.zaga.entity.otellog.OtelLog;
 import com.zaga.handler.command.LogCommandHandler;
 import com.zaga.handler.query.LogQueryHandler;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -25,7 +31,7 @@ public class LogController {
 
     @POST
     @Path("/create")
-    public Response createProduvct(OtelLog logs) {
+    public Response createProduct(OtelLog logs) {
         try {
             //System.out.println("----------------");
             logCommandHandler.createLogProduct(logs);
@@ -34,5 +40,11 @@ public class LogController {
             return Response.status(500).entity(e.getMessage()).build();
         }
     }  
+
+    @GET
+    @Path("/getByServiceName")
+    public List<Document> getLogByServiceName(@QueryParam("service.name") String serviceName){
+        return logQueryHandler.findByServiceName(serviceName);
+    }
 }
 
