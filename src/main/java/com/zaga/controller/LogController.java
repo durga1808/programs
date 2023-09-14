@@ -1,6 +1,7 @@
 package com.zaga.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.bson.Document;
 
@@ -43,8 +44,8 @@ public class LogController {
 
     @GET
     @Path("/getByServiceName")
-    public List<Document> getLogByServiceName(@QueryParam("service.name") String serviceName){
-        return logQueryHandler.findByServiceName(serviceName);
+    public List<Document> getLogByServiceName(@QueryParam("serviceName") String serviceName){
+        return logQueryHandler.getLogByServiceName(serviceName);
     }
 }
 
