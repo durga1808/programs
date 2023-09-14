@@ -55,5 +55,27 @@ public class TraceController {
     public List<Document> getTraceByServiceName(@QueryParam("serviceName") String serviceName){
         return traceQueryHandler.getTraceByServiceName(serviceName);
     }         
-    
+    @GET
+    @Path("/getByStatuscode")
+    public List<Document> getTraceByStatusCode(@QueryParam("statusCode") Integer statusCode){
+        return traceQueryHandler.getTraceByStatusCode(statusCode);
+    }
+
+    @GET
+    @Path("/getByHttpMethod")
+    public List<Document> getTraceByHttpMethod(@QueryParam("httpMethod") String httpMethod){
+        return traceQueryHandler.getTraceByHttpMethod(httpMethod);
+    }
+
+    @GET
+    @Path("/getServiceNameToHttpMethod")
+    public List<Document> getServiceNameToHttpMethod(@QueryParam("serviceName") String serviceName, @QueryParam("httpMethod") String httpMethod){
+        return traceQueryHandler.getTraceByServiceNameAndHttpMethod(serviceName, httpMethod);
+    }
+
+    @GET
+    @Path("/getServiceNameToStatusCode")
+    public List<Document> getServiceNameToStatusCode(@QueryParam("serviceName") String serviceName, @QueryParam("statusCode") Integer statusCode){
+        return traceQueryHandler.getTraceByServiceNameAndStatusCode(serviceName, statusCode);
+    }
 }
