@@ -2,9 +2,9 @@ package com.zaga.handler.query;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -14,9 +14,10 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+import com.zaga.entity.otellog.OtelLog;
 import com.zaga.entity.oteltrace.OtelTrace;
+import com.zaga.repo.query.LogQueryRepo;
 import com.zaga.repo.query.TraceQueryRepo;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -30,6 +31,7 @@ public class TraceQueryHandler {
 
     @Inject
     MongoClient mongoClient;
+
 
     public List<OtelTrace> getTraceProduct(OtelTrace trace) {
         return traceQueryRepo.listAll();
@@ -110,6 +112,20 @@ public class TraceQueryHandler {
         return trace;
     }
 
+    public List<OtelTrace> findByStatusCodeAndQueryParam(String valueParam) {
+        String[] values = valueParam.split(",");
+        
+        if (values.length == 1) {
+            int intValue = Integer.parseInt(values[0]);
+            return traceQueryRepo.findByHttpStatusValue(intValue);
+        } else {
+            List<Integer> intValues = Arrays.stream(values)
+                    .map(Integer::parseInt)
+                    .collect(Collectors.toList());
+                    
+            return traceQueryRepo.findByHttpStatusValues(intValues);
+        }
+    }
 
   
     
