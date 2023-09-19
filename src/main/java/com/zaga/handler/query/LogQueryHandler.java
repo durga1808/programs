@@ -19,12 +19,16 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.zaga.entity.otellog.OtelLog;
+import com.zaga.entity.queryentity.LogRecordDTO;
 import com.zaga.repo.query.LogQueryRepo;
+import com.zaga.repo.query.LogRecordDTORepo;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
 import io.quarkus.mongodb.panache.PanacheQuery;
+import io.quarkus.panache.common.Sort;
 import io.quarkus.runtime.Quarkus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -38,6 +42,9 @@ public class LogQueryHandler {
     
     @Inject
     MongoClient mongoClient;
+
+    @Inject
+    LogRecordDTORepo logRecordDTORepo;
 
     
     private final MongoCollection<Document> collection;
@@ -114,7 +121,7 @@ public class LogQueryHandler {
             new Document("$match", 
                 new Document("resourceLogs.resource.attributes.value.stringValue", serviceName)),
             new Document("$project", 
-                new Document("_id", 1L)
+                new Document("_id", 0L)
                     .append("resourceLogs.scopeLogs.logRecords.body", 1L)
                     .append("resourceLogs.scopeLogs.logRecords.observedTimeUnixNano", 1L)
                     .append("resourceLogs.scopeLogs.logRecords.severityText", 1L)
@@ -125,13 +132,42 @@ public class LogQueryHandler {
         );
 
         List<Document> result = collection.aggregate(aggregationPipeline, Document.class).into(new ArrayList<>());
+    //     List<LogRecordDTO> logRecords = new ArrayList<>();
+    // for (Document document : result) {
+    //     LogRecordDTO logRecord = new LogRecordDTO();
+    //     logRecord.setBody(document.getString("body"));
+    //     logRecord.setObservedTimeUnixNano(document.getString("observedTimeUnixNano"));
+    //     logRecord.setSeverityText(document.getString("severityText"));
+    //     logRecord.setSpanId(document.getString("spanId"));
+    //     logRecord.setTimeUnixNano(document.getString("timeUnixNano"));
+    //     logRecord.setTraceId(document.getString("traceId"));
+    //     logRecords.add(logRecord);
+    // }
+    // return logRecords;
+
         return result;
        
     }    
+
+        public List<LogRecordDTO> extractLogData(String serviceName) {
+        List<OtelLog> otelLogs = OtelLog.listAll(Sort.ascending("id"));
+        
+        return otelLogs.stream()
+            .flatMap(otelLog -> otelLog.getResourceLogs().stream())
+            .flatMap(resourceLog -> resourceLog.getScopeLogs().stream())
+            .flatMap(scopeLog -> scopeLog.getLogRecords().stream())
+            .map(logRecord -> {
+                LogRecordDTO logRecordDTO = new LogRecordDTO();
+                logRecordDTO.setBody(logRecord.getBody().getStringValue());
+                logRecordDTO.setObservedTimeUnixNano(logRecord.getObservedTimeUnixNano());
+                logRecordDTO.setSeverityText(logRecord.getSeverityText());
+                logRecordDTO.setSpanId(logRecord.getSpanId());
+                logRecordDTO.setTimeUnixNano(logRecord.getTimeUnixNano());
+                logRecordDTO.setTraceId(logRecord.getTraceId());
+                return logRecordDTO;
+            })
+            .collect(Collectors.toList());
+    }
   
-
-    
-
-
 }
 

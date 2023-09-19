@@ -6,6 +6,8 @@ import java.util.Map;
 import org.bson.Document;
 
 import com.zaga.entity.otellog.OtelLog;
+import com.zaga.entity.queryentity.LogRecordDTO;
+//import com.zaga.entity.queryentity.LogRecordDTO;
 import com.zaga.handler.command.LogCommandHandler;
 import com.zaga.handler.query.LogQueryHandler;
 
@@ -64,9 +66,16 @@ public class LogController {
 
     @GET
     @Path("/service/{serviceName}")
-    public   List<Document> aggregateDocuments(@PathParam("serviceName") String serviceName) {
+    public  List<Document>  aggregateDocuments(@PathParam("serviceName") String serviceName) {
         return logQueryHandler.aggregateDocuments(serviceName);
     }
+
+    @GET
+    @Path("/exactdata/{serviceName}")
+    public List<LogRecordDTO> getLogData(@PathParam("serviceName") String serviceName) {
+        return logQueryHandler.extractLogData(serviceName);
+    }
+    
     
 }
 

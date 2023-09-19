@@ -28,7 +28,7 @@ public class TraceQueryHandler {
     @Inject
     TraceQueryRepo traceQueryRepo;
 
-     @Inject
+    @Inject
     MongoClient mongoClient;
 
     public List<OtelTrace> getTraceProduct(OtelTrace trace) {
