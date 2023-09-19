@@ -9,15 +9,13 @@ import java.util.stream.Collectors;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
-import com.arjuna.ats.internal.jdbc.drivers.modifiers.list;
-import com.mongodb.client.FindIterable;
+
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
-import com.zaga.entity.otellog.OtelLog;
+
 import com.zaga.entity.oteltrace.OtelTrace;
-import com.zaga.repo.query.LogQueryRepo;
 import com.zaga.repo.query.TraceQueryRepo;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -200,11 +198,27 @@ public class TraceQueryHandler {
         return trace;
     }
     
-
-
-
-
-  
+   
+    public List<Document> getTraceByMultipleStatusCodes(List<Integer> statusCodes) {
+        List<Document> trace = new ArrayList<>();
+    
+        // Create a query to filter documents where "resourceSpans.scopeSpans.spans.attributes.value.intValue" matches any of the specified status codes
+        Bson query = Filters.in("resourceSpans.scopeSpans.spans.attributes.value.intValue", statusCodes);
+    
+        // Perform the query and return the documents
+        try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                trace.add(cursor.next());
+            }
+        }
+    
+        return trace;
+    }
+    
+    
+    
+    
+    
     
 
     
