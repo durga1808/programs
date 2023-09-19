@@ -3,16 +3,8 @@ package com.zaga.handler.query;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import com.arjuna.ats.internal.jdbc.drivers.modifiers.list;
-import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -20,9 +12,7 @@ import org.bson.conversions.Bson;
 import java.util.ArrayList;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.zaga.entity.otellog.OtelLog;
@@ -30,10 +20,7 @@ import com.zaga.entity.queryentity.LogRecordDTO;
 import com.zaga.repo.query.LogQueryRepo;
 import com.zaga.repo.query.LogRecordDTORepo;
 
-import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
-import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Sort;
-import io.quarkus.runtime.Quarkus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -136,19 +123,6 @@ public class LogQueryHandler {
         );
 
         List<Document> result = collection.aggregate(aggregationPipeline, Document.class).into(new ArrayList<>());
-    //     List<LogRecordDTO> logRecords = new ArrayList<>();
-    // for (Document document : result) {
-    //     LogRecordDTO logRecord = new LogRecordDTO();
-    //     logRecord.setBody(document.getString("body"));
-    //     logRecord.setObservedTimeUnixNano(document.getString("observedTimeUnixNano"));
-    //     logRecord.setSeverityText(document.getString("severityText"));
-    //     logRecord.setSpanId(document.getString("spanId"));
-    //     logRecord.setTimeUnixNano(document.getString("timeUnixNano"));
-    //     logRecord.setTraceId(document.getString("traceId"));
-    //     logRecords.add(logRecord);
-    // }
-    // return logRecords;
-
         return result;
        
     }    

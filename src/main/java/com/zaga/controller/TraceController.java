@@ -50,13 +50,6 @@ public class TraceController {
     public List<Document> getTraceByServiceName(@QueryParam("serviceName") String serviceName){
         return traceQueryHandler.getTraceByServiceName(serviceName);
     }         
-        
-    
-    @GET
-    @Path("/intValue/queryParam")
-    public List<OtelTrace> findByIntValue(@QueryParam("value") String valueParam) {
-        return traceQueryHandler.findByStatusCodeAndQueryParam(valueParam);
-    }
     
     @GET
     @Path("/getByStatuscode")
@@ -82,15 +75,10 @@ public class TraceController {
         return traceQueryHandler.getTraceByServiceNameAndStatusCode(serviceName, statusCode);
     }
 
-    // @GET
-    // @Path("/getByMultipleStatusCode")
-    // public List<Document> getTracesByStatusCodes(@QueryParam("statusCodes") List<Integer> statusCodes) {
-    //     return traceQueryHandler.getTraceByMultipleStatusCodes(statusCodes);
-    // }
 
     @GET
-@Path("/getByMultipleStatusCode")
-public List<Document> getTracesByStatusCodes(
+    @Path("/getByMultipleStatusCode")
+    public List<Document> getTracesByStatusCodes(
     @QueryParam("statusCodes") List<Integer> statusCodes,
     @QueryParam("statusCodeOne") Integer statusCodeOne,
     @QueryParam("statusCodeTwo") Integer statusCodeTwo,

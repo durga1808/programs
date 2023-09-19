@@ -6,11 +6,9 @@ import org.bson.Document;
 
 import com.zaga.entity.otellog.OtelLog;
 import com.zaga.entity.queryentity.LogRecordDTO;
-//import com.zaga.entity.queryentity.LogRecordDTO;
 import com.zaga.handler.command.LogCommandHandler;
 import com.zaga.handler.query.LogQueryHandler;
 
-import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
