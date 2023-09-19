@@ -1,9 +1,15 @@
 package com.zaga.handler.command;
 
+import java.util.ArrayList;
 import java.util.List;
-
 import com.zaga.entity.oteltrace.OtelTrace;
+import com.zaga.entity.oteltrace.ResourceSpans;
+import com.zaga.entity.oteltrace.ScopeSpans;
+import com.zaga.entity.oteltrace.resource.attributes.Value;
+import com.zaga.entity.oteltrace.scopeSpans.Spans;
+import com.zaga.entity.queryentity.trace.SpansData;
 import com.zaga.entity.queryentity.trace.TraceDTO;
+import com.zaga.entity.queryentity.trace.TraceValue;
 import com.zaga.repo.command.TraceCommandRepo;
 import com.zaga.repo.query.TraceQueryRepo;
 
@@ -22,35 +28,126 @@ public class TraceCommandHandler {
     public void createTraceProduct(OtelTrace trace) {
         traceCommandRepo.persist(trace);
 
-        // Extract the traceId from the OtelTrace object
-        String traceId = extractTraceId(trace);
+        List<TraceDTO> traceDTOs = extractAndMapData(trace);
+        if (!traceDTOs.isEmpty()) {
+            for (TraceDTO traceDTO : traceDTOs) {
+                traceQueryRepo.persist(traceDTO);
+            }
+        } else {
+            System.out.println("No trace id");
+        }
+    }
 
-        System.out.println("Trace ID: " + traceId);
+   
+private List<TraceDTO> extractAndMapData(OtelTrace trace) {
+    List<TraceDTO> traceDTOs = new ArrayList<>();
 
-        TraceDTO traceDTO = new TraceDTO();
-        traceDTO.setTraceId(traceId);
+    try {
+        for (ResourceSpans resourceSpans : trace.getResourceSpans()) {
+            String serviceName = getServiceName(resourceSpans);
 
-        traceQueryRepo.persist(traceDTO);
+            for (ScopeSpans scopeSpans : resourceSpans.getScopeSpans()) {
+                for (Spans span : scopeSpans.getSpans()) {
+                    TraceDTO traceDTO = new TraceDTO();
+                    traceDTO.setServiceName(serviceName);
+                    traceDTO.setTraceId(span.getTraceId());
+                    traceDTO.setMethodName(extractMethodName(span));
+                    traceDTO.setDuration(calculateDuration(span));
+                    traceDTO.setStatusCode(extractStatusCode(span));
+                    traceDTO.setSpanCount(String.valueOf(scopeSpans.getSpans().size()));
+                    traceDTO.setCreatedTime(span.getStartTimeUnixNano());
 
+                    List<com.zaga.entity.queryentity.trace.Attributes> attributesList = new ArrayList<>();
+                    for (com.zaga.entity.oteltrace.scopeSpans.spans.Attributes sourceAttribute : span.getAttributes()) {
+                        com.zaga.entity.queryentity.trace.Attributes targetAttribute = mapAttributes(sourceAttribute);
+                        attributesList.add(targetAttribute);
+                    }
+
+                    SpansData spansData = new SpansData();
+                    spansData.setAttributes(attributesList);
+                    // Set other fields in spansData
+                    spansData.setEndTimeUnixNano(span.getEndTimeUnixNano());
+                    spansData.setKind(span.getKind());
+                    spansData.setName(span.getName());
+                    spansData.setParentSpanId(span.getParentSpanId());
+                    spansData.setSpanId(span.getSpanId());
+                    spansData.setStartTimeUnixNano(span.getStartTimeUnixNano());
+                    spansData.setStatus(span.getStatus());
+
+                    List<SpansData> spansList = new ArrayList<>();
+                    spansList.add(spansData);
+
+                    traceDTO.setSpans(spansList);
+
+                    traceDTOs.add(traceDTO);
+                }
+            }
+        }
+
+        return traceDTOs;
+    } catch (Exception e) {
+        e.printStackTrace();
+        return traceDTOs;
+    }
+}
+
+
+
+     private com.zaga.entity.queryentity.trace.Attributes mapAttributes(com.zaga.entity.oteltrace.scopeSpans.spans.Attributes source) {
+        com.zaga.entity.queryentity.trace.Attributes target = new com.zaga.entity.queryentity.trace.Attributes();
+        
+        Value sourceValue = source.getValue(); 
+        
+        TraceValue traceValue = new TraceValue();
+        traceValue.setIntValue(sourceValue.getIntValue());
+        traceValue.setStringValue(sourceValue.getStringValue());
+        
+        String key = source.getKey();
+        
+        target.setKey(key);
+        target.setValue(traceValue);
+        
+        return target;
     }
 
     
-    public List<OtelTrace> getTraceProduct(OtelTrace trace) {
-        return traceCommandRepo.listAll();
+    private String getServiceName(ResourceSpans resourceSpans) {
+        return resourceSpans.getResource().getAttributes().stream()
+                .filter(attribute -> "service.name".equals(attribute.getKey()))
+                .findFirst()
+                .map(attribute -> attribute.getValue().getStringValue())
+                .orElse(null);
     }
 
-    private String extractTraceId(OtelTrace trace) {
+    private String calculateDuration(Spans span) {
+        return "CalculatedDuration";
+    }
+
+    private String extractMethodName(Spans span) {
         try {
-            // Extract the traceId from the OtelTrace object
-            String traceId = trace.getResourceSpans().get(0).getScopeSpans().get(0).getSpans().get(0).getTraceId();
-            
-            return traceId;
-            // String traceId = jsonNode.path("traceId").asText();
-            // return traceId;
+            // Extract the "http.method" attribute from the span's attributes
+            return span.getName(); 
         } catch (Exception e) {
             e.printStackTrace();
-            return null; 
+            return "Unknown"; 
         }
+    }
+
+    private String extractStatusCode(Spans span) {
+        if (span == null || span.getAttributes() == null) {
+            return "Unknown";
+        }
+    
+        return span.getAttributes()
+                .stream()
+                .filter(attribute -> "http.status_code".equals(attribute.getKey()))
+                .findFirst()
+                .map(attribute -> String.valueOf(attribute.getValue().getIntValue()))
+                .orElse("0");
+    }
+    
+    public List<OtelTrace> getTraceProduct(OtelTrace trace) {
+        return traceCommandRepo.listAll();
     }
 }
 

@@ -18,14 +18,15 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties("id")
 @MongoEntity(collection="TraceDto",database="OtelTrace")
 public class TraceDTO extends PanacheMongoEntity{
- private String traceId;
+    private String traceId;
     private String serviceName;
     private String methodName;
     private String duration;
     private String statusCode;
     private String spanCount;
     private String createdTime;
-    private List<Spans> spans;
+    private List<SpansData> spans;
+   
 }
 
 

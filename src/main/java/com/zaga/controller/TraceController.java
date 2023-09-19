@@ -6,6 +6,7 @@ import java.util.List;
 import org.bson.Document;
 
 import com.zaga.entity.oteltrace.OtelTrace;
+import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.handler.command.TraceCommandHandler;
 import com.zaga.handler.query.TraceQueryHandler;
 
@@ -103,4 +104,10 @@ public class TraceController {
     return traceQueryHandler.getTraceByMultipleStatusCodes(allStatusCodes);
 }
 
+
+@GET
+@Path("/getTraceData")
+public List<TraceDTO> getDetails(){
+        return traceQueryHandler.getTraceProduct();
+    }
 }
