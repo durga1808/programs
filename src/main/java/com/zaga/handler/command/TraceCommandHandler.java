@@ -2,14 +2,13 @@ package com.zaga.handler.command;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import com.zaga.entity.oteltrace.OtelTrace;
 import com.zaga.entity.oteltrace.ResourceSpans;
 import com.zaga.entity.oteltrace.ScopeSpans;
-import com.zaga.entity.oteltrace.resource.attributes.Value;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
-import com.zaga.entity.queryentity.trace.SpansData;
+import com.zaga.entity.oteltrace.scopeSpans.spans.Attributes;
 import com.zaga.entity.queryentity.trace.TraceDTO;
-import com.zaga.entity.queryentity.trace.TraceValue;
 import com.zaga.repo.command.TraceCommandRepo;
 import com.zaga.repo.query.TraceQueryRepo;
 
@@ -29,88 +28,66 @@ public class TraceCommandHandler {
         traceCommandRepo.persist(trace);
 
         List<TraceDTO> traceDTOs = extractAndMapData(trace);
-        if (!traceDTOs.isEmpty()) {
-            for (TraceDTO traceDTO : traceDTOs) {
-                traceQueryRepo.persist(traceDTO);
-            }
-        } else {
-            System.out.println("No trace id");
-        }
+        System.out.println(traceDTOs);
+        
     }
 
    
-private List<TraceDTO> extractAndMapData(OtelTrace trace) {
-    List<TraceDTO> traceDTOs = new ArrayList<>();
+    private List<TraceDTO> extractAndMapData(OtelTrace trace) {
+        List<TraceDTO> traceDTOs = new ArrayList<>();
 
-    try {
-        for (ResourceSpans resourceSpans : trace.getResourceSpans()) {
-            String serviceName = getServiceName(resourceSpans);
-
-            for (ScopeSpans scopeSpans : resourceSpans.getScopeSpans()) {
-                for (Spans span : scopeSpans.getSpans()) {
-                    TraceDTO traceDTO = new TraceDTO();
-                    traceDTO.setServiceName(serviceName);
-                    traceDTO.setTraceId(span.getTraceId());
-                    traceDTO.setMethodName(extractMethodName(span));
-                    traceDTO.setDuration(calculateDuration(span));
-                    traceDTO.setStatusCode(extractStatusCode(span));
-                    traceDTO.setSpanCount(String.valueOf(scopeSpans.getSpans().size()));
-                    traceDTO.setCreatedTime(span.getStartTimeUnixNano());
-
-                    List<com.zaga.entity.queryentity.trace.Attributes> attributesList = new ArrayList<>();
-                    for (com.zaga.entity.oteltrace.scopeSpans.spans.Attributes sourceAttribute : span.getAttributes()) {
-                        com.zaga.entity.queryentity.trace.Attributes targetAttribute = mapAttributes(sourceAttribute);
-                        attributesList.add(targetAttribute);
-                    }
-
-                    SpansData spansData = new SpansData();
-                    spansData.setAttributes(attributesList);
-                    // Set other fields in spansData
-                    spansData.setEndTimeUnixNano(span.getEndTimeUnixNano());
-                    spansData.setKind(span.getKind());
-                    spansData.setName(span.getName());
-                    spansData.setParentSpanId(span.getParentSpanId());
-                    spansData.setSpanId(span.getSpanId());
-                    spansData.setStartTimeUnixNano(span.getStartTimeUnixNano());
-                    spansData.setStatus(span.getStatus());
-
-                    List<SpansData> spansList = new ArrayList<>();
-                    spansList.add(spansData);
-
-                    traceDTO.setSpans(spansList);
-
-                    traceDTOs.add(traceDTO);
-                }
-            }
-        }
-
-        return traceDTOs;
-    } catch (Exception e) {
-        e.printStackTrace();
-        return traceDTOs;
-    }
-}
-
-
-
-     private com.zaga.entity.queryentity.trace.Attributes mapAttributes(com.zaga.entity.oteltrace.scopeSpans.spans.Attributes source) {
-        com.zaga.entity.queryentity.trace.Attributes target = new com.zaga.entity.queryentity.trace.Attributes();
-        
-        Value sourceValue = source.getValue(); 
-        
-        TraceValue traceValue = new TraceValue();
-        traceValue.setIntValue(sourceValue.getIntValue());
-        traceValue.setStringValue(sourceValue.getStringValue());
-        
-        String key = source.getKey();
-        
-        target.setKey(key);
-        target.setValue(traceValue);
-        
-        return target;
-    }
-
+        try {
+            List<String> traceIdList = new ArrayList<>(); 
+            // Map<String, Object> attributeMap = new HashMap<>();
     
+            for (ResourceSpans resourceSpans : trace.getResourceSpans()) {
+                String serviceName = getServiceName(resourceSpans);
+                for (ScopeSpans scopeSpans : resourceSpans.getScopeSpans()) {
+                    for (Spans span : scopeSpans.getSpans()) {
+                        String traceId = span.getTraceId();
+                        
+                        if (!traceIdList.contains(traceId)) {
+                            traceIdList.add(traceId);
+                        }
+                    }
+                }
+                        for (String traceIdLoop : traceIdList) {
+                            TraceDTO traceDTO = new TraceDTO();
+                            List<Spans> objectList = new ArrayList<Spans>();
+                            for (ScopeSpans scopeSpans : resourceSpans.getScopeSpans()) {
+                                List<Spans> spans = scopeSpans.getSpans();
+                                for (Spans span : spans) {
+                                    String traceId = span.getTraceId();
+                                    if (traceId.contains(traceIdLoop)) {
+                                         
+                                    traceDTO.setServiceName(serviceName);
+                                    traceDTO.setTraceId(traceId);
+                                    if (span.getParentSpanId() == null || span.getParentSpanId().isEmpty()) {
+                                    traceDTO.setMethodName(extractMethodName(span));
+                                    traceDTO.setStatusCode(extractStatusCode(span));
+                                    }
+                                    traceDTO.setDuration(calculateDuration(span));
+                                    traceDTO.setSpanCount(String.valueOf(scopeSpans.getSpans().size()));
+                                    traceDTO.setCreatedTime(span.getStartTimeUnixNano());
+
+                                    objectList.add(span);
+                                    traceDTO.setSpans(objectList); 
+                                    // traceDTOs.add(traceDTO);
+                                    
+                                    }
+                                }
+                            }          
+                            traceQueryRepo.persist(traceDTO);
+                        }
+            }
+            return traceDTOs;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return traceDTOs;
+        }
+    }
+     
+       
     private String getServiceName(ResourceSpans resourceSpans) {
         return resourceSpans.getResource().getAttributes().stream()
                 .filter(attribute -> "service.name".equals(attribute.getKey()))
@@ -124,28 +101,25 @@ private List<TraceDTO> extractAndMapData(OtelTrace trace) {
     }
 
     private String extractMethodName(Spans span) {
-        try {
-            // Extract the "http.method" attribute from the span's attributes
-            return span.getName(); 
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Unknown"; 
+        List<Attributes> attributes = span.getAttributes();
+        for (Attributes attribute : attributes) {
+            if ("http.method".equals(attribute.getKey())) {
+                return attribute.getValue().getStringValue();
+            }
         }
+        return "Unknown";
     }
-
+    
     private String extractStatusCode(Spans span) {
-        if (span == null || span.getAttributes() == null) {
-            return "Unknown";
+        List<Attributes> attributes = span.getAttributes();
+        for (Attributes attribute : attributes) {
+            if ("http.status_code".equals(attribute.getKey())) {
+                return String.valueOf(attribute.getValue().getIntValue());
+            }
         }
-    
-        return span.getAttributes()
-                .stream()
-                .filter(attribute -> "http.status_code".equals(attribute.getKey()))
-                .findFirst()
-                .map(attribute -> String.valueOf(attribute.getValue().getIntValue()))
-                .orElse("0");
+        return "Unknown";
     }
-    
+      
     public List<OtelTrace> getTraceProduct(OtelTrace trace) {
         return traceCommandRepo.listAll();
     }

@@ -3,6 +3,7 @@ package com.zaga.entity.queryentity.trace;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.zaga.entity.oteltrace.scopeSpans.Spans;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
@@ -25,9 +26,16 @@ public class TraceDTO extends PanacheMongoEntity{
     private String statusCode;
     private String spanCount;
     private String createdTime;
-    private List<SpansData> spans;
-   
+    private List<Spans> spans;
+
 }
+
+
+
+
+
+
+   
 
 
 

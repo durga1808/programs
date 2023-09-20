@@ -70,7 +70,6 @@ public class LogQueryHandler {
     public List<Document> getLogsBySeverityText(String severityText) {
         List<Document> logs = new ArrayList<>();
 
-        // Create a query to filter documents where "resourceLogs.scopeLogs.logRecords.body.stringValue" matches severityText
         Bson query = Filters.eq("resourceLogs.scopeLogs.logRecords.severityText", severityText);
 
         // Perform the query and return the documents
@@ -86,8 +85,6 @@ public class LogQueryHandler {
     public List<Document> getLogsByServiceNameAndSeverityText(String serviceName, String severityText) {
         List<Document> logs = new ArrayList<>();
     
-        // Create a query to filter documents where both "resourceLogs.resource.attributes.value.stringValue" matches serviceName
-        // and "resourceLogs.scopeLogs.logRecords.body.stringValue" matches severityText
         Bson query = Filters.and(
             Filters.eq("resourceLogs.resource.attributes.value.stringValue", serviceName),
             Filters.eq("resourceLogs.scopeLogs.logRecords.severityText", severityText)
