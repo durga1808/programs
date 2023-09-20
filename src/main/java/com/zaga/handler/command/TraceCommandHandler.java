@@ -1,5 +1,9 @@
 package com.zaga.handler.command;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,7 +72,7 @@ public class TraceCommandHandler {
                                     }
                                     traceDTO.setDuration(calculateDuration(span));
                                     traceDTO.setSpanCount(String.valueOf(scopeSpans.getSpans().size()));
-                                    traceDTO.setCreatedTime(span.getStartTimeUnixNano());
+                                    traceDTO.setCreatedTime(calculateCreatedTime(span));
 
                                     objectList.add(span);
                                     traceDTO.setSpans(objectList); 
@@ -97,8 +101,24 @@ public class TraceCommandHandler {
     }
 
     private String calculateDuration(Spans span) {
-        return "CalculatedDuration";
+        String startTimeUnixNano = span.getStartTimeUnixNano();
+        String endTimeUnixNano = span.getEndTimeUnixNano();
+    
+        long startUnixNanoTime = Long.parseLong(startTimeUnixNano);
+        long endUnixNanoTime = Long.parseLong(endTimeUnixNano);
+    
+        Instant startInstant = Instant.ofEpochSecond(startUnixNanoTime / 1_000_000_000L, startUnixNanoTime % 1_000_000_000L);
+        Instant endInstant = Instant.ofEpochSecond(endUnixNanoTime / 1_000_000_000L, endUnixNanoTime % 1_000_000_000L);
+    
+        Duration duration = Duration.between(startInstant, endInstant);
+    
+        long milliseconds = duration.toMillis();
+    
+        return String.valueOf(milliseconds);
     }
+    
+    
+    
 
     private String extractMethodName(Spans span) {
         List<Attributes> attributes = span.getAttributes();
@@ -119,6 +139,53 @@ public class TraceCommandHandler {
         }
         return "Unknown";
     }
+
+    private String calculateCreatedTime(Spans span) {
+        String startTimeUnixNano = span.getStartTimeUnixNano();
+        long startUnixNanoTime = Long.parseLong(startTimeUnixNano);
+        Instant startInstant = Instant.ofEpochSecond(startUnixNanoTime / 1_000_000_000L, startUnixNanoTime % 1_000_000_000L);
+    
+        Instant currentInstant = Instant.now();
+        Duration createdDuration = Duration.between(startInstant, currentInstant);
+        String createdTime = formatDuration(createdDuration);
+    
+        return createdTime;
+    }
+    
+    private static String formatDuration(Duration duration) {
+        if (duration.toMinutes() < 1) {
+            long seconds = duration.getSeconds();
+            if (seconds == 0) {
+                return "a few seconds ago";
+            } else if (seconds == 1) {
+                return "a second ago";
+            } else {
+                return seconds + " seconds ago";
+            }
+        } else if (duration.toHours() < 1) {
+            long minutes = duration.toMinutes();
+            if (minutes == 1) {
+                return "a minute ago";
+            } else {
+                return minutes + " minutes ago";
+            }
+        } else if (duration.toDays() < 1) {
+            long hours = duration.toHours();
+            if (hours == 1) {
+                return "an hour ago";
+            } else {
+                return hours + " hours ago";
+            }
+        } else {
+            long days = duration.toDays();
+            if (days == 1) {
+                return "a day ago";
+            } else {
+                return days + " days ago";
+            }
+        }
+    }
+    
       
     public List<OtelTrace> getTraceProduct(OtelTrace trace) {
         return traceCommandRepo.listAll();
