@@ -19,6 +19,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.zaga.entity.oteltrace.OtelTrace;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
+import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.repo.query.TraceQueryRepo;
@@ -146,17 +147,109 @@ public class TraceQueryHandler {
     }
     
 
-public List<TraceDTO> searchTraces(TraceQuery query) {
-    // Create filters for both methodName and serviceName
-    Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
-    Bson serviceNameFilter = Filters.in("serviceName", query.getServiceName());
+    // public List<TraceDTO> searchTraces(TraceQuery query) {
+    //     List<Bson> filters = new ArrayList<>();
 
-    // Combine the filters using the $or operator
-    Bson filter = Filters.and(methodNameFilter, serviceNameFilter);
+    //     if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
+    //         Bson methodNameFilter = Filters.eq("methodName", query.getMethodName());
+    //         filters.add(methodNameFilter);
+    //     }
+
+    //     if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
+    //         Bson serviceNameFilter = Filters.eq("serviceName", query.getServiceName());
+    //         filters.add(serviceNameFilter);
+    //     }
+
+    //     // Combine the filters using the $or operator
+    //     Bson filter = Filters.or(filters);
+
+    //     MongoCollection<Document> collection = mongoClient
+    //     .getDatabase("OtelTrace")
+    //     .getCollection("TraceDto");
+
+    //     // Define the projection to select all fields of TraceDTO
+    //     Bson projection = Projections.excludeId(); // Exclude the _id field
+
+    //     FindIterable<Document> result = collection
+    //             .find(filter)
+    //             .projection(projection);
+
+    //     List<TraceDTO> traceDTOList = new ArrayList<>();
+    //     try (MongoCursor<Document> cursor = result.iterator()) {
+    //         while (cursor.hasNext()) {
+    //             Document document = cursor.next();
+    //             TraceDTO traceDTO = new TraceDTO();
+
+    //             // Extract and handle different data types for all fields
+    //             traceDTO.setTraceId(document.getString("traceId"));
+    //             traceDTO.setServiceName(document.getString("serviceName"));
+    //             traceDTO.setMethodName(document.getString("methodName"));
+    //             traceDTO.setDuration(document.getString("duration"));
+    //             traceDTO.setStatusCode(document.getString("statusCode"));
+
+    //             // Make sure you have appropriate getters and setters for these fields in TraceDTO
+    //             traceDTO.setSpanCount(document.getString("spanCount"));
+    //             traceDTO.setCreatedTime(document.getString("createdTime"));
+    //             traceDTO.setSpans((List<Spans>) document.get("spans")); // Assuming Spans is a custom class
+
+    //             traceDTOList.add(traceDTO);
+    //         }
+    //     }
+
+    //     return traceDTOList;
+    // }
+    public List<TraceDTO> searchTraces(TraceQuery query) {
+    List<Bson> filters = new ArrayList<>();
+
+    if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
+        Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
+        filters.add(methodNameFilter);
+    }
+
+    if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
+        Bson serviceNameFilter = Filters.in("serviceName", query.getServiceName());
+        filters.add(serviceNameFilter);
+    }
+
+    if (query.getStatusCode() != null && !query.getStatusCode().isEmpty()) {
+        List<Bson> statusCodeFilters = new ArrayList<>();
+        for (StatusCodeRange statusCodeRange : query.getStatusCode()) {
+            Bson rangeFilter = Filters.and(
+                Filters.gte("statusCode.miniVal", statusCodeRange.getMin()),
+                Filters.lte("statusCode.maxiVal", statusCodeRange.getMax())
+            );
+            statusCodeFilters.add(rangeFilter);
+        }
+        if (!statusCodeFilters.isEmpty()) {
+            Bson statusCodeFilter = Filters.or(statusCodeFilters);
+            filters.add(statusCodeFilter);
+        }
+    }
+
+    if (query.getDuration() != null) {
+        Bson minDurationFilter = null;
+        Bson maxDurationFilter = null;
+        if (query.getDuration().getMin() != null) {
+            minDurationFilter = Filters.gte("duration.min", query.getDuration().getMin());
+        }
+        if (query.getDuration().getMax() != null) {
+            maxDurationFilter = Filters.lte("duration.max", query.getDuration().getMax());
+        }
+        if (minDurationFilter != null || maxDurationFilter != null) {
+            Bson durationFilter = Filters.and(
+                minDurationFilter != null ? minDurationFilter : Filters.exists("duration.min", false),
+                maxDurationFilter != null ? maxDurationFilter : Filters.exists("duration.max", false)
+            );
+            filters.add(durationFilter);
+        }
+    }
+
+    // Combine the filters using the $and operator
+    Bson filter = Filters.and(filters);
 
     MongoCollection<Document> collection = mongoClient
-            .getDatabase("OtelTrace")
-            .getCollection("TraceDto");
+        .getDatabase("OtelTrace")
+        .getCollection("TraceDto");
 
     // Define the projection to select all fields of TraceDTO
     Bson projection = Projections.excludeId(); // Exclude the _id field
@@ -177,9 +270,11 @@ public List<TraceDTO> searchTraces(TraceQuery query) {
             traceDTO.setMethodName(document.getString("methodName"));
             traceDTO.setDuration(document.getString("duration"));
             traceDTO.setStatusCode(document.getString("statusCode"));
-            traceDTO.setSpanCount(document.getString("spanCount")); // Add this line
-            traceDTO.setCreatedTime(document.getString("createdTime")); // Add this line
-            traceDTO.setSpans((List<Spans>) document.get("spans")); // Add this line
+
+            // Make sure you have appropriate getters and setters for these fields in TraceDTO
+            traceDTO.setSpanCount(document.getString("spanCount"));
+            traceDTO.setCreatedTime(document.getString("createdTime"));
+            traceDTO.setSpans((List<Spans>) document.get("spans")); // Assuming Spans is a custom class
 
             traceDTOList.add(traceDTO);
         }
@@ -187,6 +282,7 @@ public List<TraceDTO> searchTraces(TraceQuery query) {
 
     return traceDTOList;
 }
+
 
 }
 

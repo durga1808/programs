@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class StatusCodeRange {
-    private Integer miniVal;
-    private Integer maxiVal;
+    private Integer min;
+    private Integer max;
 }

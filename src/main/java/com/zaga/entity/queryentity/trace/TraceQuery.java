@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 public class TraceQuery {
     private List<String> methodName;
     private List<String> serviceName;
-    // private List<StatusCodeRange> statusCode;
-    // private QueryDuration duration;
+    private List<StatusCodeRange> statusCode;
+    private QueryDuration duration;
 }
