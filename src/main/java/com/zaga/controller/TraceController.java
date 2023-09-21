@@ -2,14 +2,16 @@ package com.zaga.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.bson.Document;
 
 import com.zaga.entity.oteltrace.OtelTrace;
 import com.zaga.entity.queryentity.trace.TraceDTO;
+import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.handler.command.TraceCommandHandler;
 import com.zaga.handler.query.TraceQueryHandler;
-
+import com.zaga.repo.query.TraceQueryRepo;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -33,6 +35,9 @@ public class TraceController {
 
     @Inject
     TraceQueryHandler traceQueryHandler;
+
+    @Inject
+    TraceQueryRepo traceQueryRepo;
    
     @POST
     @Path("/create")
@@ -110,4 +115,12 @@ public class TraceController {
 public List<TraceDTO> getDetails(){
         return traceQueryHandler.getTraceProduct();
     }
+
+
+
+@POST
+@Path("/TraceQuery")
+public List<TraceDTO> queryTraces(TraceQuery traceQuery) {
+        return traceQueryHandler.searchTraces(traceQuery);
+}
 }
