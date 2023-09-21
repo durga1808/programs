@@ -18,6 +18,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.zaga.entity.oteltrace.OtelTrace;
+import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.repo.query.TraceQueryRepo;
@@ -145,9 +146,7 @@ public class TraceQueryHandler {
     }
     
 
-
-    
-    public List<TraceDTO> searchTraces(TraceQuery query) {
+public List<TraceDTO> searchTraces(TraceQuery query) {
     // Create filters for both methodName and serviceName
     Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
     Bson serviceNameFilter = Filters.in("serviceName", query.getServiceName());
@@ -159,10 +158,8 @@ public class TraceQueryHandler {
             .getDatabase("OtelTrace")
             .getCollection("TraceDto");
 
-    // Define the projection to select only the fields of TraceDTO
-    Bson projection = Projections.fields(
-            Projections.include("traceId", "serviceName", "methodName", "duration", "statusCode")
-    );
+    // Define the projection to select all fields of TraceDTO
+    Bson projection = Projections.excludeId(); // Exclude the _id field
 
     FindIterable<Document> result = collection
             .find(filter)
@@ -174,46 +171,15 @@ public class TraceQueryHandler {
             Document document = cursor.next();
             TraceDTO traceDTO = new TraceDTO();
 
-            // Extract and handle different data types
-            Object traceIdValue = document.get("traceId");
-            if (traceIdValue instanceof String) {
-                traceDTO.setTraceId((String) traceIdValue);
-            } else {
-                // Handle other data types or null values as needed
-                traceDTO.setTraceId(null);
-            }
-
-            Object serviceNameValue = document.get("serviceName");
-            if (serviceNameValue instanceof String) {
-                traceDTO.setServiceName((String) serviceNameValue);
-            } else {
-                // Handle other data types or null values as needed
-                traceDTO.setServiceName(null);
-            }
-
-            Object methodNameValue = document.get("methodName");
-            if (methodNameValue instanceof String) {
-                traceDTO.setMethodName((String) methodNameValue);
-            } else {
-                // Handle other data types or null values as needed
-                traceDTO.setMethodName(null);
-            }
-
-            Object durationValue = document.get("duration");
-            if (durationValue instanceof String) {
-                traceDTO.setDuration((String) durationValue);
-            } else {
-                // Handle other data types or null values as needed
-                traceDTO.setDuration(null);
-            }
-
-            Object statusCodeValue = document.get("statusCode");
-            if (statusCodeValue instanceof String) {
-                traceDTO.setStatusCode((String) statusCodeValue);
-            } else {
-                // Handle other data types or null values as needed
-                traceDTO.setStatusCode(null);
-            }
+            // Extract and handle different data types for all fields
+            traceDTO.setTraceId(document.getString("traceId"));
+            traceDTO.setServiceName(document.getString("serviceName"));
+            traceDTO.setMethodName(document.getString("methodName"));
+            traceDTO.setDuration(document.getString("duration"));
+            traceDTO.setStatusCode(document.getString("statusCode"));
+            traceDTO.setSpanCount(document.getString("spanCount")); // Add this line
+            traceDTO.setCreatedTime(document.getString("createdTime")); // Add this line
+            traceDTO.setSpans((List<Spans>) document.get("spans")); // Add this line
 
             traceDTOList.add(traceDTO);
         }
@@ -221,6 +187,7 @@ public class TraceQueryHandler {
 
     return traceDTOList;
 }
+
 }
 
     
