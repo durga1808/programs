@@ -22,5 +22,6 @@ public class Spans {
     private String endTimeUnixNano;
     private List<Attributes> attributes;
     private Map<String, Object> status;
+    @JsonIgnore
     private List<Event> events;
 }
