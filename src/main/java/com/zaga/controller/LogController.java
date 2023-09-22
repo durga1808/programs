@@ -5,7 +5,7 @@ import java.util.List;
 import org.bson.Document;
 
 import com.zaga.entity.otellog.OtelLog;
-import com.zaga.entity.queryentity.LogRecordDTO;
+import com.zaga.entity.queryentity.log.LogRecordDTO;
 import com.zaga.handler.command.LogCommandHandler;
 import com.zaga.handler.query.LogQueryHandler;
 

@@ -46,6 +46,8 @@ public class TraceQueryHandler {
         collection = mongoClient.getDatabase("OtelTrace").getCollection("Trace");
     }
 
+
+    // getTrace by serviceName from OtelTrace 
     public List<Document> getTraceByServiceName(String serviceName) {
         List<Document> trace = new ArrayList<>();
 
@@ -62,7 +64,7 @@ public class TraceQueryHandler {
 
   
     
-
+    // getTrace by statusCode from OtelTrace 
     public List<Document> getTraceByStatusCode(Integer statusCode) {
         List<Document> trace = new ArrayList<>();
     
@@ -77,6 +79,7 @@ public class TraceQueryHandler {
         return trace;
     }
     
+    // getTrace by HttpMethod from OtelTrace 
      public List<Document> getTraceByHttpMethod(String httpMethod) {
         List<Document> trace = new ArrayList<>();
     
@@ -90,7 +93,9 @@ public class TraceQueryHandler {
     
         return trace;
     }
-     
+
+    
+    // getTrace by service name with http method from OtelTrace
     public List<Document> getTraceByServiceNameAndHttpMethod(String serviceName, String httpMethod) {
         List<Document> trace = new ArrayList<>();
     
@@ -107,7 +112,9 @@ public class TraceQueryHandler {
     
         return trace;
     }
+
     
+    // getTrace by service name with http status from OtelTrace
     public List<Document> getTraceByServiceNameAndStatusCode(String serviceName, Integer statusCode) {
         List<Document> trace = new ArrayList<>();
     
@@ -125,7 +132,7 @@ public class TraceQueryHandler {
         return trace;
     }
     
-   
+       // getTrace by service name with multiple http method from OtelTrace
     public List<Document> getTraceByMultipleStatusCodes(List<Integer> statusCodes) {
         List<Document> trace = new ArrayList<>();
     
@@ -141,6 +148,7 @@ public class TraceQueryHandler {
     }
     
 
+    // getTrace by multiple queries like serviceName, method, duration and statuscode from TraceDTO entity
     public List<TraceDTO> searchTraces(TraceQuery query) {
         List<Bson> filters = new ArrayList<>();
     

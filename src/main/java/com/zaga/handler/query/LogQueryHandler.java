@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.zaga.entity.otellog.OtelLog;
-import com.zaga.entity.queryentity.LogRecordDTO;
+import com.zaga.entity.queryentity.log.LogRecordDTO;
 import com.zaga.repo.query.LogQueryRepo;
 import com.zaga.repo.query.LogRecordDTORepo;
 
@@ -54,10 +54,8 @@ public class LogQueryHandler {
     public List<Document> getLogByServiceName(String serviceName) {
         List<Document> logs = new ArrayList<>();
 
-        // Create a query to filter documents where "resourceLogs.resource.attributes.value.stringValue" matches serviceName
         Bson query = Filters.eq("resourceLogs.resource.attributes.value.stringValue", serviceName);
 
-        // Perform the query and return the documents
         try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
             while (cursor.hasNext()) {
                 logs.add(cursor.next());
@@ -72,7 +70,6 @@ public class LogQueryHandler {
 
         Bson query = Filters.eq("resourceLogs.scopeLogs.logRecords.severityText", severityText);
 
-        // Perform the query and return the documents
         try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
             while (cursor.hasNext()) {
                 logs.add(cursor.next());
@@ -90,7 +87,6 @@ public class LogQueryHandler {
             Filters.eq("resourceLogs.scopeLogs.logRecords.severityText", severityText)
         );
     
-        // Perform the query and return the documents
         try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
             while (cursor.hasNext()) {
                 logs.add(cursor.next());

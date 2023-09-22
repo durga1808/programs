@@ -1,4 +1,4 @@
-package com.zaga.entity.queryentity;
+package com.zaga.entity.queryentity.log;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

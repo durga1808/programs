@@ -32,6 +32,7 @@ public class TraceCommandHandler {
     System.out.println(traceDTOs);
   }
 
+  // logic for getting serviceName
   private String getServiceName(ResourceSpans resourceSpans) {
     return resourceSpans
       .getResource()
@@ -43,6 +44,8 @@ public class TraceCommandHandler {
       .orElse(null);
   }
 
+
+    // logic for calculating the createdtime
   private String calculateCreatedTime(Spans span) {
     String startTimeUnixNano = span.getStartTimeUnixNano();
     long startUnixNanoTime = Long.parseLong(startTimeUnixNano);
@@ -58,6 +61,7 @@ public class TraceCommandHandler {
     return createdTime;
   }
 
+  // logic for calculating the duration for trace 
   private static String formatDuration(Duration duration) {
     if (duration.toMinutes() < 1) {
       long seconds = duration.getSeconds();
@@ -113,74 +117,88 @@ public class TraceCommandHandler {
     return (int) duration.toMillis();
   }
 
+  // extraction and marshelling of data and persistance for trace
   private List<TraceDTO> extractAndMapData(OtelTrace trace) {
     List<TraceDTO> traceDTOs = new ArrayList<>();
 
     try {
-      List<String> traceIdList = new ArrayList<>();
+        for (ResourceSpans resourceSpans : trace.getResourceSpans()) {
+            String serviceName = getServiceName(resourceSpans);
+            
+            List<String> traceIdList = new ArrayList<>(); 
+            
+            for (ScopeSpans scopeSpans : resourceSpans.getScopeSpans()) {
+                List<Spans> spans = scopeSpans.getSpans();
+                
+                for (Spans span : spans) {
+                    String traceId = span.getTraceId();
 
-      for (ResourceSpans resourceSpans : trace.getResourceSpans()) {
-        String serviceName = getServiceName(resourceSpans);
-        for (ScopeSpans scopeSpans : resourceSpans.getScopeSpans()) {
-          for (Spans span : scopeSpans.getSpans()) {
-            String traceId = span.getTraceId();
-
-            if (!traceIdList.contains(traceId)) {
-              traceIdList.add(traceId);
-            }
-          }
-        }
-        for (String traceIdLoop : traceIdList) {
-          TraceDTO traceDTO = new TraceDTO();
-          List<Spans> objectList = new ArrayList<Spans>();
-          for (ScopeSpans scopeSpans : resourceSpans.getScopeSpans()) {
-            List<Spans> spans = scopeSpans.getSpans();
-            for (Spans span : spans) {
-              String traceId = span.getTraceId();
-              if (traceId.contains(traceIdLoop)) {
-                traceDTO.setServiceName(serviceName);
-                traceDTO.setTraceId(traceId);
-
-                List<Attributes> attributes = span.getAttributes();
-                for (Attributes attribute : attributes) {
-                  if ("http.method".equals(attribute.getKey())) {
-                    traceDTO.setMethodName(
-                      attribute.getValue().getStringValue()
-                    );
-                  } else if ("http.status_code".equals(attribute.getKey())) {
-                    String statusCodeString = attribute
-                      .getValue()
-                      .getStringValue();
-                    // Check if statusCodeString is a valid integer before parsing it
-                    try {
-                      Integer statusCode = Integer.parseInt(statusCodeString);
-                      traceDTO.setStatusCode(statusCode);
-                    } catch (NumberFormatException e) {
-                      // Handle the case where the status code is not a valid integer
-                      // You can log an error or take appropriate action here
+                    if (!traceIdList.contains(traceId)) {
+                        traceIdList.add(traceId);
                     }
-                  } else {
-                    // Handle other attributes if needed
-                  }
                 }
-                traceDTO.setDuration(calculateDuration(span));
-                traceDTO.setCreatedTime(calculateCreatedTime(span));
-                objectList.add(span);
-                traceDTO.setSpanCount(String.valueOf(objectList.size()));
-                traceDTO.setSpans(objectList);
-              }
             }
-          }
-          traceQueryRepo.persist(traceDTO);
+            
+            for (String traceIdLoop : traceIdList) {
+                TraceDTO traceDTO = new TraceDTO(); 
+                List<Spans> objectList = new ArrayList<Spans>();
+                
+                for (ScopeSpans scopeSpans : resourceSpans.getScopeSpans()) {
+                    List<Spans> spans = scopeSpans.getSpans();
+                    
+                    for (Spans span : spans) {
+                        String traceId = span.getTraceId();
+                        
+                        if (traceId.contains(traceIdLoop)) {
+                            traceDTO.setServiceName(serviceName);
+                            traceDTO.setTraceId(traceId);
+                            
+                            if (span.getParentSpanId() == null || span.getParentSpanId().isEmpty()) {
+                                traceDTO.setOperationName(span.getName());
+                            } else {
+                            }
+                            
+                            List<Attributes> attributes = span.getAttributes();
+                            
+                            for (Attributes attribute : attributes) {
+                                if ("http.method".equals(attribute.getKey())) {
+                                    traceDTO.setMethodName(attribute.getValue().getStringValue());
+                                } else if ("http.status_code".equals(attribute.getKey())) {
+                                    String statusCodeString = attribute.getValue().getStringValue();
+                                    
+                                    try {
+                                        Integer statusCode = Integer.parseInt(statusCodeString);
+                                        traceDTO.setStatusCode(statusCode);
+                                    } catch (NumberFormatException e) {
+                                        // Handle the parsing error
+                                    }
+                                } else {
+                                  
+                                }
+                            }
+                            
+                            traceDTO.setDuration(calculateDuration(span));
+                            traceDTO.setCreatedTime(calculateCreatedTime(span));
+                            objectList.add(span);
+                            traceDTO.setSpanCount(String.valueOf(objectList.size()));
+                            traceDTO.setSpans(objectList);
+                        }
+                    }
+                }
+                traceQueryRepo.persist(traceDTO);
+                traceDTOs.add(traceDTO);
+            }
         }
-      }
-      return traceDTOs;
+        return traceDTOs;
     } catch (Exception e) {
-      e.printStackTrace();
-      return traceDTOs;
+        e.printStackTrace();
+        return traceDTOs;
     }
-  }
+}
 
+
+
+  // get all trace data
   public List<OtelTrace> getTraceProduct(OtelTrace trace) {
     return traceCommandRepo.listAll();
   }

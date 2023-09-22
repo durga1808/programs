@@ -1,6 +1,6 @@
 package com.zaga.repo.query;
 
-import com.zaga.entity.queryentity.LogRecordDTO;
+import com.zaga.entity.queryentity.log.LogRecordDTO;
 
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
