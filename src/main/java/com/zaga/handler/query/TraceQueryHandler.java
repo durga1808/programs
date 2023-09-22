@@ -2,11 +2,7 @@ package com.zaga.handler.query;
 
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -17,14 +13,12 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.zaga.entity.oteltrace.OtelTrace;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.repo.query.TraceQueryRepo;
 
-import io.quarkus.mongodb.panache.PanacheQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -147,144 +141,77 @@ public class TraceQueryHandler {
     }
     
 
-    // public List<TraceDTO> searchTraces(TraceQuery query) {
-    //     List<Bson> filters = new ArrayList<>();
-
-    //     if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
-    //         Bson methodNameFilter = Filters.eq("methodName", query.getMethodName());
-    //         filters.add(methodNameFilter);
-    //     }
-
-    //     if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
-    //         Bson serviceNameFilter = Filters.eq("serviceName", query.getServiceName());
-    //         filters.add(serviceNameFilter);
-    //     }
-
-    //     // Combine the filters using the $or operator
-    //     Bson filter = Filters.or(filters);
-
-    //     MongoCollection<Document> collection = mongoClient
-    //     .getDatabase("OtelTrace")
-    //     .getCollection("TraceDto");
-
-    //     // Define the projection to select all fields of TraceDTO
-    //     Bson projection = Projections.excludeId(); // Exclude the _id field
-
-    //     FindIterable<Document> result = collection
-    //             .find(filter)
-    //             .projection(projection);
-
-    //     List<TraceDTO> traceDTOList = new ArrayList<>();
-    //     try (MongoCursor<Document> cursor = result.iterator()) {
-    //         while (cursor.hasNext()) {
-    //             Document document = cursor.next();
-    //             TraceDTO traceDTO = new TraceDTO();
-
-    //             // Extract and handle different data types for all fields
-    //             traceDTO.setTraceId(document.getString("traceId"));
-    //             traceDTO.setServiceName(document.getString("serviceName"));
-    //             traceDTO.setMethodName(document.getString("methodName"));
-    //             traceDTO.setDuration(document.getString("duration"));
-    //             traceDTO.setStatusCode(document.getString("statusCode"));
-
-    //             // Make sure you have appropriate getters and setters for these fields in TraceDTO
-    //             traceDTO.setSpanCount(document.getString("spanCount"));
-    //             traceDTO.setCreatedTime(document.getString("createdTime"));
-    //             traceDTO.setSpans((List<Spans>) document.get("spans")); // Assuming Spans is a custom class
-
-    //             traceDTOList.add(traceDTO);
-    //         }
-    //     }
-
-    //     return traceDTOList;
-    // }
     public List<TraceDTO> searchTraces(TraceQuery query) {
-    List<Bson> filters = new ArrayList<>();
-
-    if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
-        Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
-        filters.add(methodNameFilter);
-    }
-
-    if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
-        Bson serviceNameFilter = Filters.in("serviceName", query.getServiceName());
-        filters.add(serviceNameFilter);
-    }
-
-    if (query.getStatusCode() != null && !query.getStatusCode().isEmpty()) {
-        List<Bson> statusCodeFilters = new ArrayList<>();
-        for (StatusCodeRange statusCodeRange : query.getStatusCode()) {
-            Bson rangeFilter = Filters.and(
-                Filters.gte("statusCode.miniVal", statusCodeRange.getMin()),
-                Filters.lte("statusCode.maxiVal", statusCodeRange.getMax())
-            );
-            statusCodeFilters.add(rangeFilter);
+        List<Bson> filters = new ArrayList<>();
+    
+        if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
+            Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
+            filters.add(methodNameFilter);
         }
+    
+        if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
+            Bson serviceNameFilter = Filters.in("serviceName", query.getServiceName());
+            filters.add(serviceNameFilter);
+        }
+    
+        if (query.getDuration() != null) {
+            Bson durationFilter = Filters.and(
+                Filters.gte("duration", query.getDuration().getMin()),
+                Filters.lte("duration", query.getDuration().getMax())
+            );
+            filters.add(durationFilter);
+        }
+    
+        List<Bson> statusCodeFilters = new ArrayList<>();
+        if (query.getStatusCode() != null && !query.getStatusCode().isEmpty()) {
+            for (StatusCodeRange statusCodeRange : query.getStatusCode()) {
+                statusCodeFilters.add(
+                    Filters.and(
+                        Filters.gte("statusCode", statusCodeRange.getMin()),
+                        Filters.lte("statusCode", statusCodeRange.getMax())
+                    )
+                );
+            }
+        }
+    
         if (!statusCodeFilters.isEmpty()) {
             Bson statusCodeFilter = Filters.or(statusCodeFilters);
             filters.add(statusCodeFilter);
         }
-    }
-
-    if (query.getDuration() != null) {
-        Bson minDurationFilter = null;
-        Bson maxDurationFilter = null;
-        if (query.getDuration().getMin() != null) {
-            minDurationFilter = Filters.gte("duration.min", query.getDuration().getMin());
-        }
-        if (query.getDuration().getMax() != null) {
-            maxDurationFilter = Filters.lte("duration.max", query.getDuration().getMax());
-        }
-        if (minDurationFilter != null || maxDurationFilter != null) {
-            Bson durationFilter = Filters.and(
-                minDurationFilter != null ? minDurationFilter : Filters.exists("duration.min", false),
-                maxDurationFilter != null ? maxDurationFilter : Filters.exists("duration.max", false)
-            );
-            filters.add(durationFilter);
-        }
-    }
-
-    // Combine the filters using the $and operator
-    Bson filter = Filters.and(filters);
-
-    MongoCollection<Document> collection = mongoClient
-        .getDatabase("OtelTrace")
-        .getCollection("TraceDto");
-
-    // Define the projection to select all fields of TraceDTO
-    Bson projection = Projections.excludeId(); // Exclude the _id field
-
-    FindIterable<Document> result = collection
+    
+        Bson filter = Filters.and(filters);
+    
+        MongoCollection<Document> collection = mongoClient
+            .getDatabase("OtelTrace")
+            .getCollection("TraceDto");
+    
+        Bson projection = Projections.excludeId(); 
+    
+        FindIterable<Document> result = collection
             .find(filter)
             .projection(projection);
-
-    List<TraceDTO> traceDTOList = new ArrayList<>();
-    try (MongoCursor<Document> cursor = result.iterator()) {
-        while (cursor.hasNext()) {
-            Document document = cursor.next();
-            TraceDTO traceDTO = new TraceDTO();
-
-            // Extract and handle different data types for all fields
-            traceDTO.setTraceId(document.getString("traceId"));
-            traceDTO.setServiceName(document.getString("serviceName"));
-            traceDTO.setMethodName(document.getString("methodName"));
-            traceDTO.setDuration(document.getString("duration"));
-            traceDTO.setStatusCode(document.getString("statusCode"));
-
-            // Make sure you have appropriate getters and setters for these fields in TraceDTO
-            traceDTO.setSpanCount(document.getString("spanCount"));
-            traceDTO.setCreatedTime(document.getString("createdTime"));
-            traceDTO.setSpans((List<Spans>) document.get("spans")); // Assuming Spans is a custom class
-
-            traceDTOList.add(traceDTO);
-        }
-    }
-
-    return traceDTOList;
-}
-
-
-}
-
     
+        List<TraceDTO> traceDTOList = new ArrayList<>();
+        try (MongoCursor<Document> cursor = result.iterator()) {
+            while (cursor.hasNext()) {
+                Document document = cursor.next();
+                TraceDTO traceDTO = new TraceDTO();
+    
+                traceDTO.setTraceId(document.getString("traceId"));
+                traceDTO.setServiceName(document.getString("serviceName"));
+                traceDTO.setMethodName(document.getString("methodName"));
+                traceDTO.setDuration(document.getLong("duration").intValue()); 
+                traceDTO.setStatusCode(document.getLong("statusCode").intValue()); 
+                traceDTO.setSpanCount(document.getString("spanCount")); 
+                traceDTO.setCreatedTime(document.getString("createdTime"));
+                traceDTO.setSpans((List<Spans>) document.get("spans"));
+    
+                traceDTOList.add(traceDTO);
+            }
+        }
+    
+        return traceDTOList;
+}
+
+}
 

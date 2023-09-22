@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class QueryDuration {
-    private String min;
-    private String max;
+    private Integer min;
+    private Integer max;
 }
