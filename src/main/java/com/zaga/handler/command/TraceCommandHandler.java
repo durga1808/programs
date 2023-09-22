@@ -12,6 +12,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,48 +56,54 @@ public class TraceCommandHandler {
       startUnixNanoTime / 1_000_000_000L,
       startUnixNanoTime % 1_000_000_000L
     );
+    ZoneId istZone = ZoneId.of("Asia/Kolkata");
 
-    Instant currentInstant = Instant.now();
-    Duration createdDuration = Duration.between(startInstant, currentInstant);
-    String createdTime = formatDuration(createdDuration);
+    ZonedDateTime istTime = startInstant.atZone(istZone);
 
-    return createdTime;
-  }
+    String formattedIstTime = istTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z"));
+
+    return formattedIstTime;
+}
+
+
+
+
+
 
   // logic for calculating the duration for trace 
-  private static String formatDuration(Duration duration) {
-    if (duration.toMinutes() < 1) {
-      long seconds = duration.getSeconds();
-      if (seconds == 0) {
-        return "a few seconds ago";
-      } else if (seconds == 1) {
-        return "a second ago";
-      } else {
-        return seconds + " seconds ago";
-      }
-    } else if (duration.toHours() < 1) {
-      long minutes = duration.toMinutes();
-      if (minutes == 1) {
-        return "a minute ago";
-      } else {
-        return minutes + " minutes ago";
-      }
-    } else if (duration.toDays() < 1) {
-      long hours = duration.toHours();
-      if (hours == 1) {
-        return "an hour ago";
-      } else {
-        return hours + " hours ago";
-      }
-    } else {
-      long days = duration.toDays();
-      if (days == 1) {
-        return "a day ago";
-      } else {
-        return days + " days ago";
-      }
-    }
-  }
+  // private static String formatDuration(Duration duration) {
+  //   if (duration.toMinutes() < 1) {
+  //     long seconds = duration.getSeconds();
+  //     if (seconds == 0) {
+  //       return "a few seconds ago";
+  //     } else if (seconds == 1) {
+  //       return "a second ago";
+  //     } else {
+  //       return seconds + " seconds ago";
+  //     }
+  //   } else if (duration.toHours() < 1) {
+  //     long minutes = duration.toMinutes();
+  //     if (minutes == 1) {
+  //       return "a minute ago";
+  //     } else {
+  //       return minutes + " minutes ago";
+  //     }
+  //   } else if (duration.toDays() < 1) {
+  //     long hours = duration.toHours();
+  //     if (hours == 1) {
+  //       return "an hour ago";
+  //     } else {
+  //       return hours + " hours ago";
+  //     }
+  //   } else {
+  //     long days = duration.toDays();
+  //     if (days == 1) {
+  //       return "a day ago";
+  //     } else {
+  //       return days + " days ago";
+  //     }
+  //   }
+  // }
 
   private Long calculateDuration(Spans span) {
     String startTimeUnixNano = span.getStartTimeUnixNano();
@@ -155,6 +164,7 @@ public class TraceCommandHandler {
                             
                             if (span.getParentSpanId() == null || span.getParentSpanId().isEmpty()) {
                                 traceDTO.setOperationName(span.getName());
+                                traceDTO.setCreatedTime(calculateCreatedTime(span));
                             } else {
                             }
                             
@@ -170,18 +180,13 @@ public class TraceCommandHandler {
                                 
                                 try {
                                     int statusCodeInt = Integer.parseInt(statusCodeString);
-                                    long statusCode = (long) statusCodeInt; // Cast to long
-                                    traceDTO.setStatusCode(statusCode);
+                                    long statusCode = (long) statusCodeInt;                                    traceDTO.setStatusCode(statusCode);
                                 } catch (NumberFormatException e) {
-                                    // Handle the case where the status code is not a valid integer
-                                    // You can log an error or take appropriate action here
                                 }
                             } else {
-                                // Handle other attributes if needed
                               }
                             }
                             traceDTO.setDuration(calculateDuration(span));
-                            traceDTO.setCreatedTime(calculateCreatedTime(span));
                             objectList.add(span);
                             traceDTO.setSpanCount(String.valueOf(objectList.size()));
                             traceDTO.setSpans(objectList);
