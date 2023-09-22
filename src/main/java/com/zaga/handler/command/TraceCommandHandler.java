@@ -96,7 +96,7 @@ public class TraceCommandHandler {
     }
   }
 
-  private int calculateDuration(Spans span) {
+  private Long calculateDuration(Spans span) {
     String startTimeUnixNano = span.getStartTimeUnixNano();
     String endTimeUnixNano = span.getEndTimeUnixNano();
 
@@ -114,7 +114,7 @@ public class TraceCommandHandler {
 
     Duration duration = Duration.between(startInstant, endInstant);
 
-    return (int) duration.toMillis();
+    return (Long) duration.toMillis();
   }
 
   // extraction and marshelling of data and persistance for trace
