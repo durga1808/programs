@@ -23,8 +23,8 @@ public class TraceDTO extends PanacheMongoEntity{
     private String serviceName;
     private String methodName;
     private String operationName;
-    private Object duration;
-    private Object statusCode;
+    private Long duration;
+    private Long statusCode;
     private String spanCount;
     private String createdTime;
     private List<Spans> spans;

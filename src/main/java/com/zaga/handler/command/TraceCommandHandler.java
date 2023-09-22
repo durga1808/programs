@@ -161,42 +161,42 @@ public class TraceCommandHandler {
                             List<Attributes> attributes = span.getAttributes();
                             
                             for (Attributes attribute : attributes) {
-                                if ("http.method".equals(attribute.getKey())) {
-                                    traceDTO.setMethodName(attribute.getValue().getStringValue());
-                                } else if ("http.status_code".equals(attribute.getKey())) {
-                                    String statusCodeString = attribute.getValue().getStringValue();
-                                    
-                                    try {
-                                        Integer statusCode = Integer.parseInt(statusCodeString);
-                                        traceDTO.setStatusCode(statusCode);
-                                    } catch (NumberFormatException e) {
-                                        // Handle the parsing error
-                                    }
-                                } else {
-                                  
+                              if ("http.method".equals(attribute.getKey())) {
+                                traceDTO.setMethodName(
+                                  attribute.getValue().getStringValue()
+                                );
+                              } else if ("http.status_code".equals(attribute.getKey())) {
+                                String statusCodeString = attribute.getValue().getStringValue();
+                                
+                                try {
+                                    int statusCodeInt = Integer.parseInt(statusCodeString);
+                                    long statusCode = (long) statusCodeInt; // Cast to long
+                                    traceDTO.setStatusCode(statusCode);
+                                } catch (NumberFormatException e) {
+                                    // Handle the case where the status code is not a valid integer
+                                    // You can log an error or take appropriate action here
                                 }
+                            } else {
+                                // Handle other attributes if needed
+                              }
                             }
-                            
                             traceDTO.setDuration(calculateDuration(span));
                             traceDTO.setCreatedTime(calculateCreatedTime(span));
                             objectList.add(span);
                             traceDTO.setSpanCount(String.valueOf(objectList.size()));
                             traceDTO.setSpans(objectList);
+                          }
                         }
+                      }
+                      traceQueryRepo.persist(traceDTO);
                     }
-                }
-                traceQueryRepo.persist(traceDTO);
-                traceDTOs.add(traceDTO);
-            }
+                  }
+                  return traceDTOs;
+                } catch (Exception e) {
+                  e.printStackTrace();
+                  return traceDTOs;
         }
-        return traceDTOs;
-    } catch (Exception e) {
-        e.printStackTrace();
-        return traceDTOs;
-    }
-}
-
-
+      }
 
   // get all trace data
   public List<OtelTrace> getTraceProduct(OtelTrace trace) {
