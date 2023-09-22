@@ -92,7 +92,7 @@ public class TraceCommandHandler {
     }
   }
 
-  private int calculateDuration(Spans span) {
+  private Long calculateDuration(Spans span) {
     String startTimeUnixNano = span.getStartTimeUnixNano();
     String endTimeUnixNano = span.getEndTimeUnixNano();
 
@@ -110,7 +110,7 @@ public class TraceCommandHandler {
 
     Duration duration = Duration.between(startInstant, endInstant);
 
-    return (int) duration.toMillis();
+    return (Long) duration.toMillis();
   }
 
   private List<TraceDTO> extractAndMapData(OtelTrace trace) {
@@ -153,7 +153,7 @@ public class TraceCommandHandler {
                       .getStringValue();
                     // Check if statusCodeString is a valid integer before parsing it
                     try {
-                      Integer statusCode = Integer.parseInt(statusCodeString);
+                      Long statusCode = Long.parseLong(statusCodeString);
                       traceDTO.setStatusCode(statusCode);
                     } catch (NumberFormatException e) {
                       // Handle the case where the status code is not a valid integer

@@ -144,11 +144,13 @@ public class TraceQueryHandler {
     public List<TraceDTO> searchTraces(TraceQuery query) {
         List<Bson> filters = new ArrayList<>();
     
+        // Check if methodName is provided in the query
         if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
             Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
             filters.add(methodNameFilter);
         }
     
+        // Add filters for serviceName, duration, and statusCode (unchanged)
         if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
             Bson serviceNameFilter = Filters.in("serviceName", query.getServiceName());
             filters.add(serviceNameFilter);
@@ -199,9 +201,20 @@ public class TraceQueryHandler {
     
                 traceDTO.setTraceId(document.getString("traceId"));
                 traceDTO.setServiceName(document.getString("serviceName"));
-                traceDTO.setMethodName(document.getString("methodName"));
-                traceDTO.setDuration(document.getLong("duration").intValue()); 
-                traceDTO.setStatusCode(document.getLong("statusCode").intValue()); 
+                Object durationObject = document.get("duration");
+                if (durationObject instanceof Integer) {
+                    traceDTO.setDuration(((Integer) durationObject).longValue());
+                } else if (durationObject instanceof Long) {
+                    traceDTO.setDuration((Long) durationObject);
+                }
+        
+                // Handle casting for statusCode field
+                Object statusCodeObject = document.get("statusCode");
+                if (statusCodeObject instanceof Integer) {
+                    traceDTO.setStatusCode(((Integer) statusCodeObject).longValue());
+                } else if (statusCodeObject instanceof Long) {
+                    traceDTO.setStatusCode((Long) statusCodeObject);
+                }
                 traceDTO.setSpanCount(document.getString("spanCount")); 
                 traceDTO.setCreatedTime(document.getString("createdTime"));
                 traceDTO.setSpans((List<Spans>) document.get("spans"));
@@ -214,4 +227,3 @@ public class TraceQueryHandler {
 }
 
 }
-
