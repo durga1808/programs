@@ -1,6 +1,7 @@
-package com.zaga.handler.query;
+package com.zaga.handler;
 
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,8 +18,9 @@ import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceQuery;
-import com.zaga.repo.query.TraceQueryRepo;
+import com.zaga.repo.TraceQueryRepo;
 
+import io.quarkus.mongodb.panache.PanacheQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -233,5 +235,18 @@ public class TraceQueryHandler {
     
         return traceDTOList;
 }
+
+
+public List<TraceDTO> findRecentDataPaged(String serviceName, int page, int pageSize) {
+    PanacheQuery<TraceDTO> query = traceQueryRepo.find("serviceName = ?1 order by createdTime desc", serviceName);
+    query.page(page, pageSize); // Apply paging
+
+    return query.list();
+}
+
+public long countData(String serviceName) {
+    return traceQueryRepo.count("serviceName = ?1", serviceName);
+}
+
 
 }

@@ -6,8 +6,8 @@ import org.bson.Document;
 
 import com.zaga.entity.otellog.OtelLog;
 import com.zaga.entity.queryentity.log.LogRecordDTO;
-import com.zaga.handler.command.LogCommandHandler;
-import com.zaga.handler.query.LogQueryHandler;
+import com.zaga.handler.LogQueryHandler;
+
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -25,23 +25,11 @@ import jakarta.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class LogController {
     
-    @Inject
-    LogCommandHandler logCommandHandler;
 
     @Inject
     LogQueryHandler logQueryHandler;
 
-    @POST
-    @Path("/create")
-    public Response createProduct(OtelLog logs) {
-        try {
-            //System.out.println("----------------");
-            logCommandHandler.createLogProduct(logs);
-            return Response.status(200).entity(logs).build();
-        } catch (Exception e) {
-            return Response.status(500).entity(e.getMessage()).build();
-        }
-    }  
+    
 
     @GET
     @Path("/getByServiceName")

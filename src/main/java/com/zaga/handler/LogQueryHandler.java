@@ -1,4 +1,4 @@
-package com.zaga.handler.query;
+package com.zaga.handler;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
 
 import com.zaga.entity.otellog.OtelLog;
 import com.zaga.entity.queryentity.log.LogRecordDTO;
-import com.zaga.repo.query.LogQueryRepo;
-import com.zaga.repo.query.LogRecordDTORepo;
+import com.zaga.repo.LogQueryRepo;
+import com.zaga.repo.LogRecordDTORepo;
 
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;

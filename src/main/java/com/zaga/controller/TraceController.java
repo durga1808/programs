@@ -1,18 +1,25 @@
 package com.zaga.controller;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.bson.Document;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.oteltrace.OtelTrace;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceQuery;
-import com.zaga.handler.command.TraceCommandHandler;
-import com.zaga.handler.query.TraceQueryHandler;
-import com.zaga.repo.query.TraceQueryRepo;
+import com.zaga.handler.TraceQueryHandler;
+import com.zaga.repo.TraceQueryRepo;
 
+import io.quarkus.panache.common.Sort;
 import jakarta.inject.Inject;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -23,32 +30,21 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+
 @Path("/traces")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 
 public class TraceController {
 
-    @Inject
-    TraceCommandHandler traceCommandHandler;
-
+    
     @Inject
     TraceQueryHandler traceQueryHandler;
 
     @Inject
     TraceQueryRepo traceQueryRepo;
    
-    @POST
-    @Path("/create")
-    public Response createProduvct(OtelTrace trace) {
-        try {
-            //System.out.println("----------------");
-            traceCommandHandler.createTraceProduct(trace);
-            return Response.status(200).entity(trace).build();
-        } catch (Exception e) {
-            return Response.status(500).entity(e.getMessage()).build();
-        }
-    }
+    
     
     @GET
     @Path("/getByServiceName")
@@ -122,4 +118,38 @@ public List<TraceDTO> getDetails(){
 public List<TraceDTO> queryTraces(TraceQuery traceQuery) {
         return traceQueryHandler.searchTraces(traceQuery);
 }
+
+@GET
+@Path("/recent")
+public Response findRecentData(
+        @QueryParam("serviceName") String serviceName,
+        @QueryParam("page") int page,
+        @QueryParam("pageSize") int pageSize) {
+
+    try {
+        long totalCount = traceQueryHandler.countData(serviceName);
+        long totalPages = (long) Math.ceil((double) totalCount / pageSize);
+
+        List<TraceDTO> recentData = traceQueryHandler.findRecentDataPaged(serviceName, page, pageSize);
+
+        // Construct the JSON response manually
+        Map<String, Object> jsonResponse = new HashMap<>();
+        jsonResponse.put("page", page);
+        jsonResponse.put("pageSize", pageSize);
+        jsonResponse.put("totalPages", totalPages);
+        jsonResponse.put("totalCount", totalCount);
+        jsonResponse.put("data", recentData);
+
+        // Create an ObjectMapper to serialize the response
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(jsonResponse);
+
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
+    }
 }
+
+}
+    
+

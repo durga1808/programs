@@ -1,4 +1,4 @@
-package com.zaga.handler.query;
+package com.zaga.handler;
 
 import java.util.ArrayList;
 
@@ -12,7 +12,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.zaga.entity.otelmetric.OtelMetric;
-import com.zaga.repo.query.MetricQueryRepo;
+import com.zaga.repo.MetricQueryRepo;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

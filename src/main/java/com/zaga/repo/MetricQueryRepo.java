@@ -1,4 +1,4 @@
-package com.zaga.repo.query;
+package com.zaga.repo;
 
 import com.zaga.entity.otelmetric.OtelMetric;
 
