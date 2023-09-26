@@ -26,6 +26,7 @@ import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.repo.TraceQueryRepo;
 
+import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -85,63 +86,158 @@ public class TraceQueryHandler {
      
     
 
-    public List<TraceDTO> getMergedSpanData() {
-        // Get all trace data from the repository
-        List<TraceDTO> allTraces = traceQueryRepo.listAll();
+  
+
+
+
+    // public List<TraceDTO> getAllMergedTraceDTOs() {
+    //     // Connect to the database
+    //     MongoCollection<TraceDTO> traceCollection = mongoClient.getDatabase("OtelTrace")
+    //             .getCollection("TraceDto", TraceDTO.class);
+
+    //     // Retrieve all TraceDTO records
+    //     FindIterable<TraceDTO> traceDTOs = traceCollection.find();
+
+    //     // Create a map to group records by traceId
+    //     Map<String, List<TraceDTO>> groupedTraceDTOs = new HashMap<>();
+
+    //     // Iterate through the records and group by traceId
+    //     for (TraceDTO traceDTO : traceDTOs) {
+    //         groupedTraceDTOs
+    //                 .computeIfAbsent(traceDTO.getTraceId(), k -> new ArrayList<>())
+    //                 .add(traceDTO);
+    //     }
+
+    //     // Create a list to store merged TraceDTO records
+    //     List<TraceDTO> mergedTraceDTOs = new ArrayList<>();
+
+    //     // Merge records with the same traceId
+    //     for (List<TraceDTO> traceDTOList : groupedTraceDTOs.values()) {
+    //         if (traceDTOList.size() > 1) {
+    //             // Merge records with the same traceId
+    //             TraceDTO mergedTrace = mergeTraceDTOs(traceDTOList);
+    //             mergedTraceDTOs.add(mergedTrace);
+    //         } else {
+    //             // Add single records without merging
+    //             mergedTraceDTOs.addAll(traceDTOList);
+    //         }
+    //     }
+
+    //     return mergedTraceDTOs;
+    // }
+
+    // private TraceDTO mergeTraceDTOs(List<TraceDTO> traceDTOList) {
+    //     TraceDTO mergedTrace = new TraceDTO();
     
-        // Create a map to store merged traces by trace ID
-        Map<String, TraceDTO> mergedTraceMap = new HashMap<>();
+    //     // You can choose any appropriate strategy to merge the records here.
+    //     // For example, if you want to keep fields from the first record and
+    //     // update the spans, you can do something like this:
     
-        // Iterate through all traces
-        for (TraceDTO trace : allTraces) {
-            boolean isMerged = false;
-            List<Spans> mergedSpans = new ArrayList<>();
+    //     TraceDTO firstTraceDTO = traceDTOList.get(0);
+    //     mergedTrace.setTraceId(firstTraceDTO.getTraceId());
+    //     mergedTrace.setServiceName(firstTraceDTO.getServiceName());
+    //     mergedTrace.setMethodName(firstTraceDTO.getMethodName());
+    //     mergedTrace.setOperationName(firstTraceDTO.getOperationName());
+    //     mergedTrace.setDuration(firstTraceDTO.getDuration());
+    //     mergedTrace.setStatusCode(firstTraceDTO.getStatusCode());
+    //     mergedTrace.setSpanCount(firstTraceDTO.getSpanCount());
+    //     mergedTrace.setCreatedTime(firstTraceDTO.getCreatedTime());
     
-            // Iterate through the spans in the current trace
-            for (Spans span : trace.getSpans()) {
-                // Check if the parentSpanId is null or empty
-                if (span.getParentSpanId() == null || span.getParentSpanId().isEmpty()) {
-                    isMerged = true;
-                    mergedSpans.add(span);
-                }
-            }
+    //     // Merge the spans from all records into one list
+    //     List<Spans> mergedSpans = new ArrayList<>();
+    //     for (TraceDTO traceDTO : traceDTOList) {
+    //         mergedSpans.addAll(traceDTO.getSpans());
+    //     }
+    //     mergedTrace.setSpans(mergedSpans);
     
-            if (isMerged) {
-                // Check if a merged trace with the same trace ID already exists
-                TraceDTO mergedTrace = mergedTraceMap.get(trace.getTraceId());
+    //     return mergedTrace;
+    // }
+
+
+
+
+
+    public List<TraceDTO> getAllMergedTraceDTOs() {
+        // Connect to the database
+        MongoCollection<TraceDTO> traceCollection = mongoClient.getDatabase("OtelTrace")
+                .getCollection("TraceDto", TraceDTO.class);
     
-                if (mergedTrace == null) {
-                    // If no merged trace exists, create a new one
-                    mergedTrace = new TraceDTO();
-                    mergedTrace.setTraceId(trace.getTraceId());
-                    mergedTrace.setServiceName(trace.getServiceName());
-                    mergedTrace.setMethodName(trace.getMethodName());
-                    mergedTrace.setOperationName(trace.getOperationName());
-                    mergedTrace.setDuration(trace.getDuration());
-                    mergedTrace.setStatusCode(trace.getStatusCode());
-                    mergedTrace.setSpanCount(trace.getSpanCount());
-                    mergedTrace.setCreatedTime(trace.getCreatedTime());
-                    mergedTrace.setSpans(new ArrayList<>()); // Initialize the spans list
-                    mergedTraceMap.put(trace.getTraceId(), mergedTrace);
-                }
+        // Retrieve all TraceDTO records
+        FindIterable<TraceDTO> traceDTOs = traceCollection.find();
     
-                // Merge the spans into the merged trace
-                mergedTrace.getSpans().addAll(mergedSpans);
+        // Create a map to group records by traceId
+        Map<String, List<TraceDTO>> groupedTraceDTOs = new HashMap<>();
+    
+        // Iterate through the records and group by traceId
+        for (TraceDTO traceDTO : traceDTOs) {
+            groupedTraceDTOs
+                    .computeIfAbsent(traceDTO.getTraceId(), k -> new ArrayList<>())
+                    .add(traceDTO);
+        }
+    
+        // Create a list to store merged TraceDTO records
+        List<TraceDTO> mergedTraceDTOs = new ArrayList<>();
+    
+        // Merge records with the same traceId
+        for (List<TraceDTO> traceDTOList : groupedTraceDTOs.values()) {
+            if (traceDTOList.size() > 1) {
+                // Merge records with the same traceId
+                TraceDTO mergedTrace = mergeTraceDTOs(traceDTOList);
+                mergedTraceDTOs.add(mergedTrace);
+            } else {
+                // Add single records without merging
+                mergedTraceDTOs.addAll(traceDTOList);
             }
         }
     
-        // Convert the map values (merged traces) to a list
-        List<TraceDTO> mergedTraceDataList = new ArrayList<>(mergedTraceMap.values());
-    
-        return mergedTraceDataList;
+        return mergedTraceDTOs;
     }
-
-
-
-
+    
+    private TraceDTO mergeTraceDTOs(List<TraceDTO> traceDTOList) {
+        TraceDTO mergedTrace = new TraceDTO();
+    
+        // You can choose any appropriate strategy to merge the records here.
+        // For example, if you want to keep fields from the first record and
+        // update the spans, you can do something like this:
+    
+        TraceDTO firstTraceDTO = traceDTOList.get(0);
+        mergedTrace.setTraceId(firstTraceDTO.getTraceId());
+        mergedTrace.setServiceName(firstTraceDTO.getServiceName());
+        mergedTrace.setMethodName(firstTraceDTO.getMethodName());
+        mergedTrace.setOperationName(firstTraceDTO.getOperationName());
+        mergedTrace.setDuration(firstTraceDTO.getDuration());
+        mergedTrace.setStatusCode(firstTraceDTO.getStatusCode());
+        mergedTrace.setSpanCount(firstTraceDTO.getSpanCount());
+        mergedTrace.setCreatedTime(firstTraceDTO.getCreatedTime());
+    
+        // Merge the spans from all records into one list
+        List<Spans> mergedSpans = new ArrayList<>();
+        for (TraceDTO traceDTO : traceDTOList) {
+            mergedSpans.addAll(traceDTO.getSpans());
+        }
+    
+        // Sort the merged spans
+        mergedSpans.sort(Comparator.comparing(span -> {
+            if (span.getParentSpanId() == null || span.getParentSpanId().isEmpty()) {
+                // Root span should come first
+                return "0";
+            } else {
+                // Sort by parentSpanId and then spanId
+                return span.getParentSpanId() + span.getSpanId();
+            }
+        }));
+    
+        mergedTrace.setSpans(mergedSpans);
+    
+        return mergedTrace;
+    }
 
     
        
+
+
+    
+
 
 
     public TraceQueryHandler(MongoClient mongoClient) {
