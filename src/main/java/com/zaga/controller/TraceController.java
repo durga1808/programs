@@ -8,6 +8,7 @@ import com.zaga.handler.TraceQueryHandler;
 import com.zaga.repo.TraceQueryRepo;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -72,6 +73,20 @@ public class TraceController {
         .entity(e.getMessage())
         .build();
     }
+  }
+
+  @GET
+  @Path("/getAllDataByServiceNameAndStatusCode")
+  public List<TraceDTO> findRecentDataPaged(
+          @QueryParam("page") @DefaultValue("1") int page,
+          @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+          @QueryParam("serviceName") String serviceName,
+          @QueryParam("statusCode") @DefaultValue("0") int statusCode) {
+
+      // Call your service method to retrieve the data
+      List<TraceDTO> traceList = traceQueryHandler.findRecentDataPaged(page, pageSize, serviceName, statusCode);
+
+      return traceList;
   }
 
   @GET

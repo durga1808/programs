@@ -284,9 +284,9 @@ public class TraceQueryHandler {
     int startIndex = (page - 1) * pageSize;
     int endIndex = Math.min(startIndex + pageSize, traceList.size());
 
-    System.out.println(
-      "traceList of pagination: " + traceList.subList(startIndex, endIndex)
-    );
+    // System.out.println(
+    //   "traceList of pagination: " + traceList.subList(startIndex, endIndex)
+    // );
     return traceList.subList(startIndex, endIndex);
   }
 
@@ -298,6 +298,41 @@ public class TraceQueryHandler {
     return traceQueryRepo.count();
   }
 
+
+  // pagination data for trace summary page based on serviceName and statusCode
+  public List<TraceDTO> findRecentDataPaged(int page, int pageSize, String serviceName, int statusCode) {
+    List<TraceDTO> traceList = traceQueryRepo.listAll();
+    traceList = mergeAndSortTraceDTOs(traceList);
+
+    // Filter by serviceName and statusCode
+    traceList = filterByServiceNameAndStatusCode(traceList, serviceName, statusCode);
+
+    int startIndex = (page - 1) * pageSize;
+    int endIndex = Math.min(startIndex + pageSize, traceList.size());
+
+    // System.out.println(
+    //     "traceList of pagination: " + traceList.subList(startIndex, endIndex)
+    // );
+    return traceList.subList(startIndex, endIndex);
+}
+
+// Create a method to filter TraceDTOs by serviceName and statusCode
+private List<TraceDTO> filterByServiceNameAndStatusCode(List<TraceDTO> traceList, String serviceName, int statusCode) {
+    if (serviceName == null && statusCode == 0) {
+        return traceList; // No filtering required
+    }
+
+    List<TraceDTO> filteredTraceList = new ArrayList<>();
+    for (TraceDTO traceDTO : traceList) {
+        if ((serviceName == null || serviceName.isEmpty() || traceDTO.getServiceName().equals(serviceName)) &&
+            (statusCode == 0 || traceDTO.getStatusCode() == statusCode)) {
+            filteredTraceList.add(traceDTO);
+        }
+    }
+    return filteredTraceList;
+}
+
+  
 
 
   // appicalll counts calculations
@@ -343,7 +378,7 @@ public class TraceQueryHandler {
                     metrics.setServiceName(serviceName);
                     metrics.setApiCallCount(0L); // Initialize apiCallCount to 0
                     metrics.setTotalErrorCalls(0L); // Initialize totalErrorCalls to 0
-                    // You may need to initialize other metrics properties as well
+                    metrics.setTotalSuccessCalls(0L);
                 }
 
                 // Update metrics
@@ -358,6 +393,7 @@ public class TraceQueryHandler {
 
     // Now, calculate error counts and update the totalErrorCalls property
     Map<String, Long> errorCounts = calculateErrorCountsByService(); // Call your error count calculation method
+    Map<String, Long> successCounts = calculateSuccessCountsByService(); // Call your success count calculation method
 
     for (Map.Entry<String, Long> entry : errorCounts.entrySet()) {
         String serviceName = entry.getKey();
@@ -370,16 +406,25 @@ public class TraceQueryHandler {
         }
     }
 
+    for (Map.Entry<String, Long> entry : successCounts.entrySet()) {
+        String serviceName = entry.getKey();
+        Long successCount = entry.getValue();
+
+        // Update the TraceMetrics object in metricsMap
+        TraceMetrics metrics = metricsMap.get(serviceName);
+        if (metrics != null) {
+            metrics.setTotalSuccessCalls(successCount);
+        }
+    }
+
     // Convert the map values (TraceMetrics) into a list
     return new ArrayList<>(metricsMap.values());
 }
 
 
-
 public Map<String, Long> calculateErrorCountsByService() {
   MongoCollection<Document> traceCollection = mongoClient.getDatabase("OtelTrace").getCollection("TraceDto");
 
-  // Define aggregation stages to group and count errors by serviceName and statusCode
   List<Bson> aggregationStages = new ArrayList<>();
   aggregationStages.add(Aggregates.match(Filters.and(
       Filters.gte("statusCode", 400L),
@@ -387,10 +432,8 @@ public Map<String, Long> calculateErrorCountsByService() {
   )));
   aggregationStages.add(Aggregates.group("$serviceName", Accumulators.sum("errorCount", 1L)));
 
-  // Execute the aggregation pipeline
   AggregateIterable<Document> results = traceCollection.aggregate(aggregationStages);
 
-  // Process the results into a map
   Map<String, Long> errorCounts = new HashMap<>();
   for (Document result : results) {
       String serviceName = result.getString("_id");
@@ -399,5 +442,31 @@ public Map<String, Long> calculateErrorCountsByService() {
   }
 
   return errorCounts;
+}
+
+
+public Map<String, Long> calculateSuccessCountsByService() {
+  MongoCollection<Document> traceCollection = mongoClient.getDatabase("OtelTrace").getCollection("TraceDto");
+
+  // Define aggregation stages to group and count successes by serviceName and statusCode
+  List<Bson> aggregationStages = new ArrayList<>();
+  aggregationStages.add(Aggregates.match(Filters.and(
+      Filters.gte("statusCode", 200L),
+      Filters.lte("statusCode", 299L)
+  )));
+  aggregationStages.add(Aggregates.group("$serviceName", Accumulators.sum("successCount", 1L)));
+
+  // Execute the aggregation pipeline
+  AggregateIterable<Document> results = traceCollection.aggregate(aggregationStages);
+
+  // Process the results into a map
+  Map<String, Long> successCounts = new HashMap<>();
+  for (Document result : results) {
+      String serviceName = result.getString("_id");
+      Long count = result.getLong("successCount");
+      successCounts.put(serviceName, count);
+  }
+
+  return successCounts;
 }
 }
