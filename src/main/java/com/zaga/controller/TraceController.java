@@ -2,6 +2,7 @@ package com.zaga.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.queryentity.trace.TraceDTO;
+import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.handler.TraceQueryHandler;
 import com.zaga.repo.TraceQueryRepo;
@@ -80,18 +81,11 @@ public class TraceController {
     return traceQueryHandler.getTraceCountWithinHour();
   }
 
-  @GET
-  @Path("/countbyparam")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Map<String, Long> getTraceCountForServiceName(
-    @QueryParam("timeAgo") int timeAgoHours
-  ) {
-    return traceQueryHandler.getTraceCountWithinHour();
-  }
+@GET
+@Path("/countbyparam")
+@Produces(MediaType.APPLICATION_JSON)
+public List<TraceMetrics> getTraceMetricsForServiceNameInMinutes(@QueryParam("timeAgoMinutes") int timeAgoMinutes) {
+    return traceQueryHandler.getTraceMetricsForServiceNameInMinutes(timeAgoMinutes);
+}
 
-  @GET
-  @Path("/error-counts")
-  public Map<String, Long> getErrorCounts() {
-    return traceQueryHandler.calculateErrorCountsByService();
-  }
 }

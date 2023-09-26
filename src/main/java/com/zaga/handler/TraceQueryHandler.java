@@ -12,6 +12,7 @@ import com.mongodb.client.model.Projections;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
+import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.repo.TraceQueryRepo;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -316,63 +317,87 @@ public class TraceQueryHandler {
     return serviceNameCounts;
   }
 
-  public Map<String, Long> getTraceCountForServiceName(int timeAgoHours) {
+  public List<TraceMetrics> getTraceMetricsForServiceNameInMinutes(int timeAgoMinutes) {
     List<TraceDTO> traceList = TraceDTO.listAll();
-    Map<String, Long> serviceNameCounts = new HashMap<>();
+    Map<String, TraceMetrics> metricsMap = new HashMap<>();
 
-    LocalDateTime cutoffTime = LocalDateTime.now().minusHours(timeAgoHours);
+    // Calculate the cutoffTime based on the numeric value and unit (in minutes)
+    LocalDateTime cutoffTime = LocalDateTime.now().minusMinutes(timeAgoMinutes);
 
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
-      "yyyy-MM-dd HH:mm:ss z"
-    );
+    // Define a DateTimeFormatter for parsing the createdTime string
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
 
+    // Iterate through the traceList and accumulate metrics for each serviceName
     for (TraceDTO trace : traceList) {
-      String createdTimeString = trace.getCreatedTime();
-      if (createdTimeString != null) { // Add a null check here
-        LocalDateTime traceCreateTime = LocalDateTime.parse(
-          createdTimeString,
-          formatter
-        );
+        String createdTimeString = trace.getCreatedTime();
+        if (createdTimeString != null) {
+            LocalDateTime traceCreateTime = LocalDateTime.parse(createdTimeString, formatter);
 
-        if (traceCreateTime.isAfter(cutoffTime)) {
-          String serviceName = trace.getServiceName();
-          serviceNameCounts.put(
-            serviceName,
-            serviceNameCounts.getOrDefault(serviceName, 0L) + 1
-          );
+            if (traceCreateTime.isAfter(cutoffTime)) {
+                String serviceName = trace.getServiceName();
+
+                // Get or create a TraceMetrics object for the serviceName
+                TraceMetrics metrics = metricsMap.get(serviceName);
+                if (metrics == null) {
+                    metrics = new TraceMetrics();
+                    metrics.setServiceName(serviceName);
+                    metrics.setApiCallCount(0L); // Initialize apiCallCount to 0
+                    metrics.setTotalErrorCalls(0L); // Initialize totalErrorCalls to 0
+                    // You may need to initialize other metrics properties as well
+                }
+
+                // Update metrics
+                metrics.setApiCallCount(metrics.getApiCallCount() + 1);
+                // You would need to add logic to update peakLatency, totalSuccessCalls, and any other metrics here.
+
+                // Put the updated metrics back into the map
+                metricsMap.put(serviceName, metrics);
+            }
         }
-      }
     }
 
-    return serviceNameCounts;
-  }
+    // Now, calculate error counts and update the totalErrorCalls property
+    Map<String, Long> errorCounts = calculateErrorCountsByService(); // Call your error count calculation method
+
+    for (Map.Entry<String, Long> entry : errorCounts.entrySet()) {
+        String serviceName = entry.getKey();
+        Long errorCount = entry.getValue();
+
+        // Update the TraceMetrics object in metricsMap
+        TraceMetrics metrics = metricsMap.get(serviceName);
+        if (metrics != null) {
+            metrics.setTotalErrorCalls(errorCount);
+        }
+    }
+
+    // Convert the map values (TraceMetrics) into a list
+    return new ArrayList<>(metricsMap.values());
+}
 
 
 
-  public Map<String, Long> calculateErrorCountsByService() {
-    MongoCollection<Document> traceCollection = mongoClient
-      .getDatabase("OtelTrace")
-      .getCollection("TraceDto");
+public Map<String, Long> calculateErrorCountsByService() {
+  MongoCollection<Document> traceCollection = mongoClient.getDatabase("OtelTrace").getCollection("TraceDto");
 
-    List<Bson> aggregationStages = new ArrayList<>();
-    aggregationStages.add(
-      Aggregates.match(Filters.in("statusCode", 400L, 404L, 500L))
-    );
-    aggregationStages.add(
-      Aggregates.group("$serviceName", Accumulators.sum("errorCount", 1L))
-    );
+  // Define aggregation stages to group and count errors by serviceName and statusCode
+  List<Bson> aggregationStages = new ArrayList<>();
+  aggregationStages.add(Aggregates.match(Filters.and(
+      Filters.gte("statusCode", 400L),
+      Filters.lte("statusCode", 599L)
+  )));
+  aggregationStages.add(Aggregates.group("$serviceName", Accumulators.sum("errorCount", 1L)));
 
-    AggregateIterable<Document> results = traceCollection.aggregate(
-      aggregationStages
-    );
+  // Execute the aggregation pipeline
+  AggregateIterable<Document> results = traceCollection.aggregate(aggregationStages);
 
-    Map<String, Long> errorCounts = new HashMap<>();
-    for (Document result : results) {
+  // Process the results into a map
+  Map<String, Long> errorCounts = new HashMap<>();
+  for (Document result : results) {
       String serviceName = result.getString("_id");
       Long count = result.getLong("errorCount");
       errorCounts.put(serviceName, count);
-    }
-
-    return errorCounts;
   }
+
+  return errorCounts;
+}
 }
