@@ -43,11 +43,45 @@ public class TraceQueryHandler {
     
     private final MongoCollection<Document> collection;
 
+    // public List<TraceDTO> getTraceProduct() {
+    //     return traceQueryRepo.listAll();
+    // }
+
     public List<TraceDTO> getTraceProduct() {
-        return traceQueryRepo.listAll();
+        List<TraceDTO> traceList = traceQueryRepo.listAll();
+    
+        // Sort the spans within each TraceDTO
+        traceList.forEach(trace -> {
+            trace.getSpans().sort(Comparator.comparing(span -> {
+                if (span.getParentSpanId() == null || span.getParentSpanId().isEmpty()) {
+                    // Root span should come first
+                    return "0";
+                } else {
+                    // Sort by parentSpanId and then spanId
+                    return span.getParentSpanId() + span.getSpanId();
+                }
+            }));
+        });
+    
+        // Sort the TraceDTOs based on the first span in each TraceDTO
+        traceList.sort(Comparator.comparing(trace -> {
+            if (trace.getSpans().isEmpty()) {
+                // Handle cases where there are no spans
+                return "";
+            } else {
+                Spans firstSpan = trace.getSpans().get(0);
+                if (firstSpan.getParentSpanId() == null || firstSpan.getParentSpanId().isEmpty()) {
+                    // Root span should come first
+                    return "0";
+                } else {
+                    // Sort by parentSpanId and then spanId of the first span
+                    return firstSpan.getParentSpanId() + firstSpan.getSpanId();
+                }
+            }
+        }));
+    
+        return traceList;
     }
-
-
      
     
 
