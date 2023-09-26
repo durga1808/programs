@@ -18,10 +18,13 @@ import java.util.stream.Collectors;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Accumulators;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
@@ -438,12 +441,15 @@ public class TraceQueryHandler {
 }
 
 
+//this is pagination method
 public List<TraceDTO> findRecentDataPaged(String serviceName, int page, int pageSize) {
     PanacheQuery<TraceDTO> query = traceQueryRepo.find("serviceName = ?1 order by createdTime desc", serviceName);
     query.page(page, pageSize); // Apply paging
 
     return query.list();
 }
+
+
 
 public long countData(String serviceName) {
     return traceQueryRepo.count("serviceName = ?1", serviceName);
@@ -490,4 +496,28 @@ public Map<String, Long> getTraceCountForServiceName(int timeAgoHours) {
   return serviceNameCounts;
 }
 
+
+
+
+    public Map<String, Long> calculateErrorCountsByService() {
+        MongoCollection<Document> traceCollection = mongoClient.getDatabase("OtelTrace").getCollection("TraceDto");
+
+        // Define aggregation stages to group and count errors by serviceName and statusCode
+        List<Bson> aggregationStages = new ArrayList<>();
+        aggregationStages.add(Aggregates.match(Filters.in("statusCode", 400L, 404L, 500L)));
+        aggregationStages.add(Aggregates.group("$serviceName", Accumulators.sum("errorCount", 1L)));
+
+        // Execute the aggregation pipeline
+        AggregateIterable<Document> results = traceCollection.aggregate(aggregationStages);
+
+        // Process the results into a map
+        Map<String, Long> errorCounts = new HashMap<>();
+        for (Document result : results) {
+            String serviceName = result.getString("_id");
+            Long count = result.getLong("errorCount");
+            errorCounts.put(serviceName, count);
+        }
+
+        return errorCounts;
+    }
 }

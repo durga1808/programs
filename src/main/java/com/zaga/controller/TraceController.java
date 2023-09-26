@@ -134,9 +134,6 @@ public Response findRecentData(
 
         // Construct the JSON response manually
         Map<String, Object> jsonResponse = new HashMap<>();
-        jsonResponse.put("page", page);
-        jsonResponse.put("pageSize", pageSize);
-        jsonResponse.put("totalPages", totalPages);
         jsonResponse.put("totalCount", totalCount);
         jsonResponse.put("data", recentData);
 
@@ -167,6 +164,12 @@ public Map<String, Long> getTraceCountForServiceName(@QueryParam("timeAgo") int 
   
 }
    
+    @GET
+    @Path("/error-counts")
+    public Map<String, Long> getErrorCounts() {
+        return traceQueryHandler.calculateErrorCountsByService();
+    }
+    
 }
     
 
