@@ -101,18 +101,17 @@ public class TraceController {
 
 
 @GET
-@Path("/getallTraceData and rearrange the data")
+@Path("/getTraceData")
 public List<TraceDTO> getDetails(){
         return traceQueryHandler.getTraceProduct();
     }
 
 
-
-    @GET
-    @Path("/merged and rearrange the data")
-    public List<TraceDTO> getAllMergedTraceDTOs() {
-        return traceQueryHandler.getAllMergedTraceDTOs();
-    }
+// @GET
+// @Path("/merged-spans")
+// public List<TraceDTO> getMergedSpanData() {
+//     return traceQueryHandler.getMergedSpanData();
+// }
 
 
 @POST
@@ -155,9 +154,9 @@ public Response findRecentData(
 @GET
 @Path("/count")
 @Produces(MediaType.APPLICATION_JSON)
-public Map<String, Long> getTraceCount(@QueryParam("hoursAgo") int hoursAgo) {
+public Map<String, Long> getTraceCount( ) {
     try {
-        return traceQueryHandler.getTraceCountWithinHour(hoursAgo);
+        return traceQueryHandler.getTraceCountWithinHour();
     } catch (ParseException e) {
         e.printStackTrace();
     }

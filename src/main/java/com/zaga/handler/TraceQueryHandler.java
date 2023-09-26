@@ -449,33 +449,18 @@ public long countData(String serviceName) {
 }
 
 
-  public Map<String, Long> getTraceCountWithinHour(int hoursAgo) throws ParseException {
-    Calendar cal = Calendar.getInstance();
-    cal.add(Calendar.HOUR_OF_DAY, -hoursAgo);
-    Date startTime = cal.getTime();
+  public Map<String, Long> getTraceCountWithinHour() throws ParseException {
+    List<TraceDTO> traceList = TraceDTO.listAll();
 
-    // Log the startTime for debugging
-    System.err.println("Start Time: {}"+ startTime);
+    Map<String, Long> serviceNameCounts = new HashMap<>();
 
-    List<TraceDTO> traceList = traceQueryRepo.list("createdTime >= ?1", startTime);
-
-    Map<String, Long> apiCallCounts = new HashMap<>();
-
-    // Iterate through the traceList and count API calls for each serviceName
+    // Iterate through the traceList and count occurrences of each serviceName
     for (TraceDTO trace : traceList) {
         String serviceName = trace.getServiceName();
-        apiCallCounts.put(serviceName, apiCallCounts.getOrDefault(serviceName, 0L) + 1);
+        serviceNameCounts.put(serviceName, serviceNameCounts.getOrDefault(serviceName, 0L) + 1);
     }
 
-    // Log the result for debugging
-    System.out.println("API Call Counts: {}"+ apiCallCounts);
-
-    return apiCallCounts;
+    return serviceNameCounts;
 }
-
-
-
-
-
 
 }
