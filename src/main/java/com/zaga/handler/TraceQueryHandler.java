@@ -1,5 +1,22 @@
 package com.zaga.handler;
 
+
+import java.text.ParseException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.bson.Document;
+import org.bson.conversions.Bson;
+
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
@@ -11,375 +28,426 @@ import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.repo.TraceQueryRepo;
+
+import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
-
-import org.bson.Document;
-import org.bson.conversions.Bson;
-import org.slf4j.LoggerFactory;
-
 @ApplicationScoped
 public class TraceQueryHandler {
- 
-  @Inject
-  TraceQueryRepo traceQueryRepo;
 
-  @Inject
-  MongoClient mongoClient;
+    @Inject
+    TraceQueryRepo traceQueryRepo;
 
-  private final MongoCollection<Document> collection;
+    @Inject
+    MongoClient mongoClient;
 
-  // public List<TraceDTO> getTraceProduct() {
-  //     return traceQueryRepo.listAll();
-  // }
 
-  public List<TraceDTO> getTraceProduct() {
-    List<TraceDTO> traceList = traceQueryRepo.listAll();
+    
+    private final MongoCollection<Document> collection;
 
-    // Sort the spans within each TraceDTO
-    traceList.forEach(trace -> {
-      trace
-        .getSpans()
-        .sort(
-          Comparator.comparing(span -> {
-            if (
-              span.getParentSpanId() == null || span.getParentSpanId().isEmpty()
-            ) {
-              // Root span should come first
-              return "0";
+    // public List<TraceDTO> getTraceProduct() {
+    //     return traceQueryRepo.listAll();
+    // }
+
+    public List<TraceDTO> getTraceProduct() {
+        List<TraceDTO> traceList = traceQueryRepo.listAll();
+    
+        // Sort the spans within each TraceDTO
+        traceList.forEach(trace -> {
+            trace.getSpans().sort(Comparator.comparing(span -> {
+                if (span.getParentSpanId() == null || span.getParentSpanId().isEmpty()) {
+                    // Root span should come first
+                    return "0";
+                } else {
+                    // Sort by parentSpanId and then spanId
+                    return span.getParentSpanId() + span.getSpanId();
+                }
+            }));
+        });
+    
+        // Sort the TraceDTOs based on the first span in each TraceDTO
+        traceList.sort(Comparator.comparing(trace -> {
+            if (trace.getSpans().isEmpty()) {
+                // Handle cases where there are no spans
+                return "";
             } else {
-              // Sort by parentSpanId and then spanId
-              return span.getParentSpanId() + span.getSpanId();
+                Spans firstSpan = trace.getSpans().get(0);
+                if (firstSpan.getParentSpanId() == null || firstSpan.getParentSpanId().isEmpty()) {
+                    // Root span should come first
+                    return "0";
+                } else {
+                    // Sort by parentSpanId and then spanId of the first span
+                    return firstSpan.getParentSpanId() + firstSpan.getSpanId();
+                }
             }
-          })
+        }));
+    
+        return traceList;
+    }
+     
+    
+
+  
+
+
+
+    // public List<TraceDTO> getAllMergedTraceDTOs() {
+    //     // Connect to the database
+    //     MongoCollection<TraceDTO> traceCollection = mongoClient.getDatabase("OtelTrace")
+    //             .getCollection("TraceDto", TraceDTO.class);
+
+    //     // Retrieve all TraceDTO records
+    //     FindIterable<TraceDTO> traceDTOs = traceCollection.find();
+
+    //     // Create a map to group records by traceId
+    //     Map<String, List<TraceDTO>> groupedTraceDTOs = new HashMap<>();
+
+    //     // Iterate through the records and group by traceId
+    //     for (TraceDTO traceDTO : traceDTOs) {
+    //         groupedTraceDTOs
+    //                 .computeIfAbsent(traceDTO.getTraceId(), k -> new ArrayList<>())
+    //                 .add(traceDTO);
+    //     }
+
+    //     // Create a list to store merged TraceDTO records
+    //     List<TraceDTO> mergedTraceDTOs = new ArrayList<>();
+
+    //     // Merge records with the same traceId
+    //     for (List<TraceDTO> traceDTOList : groupedTraceDTOs.values()) {
+    //         if (traceDTOList.size() > 1) {
+    //             // Merge records with the same traceId
+    //             TraceDTO mergedTrace = mergeTraceDTOs(traceDTOList);
+    //             mergedTraceDTOs.add(mergedTrace);
+    //         } else {
+    //             // Add single records without merging
+    //             mergedTraceDTOs.addAll(traceDTOList);
+    //         }
+    //     }
+
+    //     return mergedTraceDTOs;
+    // }
+
+    // private TraceDTO mergeTraceDTOs(List<TraceDTO> traceDTOList) {
+    //     TraceDTO mergedTrace = new TraceDTO();
+    
+    //     // You can choose any appropriate strategy to merge the records here.
+    //     // For example, if you want to keep fields from the first record and
+    //     // update the spans, you can do something like this:
+    
+    //     TraceDTO firstTraceDTO = traceDTOList.get(0);
+    //     mergedTrace.setTraceId(firstTraceDTO.getTraceId());
+    //     mergedTrace.setServiceName(firstTraceDTO.getServiceName());
+    //     mergedTrace.setMethodName(firstTraceDTO.getMethodName());
+    //     mergedTrace.setOperationName(firstTraceDTO.getOperationName());
+    //     mergedTrace.setDuration(firstTraceDTO.getDuration());
+    //     mergedTrace.setStatusCode(firstTraceDTO.getStatusCode());
+    //     mergedTrace.setSpanCount(firstTraceDTO.getSpanCount());
+    //     mergedTrace.setCreatedTime(firstTraceDTO.getCreatedTime());
+    
+    //     // Merge the spans from all records into one list
+    //     List<Spans> mergedSpans = new ArrayList<>();
+    //     for (TraceDTO traceDTO : traceDTOList) {
+    //         mergedSpans.addAll(traceDTO.getSpans());
+    //     }
+    //     mergedTrace.setSpans(mergedSpans);
+    
+    //     return mergedTrace;
+    // }
+
+
+
+
+
+    public List<TraceDTO> getAllMergedTraceDTOs() {
+        // Connect to the database
+        MongoCollection<TraceDTO> traceCollection = mongoClient.getDatabase("OtelTrace")
+                .getCollection("TraceDto", TraceDTO.class);
+    
+        // Retrieve all TraceDTO records
+        FindIterable<TraceDTO> traceDTOs = traceCollection.find();
+    
+        // Create a map to group records by traceId
+        Map<String, List<TraceDTO>> groupedTraceDTOs = new HashMap<>();
+    
+        // Iterate through the records and group by traceId
+        for (TraceDTO traceDTO : traceDTOs) {
+            groupedTraceDTOs
+                    .computeIfAbsent(traceDTO.getTraceId(), k -> new ArrayList<>())
+                    .add(traceDTO);
+        }
+    
+        // Create a list to store merged TraceDTO records
+        List<TraceDTO> mergedTraceDTOs = new ArrayList<>();
+    
+        // Merge records with the same traceId
+        for (List<TraceDTO> traceDTOList : groupedTraceDTOs.values()) {
+            if (traceDTOList.size() > 1) {
+                // Merge records with the same traceId
+                TraceDTO mergedTrace = mergeTraceDTOs(traceDTOList);
+                mergedTraceDTOs.add(mergedTrace);
+            } else {
+                // Add single records without merging
+                mergedTraceDTOs.addAll(traceDTOList);
+            }
+        }
+    
+        return mergedTraceDTOs;
+    }
+    
+    private TraceDTO mergeTraceDTOs(List<TraceDTO> traceDTOList) {
+        TraceDTO mergedTrace = new TraceDTO();
+    
+        // You can choose any appropriate strategy to merge the records here.
+        // For example, if you want to keep fields from the first record and
+        // update the spans, you can do something like this:
+    
+        TraceDTO firstTraceDTO = traceDTOList.get(0);
+        mergedTrace.setTraceId(firstTraceDTO.getTraceId());
+        mergedTrace.setServiceName(firstTraceDTO.getServiceName());
+        mergedTrace.setMethodName(firstTraceDTO.getMethodName());
+        mergedTrace.setOperationName(firstTraceDTO.getOperationName());
+        mergedTrace.setDuration(firstTraceDTO.getDuration());
+        mergedTrace.setStatusCode(firstTraceDTO.getStatusCode());
+        mergedTrace.setSpanCount(firstTraceDTO.getSpanCount());
+        mergedTrace.setCreatedTime(firstTraceDTO.getCreatedTime());
+    
+        // Merge the spans from all records into one list
+        List<Spans> mergedSpans = new ArrayList<>();
+        for (TraceDTO traceDTO : traceDTOList) {
+            mergedSpans.addAll(traceDTO.getSpans());
+        }
+    
+        // Sort the merged spans
+        mergedSpans.sort(Comparator.comparing(span -> {
+            if (span.getParentSpanId() == null || span.getParentSpanId().isEmpty()) {
+                // Root span should come first
+                return "0";
+            } else {
+                // Sort by parentSpanId and then spanId
+                return span.getParentSpanId() + span.getSpanId();
+            }
+        }));
+    
+        mergedTrace.setSpans(mergedSpans);
+    
+        return mergedTrace;
+    }
+
+    
+       
+
+
+    
+
+
+
+    public TraceQueryHandler(MongoClient mongoClient) {
+        this.mongoClient = mongoClient;
+        collection = mongoClient.getDatabase("OtelTrace").getCollection("Trace");
+    }
+
+
+    // getTrace by serviceName from OtelTrace 
+    public List<Document> getTraceByServiceName(String serviceName) {
+        List<Document> trace = new ArrayList<>();
+
+        Bson query = Filters.eq("resourceSpans.resource.attributes.value.stringValue", serviceName);
+
+        try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                trace.add(cursor.next());
+            }
+        }
+
+        return trace;
+    }
+
+  
+    
+    // getTrace by statusCode from OtelTrace 
+    public List<Document> getTraceByStatusCode(Integer statusCode) {
+        List<Document> trace = new ArrayList<>();
+    
+        Bson query = Filters.eq("resourceSpans.scopeSpans.spans.attributes.value.intValue", statusCode);
+    
+        try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                trace.add(cursor.next());
+            }
+        }
+    
+        return trace;
+    }
+    
+    // getTrace by HttpMethod from OtelTrace 
+     public List<Document> getTraceByHttpMethod(String httpMethod) {
+        List<Document> trace = new ArrayList<>();
+    
+        Bson query = Filters.eq("resourceSpans.scopeSpans.spans.attributes.value.stringValue", httpMethod);
+    
+        try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                trace.add(cursor.next());
+            }
+        }
+    
+        return trace;
+    }
+
+    
+    // getTrace by service name with http method from OtelTrace
+    public List<Document> getTraceByServiceNameAndHttpMethod(String serviceName, String httpMethod) {
+        List<Document> trace = new ArrayList<>();
+    
+        Bson query = Filters.and(
+            Filters.eq("resourceSpans.resource.attributes.value.stringValue", serviceName),
+            Filters.eq("resourceSpans.scopeSpans.spans.attributes.value.stringValue", httpMethod)
         );
-    });
-
-    // Sort the TraceDTOs based on the first span in each TraceDTO
-    traceList.sort(
-      Comparator.comparing(trace -> {
-        if (trace.getSpans().isEmpty()) {
-          // Handle cases where there are no spans
-          return "";
-        } else {
-          Spans firstSpan = trace.getSpans().get(0);
-          if (
-            firstSpan.getParentSpanId() == null ||
-            firstSpan.getParentSpanId().isEmpty()
-          ) {
-            // Root span should come first
-            return "0";
-          } else {
-            // Sort by parentSpanId and then spanId of the first span
-            return firstSpan.getParentSpanId() + firstSpan.getSpanId();
-          }
+    
+        try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                trace.add(cursor.next());
+            }
         }
-      })
-    );
-
-    return traceList;
-  }
-
-  public List<TraceDTO> getMergedSpanData() {
-    // Get all trace data from the repository
-    List<TraceDTO> allTraces = traceQueryRepo.listAll();
-
-    // Created a map to store merged traces by trace ID
-    Map<String, TraceDTO> mergedTraceMap = new HashMap<>();
-
-    // Iterate through all traces
-    for (TraceDTO trace : allTraces) {
-      boolean isMerged = false;
-      List<Spans> mergedSpans = new ArrayList<>();
-      for (Spans span : trace.getSpans()) {
-        if (
-          span.getParentSpanId() == null || span.getParentSpanId().isEmpty()
-        ) {
-          isMerged = true;
-          mergedSpans.add(span);
-        }
-      }
-
-      if (isMerged) {
-        TraceDTO mergedTrace = mergedTraceMap.get(trace.getTraceId());
-
-        if (mergedTrace == null) {
-          // If no merged trace exists, create a new one
-          mergedTrace = new TraceDTO();
-          mergedTrace.setTraceId(trace.getTraceId());
-          mergedTrace.setServiceName(trace.getServiceName());
-          mergedTrace.setMethodName(trace.getMethodName());
-          mergedTrace.setOperationName(trace.getOperationName());
-          mergedTrace.setDuration(trace.getDuration());
-          mergedTrace.setStatusCode(trace.getStatusCode());
-          mergedTrace.setSpanCount(trace.getSpanCount());
-          mergedTrace.setCreatedTime(trace.getCreatedTime());
-          mergedTrace.setSpans(new ArrayList<>()); // Initialize the spans list
-          mergedTraceMap.put(trace.getTraceId(), mergedTrace);
-        }
-
-        // Merge the spans into the merged trace
-        mergedTrace.getSpans().addAll(mergedSpans);
-      }
+    
+        return trace;
     }
 
-    List<TraceDTO> mergedTraceDataList = new ArrayList<>(
-      mergedTraceMap.values()
-    );
-
-    return mergedTraceDataList;
-  }
-
-  public TraceQueryHandler(MongoClient mongoClient) {
-    this.mongoClient = mongoClient;
-    collection = mongoClient.getDatabase("OtelTrace").getCollection("Trace");
-  }
-
-  // getTrace by serviceName from OtelTrace
-  public List<Document> getTraceByServiceName(String serviceName) {
-    List<Document> trace = new ArrayList<>();
-
-    Bson query = Filters.eq(
-      "resourceSpans.resource.attributes.value.stringValue",
-      serviceName
-    );
-
-    try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
-      while (cursor.hasNext()) {
-        trace.add(cursor.next());
-      }
-    }
-
-    return trace;
-  }
-
-  // getTrace by statusCode from OtelTrace
-  public List<Document> getTraceByStatusCode(Integer statusCode) {
-    List<Document> trace = new ArrayList<>();
-
-    Bson query = Filters.eq(
-      "resourceSpans.scopeSpans.spans.attributes.value.intValue",
-      statusCode
-    );
-
-    try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
-      while (cursor.hasNext()) {
-        trace.add(cursor.next());
-      }
-    }
-
-    return trace;
-  }
-
-  // getTrace by HttpMethod from OtelTrace
-  public List<Document> getTraceByHttpMethod(String httpMethod) {
-    List<Document> trace = new ArrayList<>();
-
-    Bson query = Filters.eq(
-      "resourceSpans.scopeSpans.spans.attributes.value.stringValue",
-      httpMethod
-    );
-
-    try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
-      while (cursor.hasNext()) {
-        trace.add(cursor.next());
-      }
-    }
-
-    return trace;
-  }
-
-  // getTrace by service name with http method from OtelTrace
-  public List<Document> getTraceByServiceNameAndHttpMethod(
-    String serviceName,
-    String httpMethod
-  ) {
-    List<Document> trace = new ArrayList<>();
-
-    Bson query = Filters.and(
-      Filters.eq(
-        "resourceSpans.resource.attributes.value.stringValue",
-        serviceName
-      ),
-      Filters.eq(
-        "resourceSpans.scopeSpans.spans.attributes.value.stringValue",
-        httpMethod
-      )
-    );
-
-    try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
-      while (cursor.hasNext()) {
-        trace.add(cursor.next());
-      }
-    }
-
-    return trace;
-  }
-
-  // getTrace by service name with http status from OtelTrace
-  public List<Document> getTraceByServiceNameAndStatusCode(
-    String serviceName,
-    Integer statusCode
-  ) {
-    List<Document> trace = new ArrayList<>();
-
-    Bson query = Filters.and(
-      Filters.eq(
-        "resourceSpans.resource.attributes.value.stringValue",
-        serviceName
-      ),
-      Filters.eq(
-        "resourceSpans.scopeSpans.spans.attributes.value.intValue",
-        statusCode
-      )
-    );
-
-    try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
-      while (cursor.hasNext()) {
-        trace.add(cursor.next());
-      }
-    }
-
-    return trace;
-  }
-
-  // getTrace by service name with multiple http method from OtelTrace
-  public List<Document> getTraceByMultipleStatusCodes(
-    List<Integer> statusCodes
-  ) {
-    List<Document> trace = new ArrayList<>();
-
-    Bson query = Filters.in(
-      "resourceSpans.scopeSpans.spans.attributes.value.intValue",
-      statusCodes
-    );
-
-    try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
-      while (cursor.hasNext()) {
-        trace.add(cursor.next());
-      }
-    }
-
-    return trace;
-  }
-
-  // getTrace by multiple queries like serviceName, method, duration and statuscode from TraceDTO entity
-  public List<TraceDTO> searchTraces(TraceQuery query) {
-    List<Bson> filters = new ArrayList<>();
-
-    if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
-      Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
-      filters.add(methodNameFilter);
-    }
-
-    if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
-      Bson serviceNameFilter = Filters.in(
-        "serviceName",
-        query.getServiceName()
-      );
-      filters.add(serviceNameFilter);
-    }
-
-    if (query.getDuration() != null) {
-      Bson durationFilter = Filters.and(
-        Filters.gte("duration", query.getDuration().getMin()),
-        Filters.lte("duration", query.getDuration().getMax())
-      );
-      filters.add(durationFilter);
-    }
-
-    List<Bson> statusCodeFilters = new ArrayList<>();
-    if (query.getStatusCode() != null && !query.getStatusCode().isEmpty()) {
-      for (StatusCodeRange statusCodeRange : query.getStatusCode()) {
-        statusCodeFilters.add(
-          Filters.and(
-            Filters.gte("statusCode", statusCodeRange.getMin()),
-            Filters.lte("statusCode", statusCodeRange.getMax())
-          )
+    
+    // getTrace by service name with http status from OtelTrace
+    public List<Document> getTraceByServiceNameAndStatusCode(String serviceName, Integer statusCode) {
+        List<Document> trace = new ArrayList<>();
+    
+        Bson query = Filters.and(
+            Filters.eq("resourceSpans.resource.attributes.value.stringValue", serviceName),
+            Filters.eq("resourceSpans.scopeSpans.spans.attributes.value.intValue", statusCode)
         );
-      }
-    }
-
-    if (!statusCodeFilters.isEmpty()) {
-      Bson statusCodeFilter = Filters.or(statusCodeFilters);
-      filters.add(statusCodeFilter);
-    }
-
-    Bson filter = Filters.and(filters);
-
-    MongoCollection<Document> collection = mongoClient
-      .getDatabase("OtelTrace")
-      .getCollection("TraceDto");
-
-    Bson projection = Projections.excludeId();
-
-    FindIterable<Document> result = collection
-      .find(filter)
-      .projection(projection);
-
-    List<TraceDTO> traceDTOList = new ArrayList<>();
-    try (MongoCursor<Document> cursor = result.iterator()) {
-      while (cursor.hasNext()) {
-        Document document = cursor.next();
-        TraceDTO traceDTO = new TraceDTO();
-
-        traceDTO.setTraceId(document.getString("traceId"));
-        traceDTO.setServiceName(document.getString("serviceName"));
-        Object durationObject = document.get("duration");
-        if (durationObject instanceof Integer) {
-          traceDTO.setDuration(((Integer) durationObject).longValue());
-        } else if (durationObject instanceof Long) {
-          traceDTO.setDuration((Long) durationObject);
+    
+        try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                trace.add(cursor.next());
+            }
         }
-
-        Object statusCodeObject = document.get("statusCode");
-        if (statusCodeObject instanceof Integer) {
-          traceDTO.setStatusCode(((Integer) statusCodeObject).longValue());
-        } else if (statusCodeObject instanceof Long) {
-          traceDTO.setStatusCode((Long) statusCodeObject);
-        }
-        traceDTO.setSpanCount(document.getString("spanCount"));
-        traceDTO.setCreatedTime(document.getString("createdTime"));
-        traceDTO.setSpans((List<Spans>) document.get("spans"));
-
-        traceDTOList.add(traceDTO);
-      }
+    
+        return trace;
     }
+    
+       // getTrace by service name with multiple http method from OtelTrace
+    public List<Document> getTraceByMultipleStatusCodes(List<Integer> statusCodes) {
+        List<Document> trace = new ArrayList<>();
+    
+        Bson query = Filters.in("resourceSpans.scopeSpans.spans.attributes.value.intValue", statusCodes);
+    
+        try (MongoCursor<Document> cursor = collection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                trace.add(cursor.next());
+            }
+        }
+    
+        return trace;
+    }
+    
 
-    return traceDTOList;
-  }
+    // getTrace by multiple queries like serviceName, method, duration and statuscode from TraceDTO entity
+    public List<TraceDTO> searchTraces(TraceQuery query) {
+        List<Bson> filters = new ArrayList<>();
+    
+        // Check if methodName is provided in the query
+        if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
+            Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
+            filters.add(methodNameFilter);
+        }
+    
+        // Add filters for serviceName, duration, and statusCode (unchanged)
+        if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
+            Bson serviceNameFilter = Filters.in("serviceName", query.getServiceName());
+            filters.add(serviceNameFilter);
+        }
+    
+        if (query.getDuration() != null) {
+            Bson durationFilter = Filters.and(
+                Filters.gte("duration", query.getDuration().getMin()),
+                Filters.lte("duration", query.getDuration().getMax())
+            );
+            filters.add(durationFilter);
+        }
+    
+        List<Bson> statusCodeFilters = new ArrayList<>();
+        if (query.getStatusCode() != null && !query.getStatusCode().isEmpty()) {
+            for (StatusCodeRange statusCodeRange : query.getStatusCode()) {
+                statusCodeFilters.add(
+                    Filters.and(
+                        Filters.gte("statusCode", statusCodeRange.getMin()),
+                        Filters.lte("statusCode", statusCodeRange.getMax())
+                    )
+                );
+            }
+        }
+    
+        if (!statusCodeFilters.isEmpty()) {
+            Bson statusCodeFilter = Filters.or(statusCodeFilters);
+            filters.add(statusCodeFilter);
+        }
+    
+        Bson filter = Filters.and(filters);
+    
+        MongoCollection<Document> collection = mongoClient
+            .getDatabase("OtelTrace")
+            .getCollection("TraceDto");
+    
+        Bson projection = Projections.excludeId(); 
+    
+        FindIterable<Document> result = collection
+            .find(filter)
+            .projection(projection);
+    
+        List<TraceDTO> traceDTOList = new ArrayList<>();
+        try (MongoCursor<Document> cursor = result.iterator()) {
+            while (cursor.hasNext()) {
+                Document document = cursor.next();
+                TraceDTO traceDTO = new TraceDTO();
+    
+                traceDTO.setTraceId(document.getString("traceId"));
+                traceDTO.setServiceName(document.getString("serviceName"));
+                Object durationObject = document.get("duration");
+                if (durationObject instanceof Integer) {
+                    traceDTO.setDuration(((Integer) durationObject).longValue());
+                } else if (durationObject instanceof Long) {
+                    traceDTO.setDuration((Long) durationObject);
+                }
+        
+                // Handle casting for statusCode field
+                Object statusCodeObject = document.get("statusCode");
+                if (statusCodeObject instanceof Integer) {
+                    traceDTO.setStatusCode(((Integer) statusCodeObject).longValue());
+                } else if (statusCodeObject instanceof Long) {
+                    traceDTO.setStatusCode((Long) statusCodeObject);
+                }
+                traceDTO.setSpanCount(document.getString("spanCount")); 
+                traceDTO.setCreatedTime(document.getString("createdTime"));
+                traceDTO.setSpans((List<Spans>) document.get("spans"));
+    
+                traceDTOList.add(traceDTO);
+            }
+        }
+    
+        return traceDTOList;
+}
 
-  //pagination api
-  public List<TraceDTO> findRecentDataPaged(
-    String serviceName,
-    int page,
-    int pageSize
-  ) {
-    PanacheQuery<TraceDTO> query = traceQueryRepo.find(
-      "serviceName = ?1 order by createdTime desc",
-      serviceName
-    );
-    query.page(page, pageSize);
+
+public List<TraceDTO> findRecentDataPaged(String serviceName, int page, int pageSize) {
+    PanacheQuery<TraceDTO> query = traceQueryRepo.find("serviceName = ?1 order by createdTime desc", serviceName);
+    query.page(page, pageSize); // Apply paging
 
     return query.list();
-  }
+}
 
-  public long countData(String serviceName) {
+public long countData(String serviceName) {
     return traceQueryRepo.count("serviceName = ?1", serviceName);
-  }
+}
+
 
   public Map<String, Long> getTraceCountWithinHour(int hoursAgo) throws ParseException {
     Calendar cal = Calendar.getInstance();
@@ -404,5 +472,10 @@ public class TraceQueryHandler {
 
     return apiCallCounts;
 }
-  
+
+
+
+
+
+
 }

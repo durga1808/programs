@@ -101,17 +101,18 @@ public class TraceController {
 
 
 @GET
-@Path("/getTraceData")
+@Path("/getallTraceData and rearrange the data")
 public List<TraceDTO> getDetails(){
         return traceQueryHandler.getTraceProduct();
     }
 
 
-@GET
-@Path("/merged-spans")
-public List<TraceDTO> getMergedSpanData() {
-    return traceQueryHandler.getMergedSpanData();
-}
+
+    @GET
+    @Path("/merged and rearrange the data")
+    public List<TraceDTO> getAllMergedTraceDTOs() {
+        return traceQueryHandler.getAllMergedTraceDTOs();
+    }
 
 
 @POST
