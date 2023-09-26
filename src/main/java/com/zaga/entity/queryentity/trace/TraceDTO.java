@@ -28,21 +28,4 @@ public class TraceDTO extends PanacheMongoEntity{
     private String spanCount;
     private String createdTime;
     private List<Spans> spans;
-
 }
-
-
-
-
-
-
-   
-
-
-
-
-
-
-
-    
-

@@ -1,26 +1,20 @@
 package com.zaga.controller;
 
-import java.time.LocalDateTime;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.bson.Document;
-import org.eclipse.microprofile.openapi.annotations.Operation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zaga.entity.oteltrace.OtelTrace;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.handler.TraceQueryHandler;
 import com.zaga.repo.TraceQueryRepo;
 
-import io.quarkus.panache.common.Sort;
 import jakarta.inject.Inject;
-import jakarta.json.bind.Jsonb;
-import jakarta.json.bind.JsonbBuilder;
-import jakarta.json.bind.JsonbException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -157,6 +151,17 @@ public Response findRecentData(
     }
 }
 
+@GET
+@Path("/count")
+@Produces(MediaType.APPLICATION_JSON)
+public Map<String, Long> getTraceCount(@QueryParam("hoursAgo") int hoursAgo) {
+    try {
+        return traceQueryHandler.getTraceCountWithinHour(hoursAgo);
+    } catch (ParseException e) {
+        e.printStackTrace();
+    }
+    return null;
+}
    
 
     
