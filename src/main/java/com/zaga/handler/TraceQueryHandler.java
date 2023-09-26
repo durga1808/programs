@@ -3,6 +3,7 @@ package com.zaga.handler;
 
 import java.text.ParseException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -449,7 +450,7 @@ public long countData(String serviceName) {
 }
 
 
-  public Map<String, Long> getTraceCountWithinHour() throws ParseException {
+  public Map<String, Long> getTraceCountWithinHour() {
     List<TraceDTO> traceList = TraceDTO.listAll();
 
     Map<String, Long> serviceNameCounts = new HashMap<>();
@@ -461,6 +462,32 @@ public long countData(String serviceName) {
     }
 
     return serviceNameCounts;
+}
+
+public Map<String, Long> getTraceCountForServiceName(int timeAgoHours) {
+  List<TraceDTO> traceList = TraceDTO.listAll();
+  Map<String, Long> serviceNameCounts = new HashMap<>();
+
+  // Calculate the cutoffTime based on the numeric value and unit
+  LocalDateTime cutoffTime = LocalDateTime.now().minusHours(timeAgoHours);
+
+  // Define a DateTimeFormatter for parsing the createdTime string
+  DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
+
+  // Iterate through the traceList and count occurrences of each serviceName
+  for (TraceDTO trace : traceList) {
+      String createdTimeString = trace.getCreatedTime();
+      if (createdTimeString != null) { // Add a null check here
+          LocalDateTime traceCreateTime = LocalDateTime.parse(createdTimeString, formatter);
+
+          if (traceCreateTime.isAfter(cutoffTime)) {
+              String serviceName = trace.getServiceName();
+              serviceNameCounts.put(serviceName, serviceNameCounts.getOrDefault(serviceName, 0L) + 1);
+          }
+      }
+  }
+
+  return serviceNameCounts;
 }
 
 }

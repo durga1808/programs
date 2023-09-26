@@ -1,6 +1,5 @@
 package com.zaga.controller;
 
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -154,17 +153,20 @@ public Response findRecentData(
 @GET
 @Path("/count")
 @Produces(MediaType.APPLICATION_JSON)
-public Map<String, Long> getTraceCount( ) {
-    try {
+public Map<String, Long> getTraceCount() {
         return traceQueryHandler.getTraceCountWithinHour();
-    } catch (ParseException e) {
-        e.printStackTrace();
-    }
-    return null;
+  
+}
+
+
+@GET
+@Path("/countbyparam")
+@Produces(MediaType.APPLICATION_JSON)
+public Map<String, Long> getTraceCountForServiceName(@QueryParam("timeAgo") int timeAgoHours) {
+        return traceQueryHandler.getTraceCountWithinHour();
+  
 }
    
-
-    
 }
     
 
