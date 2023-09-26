@@ -3,7 +3,13 @@ package com.zaga.handler;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -41,6 +47,67 @@ public class TraceQueryHandler {
         return traceQueryRepo.listAll();
     }
 
+
+     
+    
+
+    public List<TraceDTO> getMergedSpanData() {
+        // Get all trace data from the repository
+        List<TraceDTO> allTraces = traceQueryRepo.listAll();
+    
+        // Create a map to store merged traces by trace ID
+        Map<String, TraceDTO> mergedTraceMap = new HashMap<>();
+    
+        // Iterate through all traces
+        for (TraceDTO trace : allTraces) {
+            boolean isMerged = false;
+            List<Spans> mergedSpans = new ArrayList<>();
+    
+            // Iterate through the spans in the current trace
+            for (Spans span : trace.getSpans()) {
+                // Check if the parentSpanId is null or empty
+                if (span.getParentSpanId() == null || span.getParentSpanId().isEmpty()) {
+                    isMerged = true;
+                    mergedSpans.add(span);
+                }
+            }
+    
+            if (isMerged) {
+                // Check if a merged trace with the same trace ID already exists
+                TraceDTO mergedTrace = mergedTraceMap.get(trace.getTraceId());
+    
+                if (mergedTrace == null) {
+                    // If no merged trace exists, create a new one
+                    mergedTrace = new TraceDTO();
+                    mergedTrace.setTraceId(trace.getTraceId());
+                    mergedTrace.setServiceName(trace.getServiceName());
+                    mergedTrace.setMethodName(trace.getMethodName());
+                    mergedTrace.setOperationName(trace.getOperationName());
+                    mergedTrace.setDuration(trace.getDuration());
+                    mergedTrace.setStatusCode(trace.getStatusCode());
+                    mergedTrace.setSpanCount(trace.getSpanCount());
+                    mergedTrace.setCreatedTime(trace.getCreatedTime());
+                    mergedTrace.setSpans(new ArrayList<>()); // Initialize the spans list
+                    mergedTraceMap.put(trace.getTraceId(), mergedTrace);
+                }
+    
+                // Merge the spans into the merged trace
+                mergedTrace.getSpans().addAll(mergedSpans);
+            }
+        }
+    
+        // Convert the map values (merged traces) to a list
+        List<TraceDTO> mergedTraceDataList = new ArrayList<>(mergedTraceMap.values());
+    
+        return mergedTraceDataList;
+    }
+
+
+
+
+
+    
+       
 
 
     public TraceQueryHandler(MongoClient mongoClient) {
@@ -247,6 +314,12 @@ public List<TraceDTO> findRecentDataPaged(String serviceName, int page, int page
 public long countData(String serviceName) {
     return traceQueryRepo.count("serviceName = ?1", serviceName);
 }
+
+
+
+
+
+
 
 
 }

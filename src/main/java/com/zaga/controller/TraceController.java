@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.bson.Document;
+import org.eclipse.microprofile.openapi.annotations.Operation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.oteltrace.OtelTrace;
@@ -112,6 +113,12 @@ public List<TraceDTO> getDetails(){
     }
 
 
+@GET
+@Path("/merged-spans")
+public List<TraceDTO> getMergedSpanData() {
+    return traceQueryHandler.getMergedSpanData();
+}
+
 
 @POST
 @Path("/TraceQuery")
@@ -150,6 +157,9 @@ public Response findRecentData(
     }
 }
 
+   
+
+    
 }
     
 
