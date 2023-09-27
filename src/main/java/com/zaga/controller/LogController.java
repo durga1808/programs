@@ -7,6 +7,7 @@ import java.util.Map;
 import org.bson.Document;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaga.entity.otellog.OtelLog;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.handler.LogQueryHandler;
@@ -33,18 +34,39 @@ public class LogController {
     @Inject
     LogQueryHandler logQueryHandler;
 
-    @GET
-    @Path("/getAllDataByServiceName")
-    public List<LogDTO> getAllDataByServiceName(
-            @QueryParam("page") @DefaultValue("1") int page,
-            @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-            @QueryParam("serviceName") String serviceName)  {
-    
+@GET
+@Path("/getAllDataByServiceName")
+public Response getAllDataByServiceName(
+    @QueryParam("page") @DefaultValue("1") int page,
+    @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+    @QueryParam("serviceName") String serviceName) {
+
+    try {
         // Call your service method to retrieve the data
         List<LogDTO> logRecords = logQueryHandler.getLogsByServiceName(serviceName, page, pageSize);
-    
-        return logRecords;
+        
+        // Get the total count
+        long totalCount = logQueryHandler.getTotalLogCountByServiceName(serviceName);
+
+        // Create an ObjectMapper to serialize the JSON response
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode jsonResponse = objectMapper.createObjectNode();
+        jsonResponse.put("totalCount", totalCount);
+        // Serialize the logRecords list to JSON
+        jsonResponse.set("data", objectMapper.valueToTree(logRecords));
+
+        // Convert the JSON response to a string and return it as the response
+        String responseJson = objectMapper.writeValueAsString(jsonResponse);
+        
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        return Response
+            .status(Response.Status.INTERNAL_SERVER_ERROR)
+            .entity(e.getMessage())
+            .build();
     }
+}
+
 
     @GET
     @Path("/getAllLogDataByPagination")
