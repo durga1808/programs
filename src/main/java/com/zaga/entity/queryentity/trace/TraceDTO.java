@@ -1,5 +1,6 @@
 package com.zaga.entity.queryentity.trace;
 
+import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -26,6 +27,6 @@ public class TraceDTO extends PanacheMongoEntity{
     private Long duration;
     private Long statusCode;
     private String spanCount;
-    private String createdTime;
+    private Date createdTime;
     private List<Spans> spans;
 }
