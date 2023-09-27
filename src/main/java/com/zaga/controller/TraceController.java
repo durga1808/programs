@@ -35,15 +35,44 @@ public class TraceController {
 
   @GET
   @Path("/getAllTraceData")
-  public List<TraceDTO> getDetails() {
-    return traceQueryHandler.getTraceProduct();
+  public Response getDetails() {
+      try {
+          List<TraceDTO> traceList = traceQueryHandler.getTraceProduct();
+
+          ObjectMapper objectMapper = new ObjectMapper();
+          String responseJson = objectMapper.writeValueAsString(traceList);
+
+          return Response.ok(responseJson).build();
+      } catch (Exception e) {
+
+          e.printStackTrace();
+          return Response
+                  .status(Response.Status.INTERNAL_SERVER_ERROR)
+                  .entity("An error occurred: " + e.getMessage())
+                  .build();
+      }
   }
 
   @POST
   @Path("/TraceQueryFilter")
-  public List<TraceDTO> queryTraces(TraceQuery traceQuery) {
-    return traceQueryHandler.searchTraces(traceQuery);
+  public Response queryTraces(TraceQuery traceQuery) {
+      try {
+          List<TraceDTO> traceList = traceQueryHandler.searchTraces(traceQuery);
+
+          ObjectMapper objectMapper = new ObjectMapper();
+          String responseJson = objectMapper.writeValueAsString(traceList);
+
+          return Response.ok(responseJson).build();
+      } catch (Exception e) {
+          e.printStackTrace();
+
+          return Response
+                  .status(Response.Status.INTERNAL_SERVER_ERROR)
+                  .entity("An error occurred: " + e.getMessage())
+                  .build();
+      }
   }
+
 
   @GET
   @Path("/getAllDataByPagination")
@@ -63,10 +92,10 @@ public class TraceController {
       jsonResponse.put("totalCount", totalCount);
       jsonResponse.put("data", recentData);
 
-    //   ObjectMapper objectMapper = new ObjectMapper();
-    //   String responseJson = objectMapper.writeValueAsString(jsonResponse);
+      ObjectMapper objectMapper = new ObjectMapper();
+      String responseJson = objectMapper.writeValueAsString(jsonResponse);
 
-      return Response.ok(jsonResponse).build();
+      return Response.ok(responseJson).build();
     } catch (Exception e) {
       return Response
         .status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -76,18 +105,35 @@ public class TraceController {
   }
 
   @GET
-  @Path("/getAllDataByServiceNameAndStatusCode")
-  public List<TraceDTO> findRecentDataPaged(
-          @QueryParam("page") @DefaultValue("1") int page,
-          @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-          @QueryParam("serviceName") String serviceName,
-          @QueryParam("statusCode") @DefaultValue("0") int statusCode) {
+    @Path("/getAllDataByServiceNameAndStatusCode")
+    public Response findRecentDataPaged(
+            @QueryParam("page") @DefaultValue("1") int page,
+            @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+            @QueryParam("serviceName") String serviceName,
+            @QueryParam("statusCode") @DefaultValue("0") int statusCode) {
 
-      // Call your service method to retrieve the data
-      List<TraceDTO> traceList = traceQueryHandler.findRecentDataPaged(page, pageSize, serviceName, statusCode);
+        try {
+            long totalCount = traceQueryHandler.countData();
+            // Call your service method to retrieve the data
+            List<TraceDTO> traceList = traceQueryHandler.findRecentDataPaged(page, pageSize, serviceName, statusCode);
 
-      return traceList;
-  }
+            Map<String, Object> jsonResponse = new HashMap<>();
+            jsonResponse.put("totalCount", totalCount);
+            jsonResponse.put("data", traceList);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseJson = objectMapper.writeValueAsString(jsonResponse);
+            
+            return Response.ok(responseJson).build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            
+            return Response
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("An error occurred: " + e.getMessage())
+                    .build();
+        }
+    }
 
   @GET
   @Path("/count")
