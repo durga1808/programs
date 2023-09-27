@@ -45,7 +45,6 @@ public class TraceQueryHandler {
   public List<TraceDTO> getTraceProduct() {
     List<TraceDTO> traceList = traceQueryRepo.listAll();
 
-    // Sort the spans within each TraceDTO by parentSpanId and spanId
     traceList.forEach(this::sortSpans);
 
     // Sort the traceList based on the comparison logic
@@ -81,8 +80,6 @@ private int compareTraceDTOs(TraceDTO trace1, TraceDTO trace2) {
               return spanIdComparison;
           }
       }
-
-      // If all compared spans are equal, consider the TraceDTO with more spans as greater
       return Integer.compare(spans1.size(), spans2.size());
   }
 }
@@ -133,13 +130,11 @@ private void sortSpans(TraceDTO trace) {
   public List<TraceDTO> searchTraces(TraceQuery query) {
     List<Bson> filters = new ArrayList<>();
 
-    // Check if methodName is provided in the query
     if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
       Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
       filters.add(methodNameFilter);
     }
 
-    // Add filters for serviceName, duration, and statusCode (unchanged)
     if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
       Bson serviceNameFilter = Filters.in(
         "serviceName",
@@ -252,10 +247,6 @@ private void sortSpans(TraceDTO trace) {
 
     int startIndex = (page - 1) * pageSize;
     int endIndex = Math.min(startIndex + pageSize, traceList.size());
-
-    // System.out.println(
-    //   "traceList of pagination: " + traceList.subList(startIndex, endIndex)
-    // );
     return traceList.subList(startIndex, endIndex);
   }
 

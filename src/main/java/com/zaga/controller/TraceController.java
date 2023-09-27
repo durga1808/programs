@@ -63,10 +63,10 @@ public class TraceController {
       jsonResponse.put("totalCount", totalCount);
       jsonResponse.put("data", recentData);
 
-      ObjectMapper objectMapper = new ObjectMapper();
-      String responseJson = objectMapper.writeValueAsString(jsonResponse);
+    //   ObjectMapper objectMapper = new ObjectMapper();
+    //   String responseJson = objectMapper.writeValueAsString(jsonResponse);
 
-      return Response.ok(responseJson).build();
+      return Response.ok(jsonResponse).build();
     } catch (Exception e) {
       return Response
         .status(Response.Status.INTERNAL_SERVER_ERROR)
