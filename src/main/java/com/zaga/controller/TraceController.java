@@ -115,7 +115,7 @@ public class TraceController {
         try {
             long totalCount = traceQueryHandler.countData();
             // Call your service method to retrieve the data
-            List<TraceDTO> traceList = traceQueryHandler.findRecentDataPaged(page, pageSize, serviceName, statusCode);
+            List<TraceDTO> traceList = traceQueryHandler.findByServiceNameAndStatusCode(page, pageSize, serviceName, statusCode);
 
             Map<String, Object> jsonResponse = new HashMap<>();
             jsonResponse.put("totalCount", totalCount);

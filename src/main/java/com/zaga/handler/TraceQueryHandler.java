@@ -19,8 +19,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,8 +26,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
@@ -68,7 +64,6 @@ public List<TraceDTO> getTraceProduct() {
   return traceList;
 }
 
-// Define a method to create a sorting key for a TraceDTO
 private String getTraceSortingKey(TraceDTO trace) {
   List<Spans> spans = trace.getSpans();
 
@@ -76,14 +71,11 @@ private String getTraceSortingKey(TraceDTO trace) {
       return "";
   }
 
-  // Create a map to store spans by their spanId
   Map<String, Spans> spanMap = spans.stream()
           .collect(Collectors.toMap(Spans::getSpanId, span -> span));
 
-  // Create a list to store the sorted spans
   List<Spans> sortedSpans = new ArrayList<>();
 
-  // Find the first span with an empty parentSpanId
   Spans currentSpan = spans.stream()
           .filter(span -> span.getParentSpanId().isEmpty())
           .findFirst()
@@ -93,10 +85,9 @@ private String getTraceSortingKey(TraceDTO trace) {
       sortedSpans.add(currentSpan);
       String nextSpanId = currentSpan.getSpanId();
       currentSpan = spanMap.get(nextSpanId);
-      spanMap.remove(nextSpanId); // Remove the span from the map to free memory
+      spanMap.remove(nextSpanId); 
   }
 
-  // Build the sorting key based on the sorted spans
   StringBuilder keyBuilder = new StringBuilder();
   for (Spans span : sortedSpans) {
       keyBuilder.append(span.getParentSpanId()).append(span.getSpanId());
@@ -309,7 +300,7 @@ private void sortSpans(TraceDTO trace) {
   }
 
   // pagination data for trace summary page based on serviceName and statusCode
-  public List<TraceDTO> findRecentDataPaged(
+  public List<TraceDTO> findByServiceNameAndStatusCode(
     int page,
     int pageSize,
     String serviceName,
