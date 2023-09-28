@@ -53,24 +53,40 @@ public class TraceController {
   }
 
   @POST
-  @Path("/TraceQueryFilter")
-  public Response queryTraces(TraceQuery traceQuery) {
+@Path("/TraceQueryFilter")
+public Response queryTraces(
+    TraceQuery traceQuery,
+    @QueryParam("page") int page,
+    @QueryParam("pageSize") int pageSize) {
     try {
-      List<TraceDTO> traceList = traceQueryHandler.searchTraces(traceQuery);
+        // Calculate the offset based on the page and pageSize
+        int offset = (page - 1) * pageSize;
 
-      ObjectMapper objectMapper = new ObjectMapper();
-      String responseJson = objectMapper.writeValueAsString(traceList);
+        // Retrieve a subset of traceList based on pagination parameters
+        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery, offset, pageSize);
 
-      return Response.ok(responseJson).build();
+        // long totalCount = traceList.size(); // Total count for this specific query
+        long totalCount = traceQueryHandler.countQueryTraces(traceQuery);
+
+        Map<String, Object> jsonResponse = new HashMap<>();
+        jsonResponse.put("totalCount", totalCount);
+        jsonResponse.put("data", traceList);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(jsonResponse);
+
+        return Response.ok(responseJson).build();
     } catch (Exception e) {
-      e.printStackTrace();
+        e.printStackTrace();
 
-      return Response
-          .status(Response.Status.INTERNAL_SERVER_ERROR)
-          .entity("An error occurred: " + e.getMessage())
-          .build();
+        return Response
+            .status(Response.Status.INTERNAL_SERVER_ERROR)
+            .entity("An error occurred: " + e.getMessage())
+            .build();
     }
-  }
+}
+
+
 
   @GET
   @Path("/getAllDataByPagination")
