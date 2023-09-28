@@ -56,17 +56,14 @@ public class TraceController {
 @Path("/TraceQueryFilter")
 public Response queryTraces(
     TraceQuery traceQuery,
-    @QueryParam("page") int page,
-    @QueryParam("pageSize") int pageSize,
-    @QueryParam("minutesAgo") int minutesAgo) {
+    @QueryParam("page") @DefaultValue("1") int page,
+    @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+    @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo) {
     try {
-        // Calculate the offset based on the page and pageSize
         int offset = (page - 1) * pageSize;
 
-        // Retrieve a subset of traceList based on pagination parameters
         List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery, offset, pageSize, minutesAgo);
 
-        // long totalCount = traceList.size(); // Total count for this specific query
         long totalCount = traceQueryHandler.countQueryTraces(traceQuery,minutesAgo);
 
         Map<String, Object> jsonResponse = new HashMap<>();
@@ -92,8 +89,8 @@ public Response queryTraces(
   @GET
   @Path("/getAllDataByPagination")
   public Response findRecentData(
-      @QueryParam("page") int page,
-      @QueryParam("pageSize") int pageSize) {
+      @QueryParam("page") @DefaultValue("1") int page,
+      @QueryParam("pageSize") @DefaultValue("10") int pageSize) {
     try {
       long totalCount = traceQueryHandler.countData();
       // long totalPages = (long) Math.ceil((double) totalCount / pageSize);
@@ -116,6 +113,8 @@ public Response queryTraces(
           .build();
     }
   }
+
+
 
   @GET
   @Path("/getAllDataByServiceNameAndStatusCode")
@@ -157,10 +156,10 @@ public Response queryTraces(
   }
 
   @GET
-  @Path("/countbyparam")
+  @Path("/TraceSumaryChartDataCount")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<TraceMetrics> getTraceMetricsForServiceNameInMinutes(@QueryParam("timeAgoMinutes") int timeAgoMinutes) {
-    return traceQueryHandler.getTraceMetricsForServiceNameInMinutes(timeAgoMinutes);
+  public List<TraceMetrics> getTraceMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes) {
+    return traceQueryHandler.getTraceMetricCount(timeAgoMinutes);
   }
 
   @GET

@@ -201,7 +201,7 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, in
 
     if (minutesAgo > 0) {
       long currentTimeInMillis = System.currentTimeMillis();
-      long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000); // Convert minutes to milliseconds
+      long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000); 
       Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
       filters.add(timeFilter);
   }
@@ -301,7 +301,7 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, in
 
 public long countQueryTraces(TraceQuery query, int minutesAgo) {
   FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, minutesAgo);
-  long totalCount = result.into(new ArrayList<>()).size(); // Count all results
+  long totalCount = result.into(new ArrayList<>()).size(); 
 
   return totalCount;
 }
@@ -397,7 +397,7 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
     return serviceNameCounts;
   }
 
-public List<TraceMetrics> getTraceMetricsForServiceNameInMinutes(
+public List<TraceMetrics> getTraceMetricCount(
     int timeAgoMinutes
 ) {
     List<TraceDTO> traceList = TraceDTO.listAll();
