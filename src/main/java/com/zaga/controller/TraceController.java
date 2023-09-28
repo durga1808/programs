@@ -1,5 +1,6 @@
 package com.zaga.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceMetrics;
@@ -31,62 +32,57 @@ public class TraceController {
   @Inject
   TraceQueryRepo traceQueryRepo;
 
-
-
   @GET
   @Path("/getAllTraceData")
   public Response getDetails() {
-      try {
-          List<TraceDTO> traceList = traceQueryHandler.getTraceProduct();
+    try {
+      List<TraceDTO> traceList = traceQueryHandler.getTraceProduct();
 
-          ObjectMapper objectMapper = new ObjectMapper();
-          String responseJson = objectMapper.writeValueAsString(traceList);
+      ObjectMapper objectMapper = new ObjectMapper();
+      String responseJson = objectMapper.writeValueAsString(traceList);
 
-          return Response.ok(responseJson).build();
-      } catch (Exception e) {
+      return Response.ok(responseJson).build();
+    } catch (Exception e) {
 
-          e.printStackTrace();
-          return Response
-                  .status(Response.Status.INTERNAL_SERVER_ERROR)
-                  .entity("An error occurred: " + e.getMessage())
-                  .build();
-      }
+      e.printStackTrace();
+      return Response
+          .status(Response.Status.INTERNAL_SERVER_ERROR)
+          .entity("An error occurred: " + e.getMessage())
+          .build();
+    }
   }
 
   @POST
   @Path("/TraceQueryFilter")
   public Response queryTraces(TraceQuery traceQuery) {
-      try {
-          List<TraceDTO> traceList = traceQueryHandler.searchTraces(traceQuery);
+    try {
+      List<TraceDTO> traceList = traceQueryHandler.searchTraces(traceQuery);
 
-          ObjectMapper objectMapper = new ObjectMapper();
-          String responseJson = objectMapper.writeValueAsString(traceList);
+      ObjectMapper objectMapper = new ObjectMapper();
+      String responseJson = objectMapper.writeValueAsString(traceList);
 
-          return Response.ok(responseJson).build();
-      } catch (Exception e) {
-          e.printStackTrace();
+      return Response.ok(responseJson).build();
+    } catch (Exception e) {
+      e.printStackTrace();
 
-          return Response
-                  .status(Response.Status.INTERNAL_SERVER_ERROR)
-                  .entity("An error occurred: " + e.getMessage())
-                  .build();
-      }
+      return Response
+          .status(Response.Status.INTERNAL_SERVER_ERROR)
+          .entity("An error occurred: " + e.getMessage())
+          .build();
+    }
   }
-
 
   @GET
   @Path("/getAllDataByPagination")
   public Response findRecentData(
-    @QueryParam("page") int page,
-    @QueryParam("pageSize") int pageSize
-  ) {
+      @QueryParam("page") int page,
+      @QueryParam("pageSize") int pageSize) {
     try {
       long totalCount = traceQueryHandler.countData();
-    //   long totalPages = (long) Math.ceil((double) totalCount / pageSize);
+      // long totalPages = (long) Math.ceil((double) totalCount / pageSize);
       List<TraceDTO> recentData = traceQueryHandler.findRecentDataPaged(
-        page,
-        pageSize
-      );
+          page,
+          pageSize);
 
       Map<String, Object> jsonResponse = new HashMap<>();
       jsonResponse.put("totalCount", totalCount);
@@ -98,42 +94,43 @@ public class TraceController {
       return Response.ok(responseJson).build();
     } catch (Exception e) {
       return Response
-        .status(Response.Status.INTERNAL_SERVER_ERROR)
-        .entity(e.getMessage())
-        .build();
+          .status(Response.Status.INTERNAL_SERVER_ERROR)
+          .entity(e.getMessage())
+          .build();
     }
   }
 
   @GET
-    @Path("/getAllDataByServiceNameAndStatusCode")
-    public Response findRecentDataPaged(
-            @QueryParam("page") @DefaultValue("1") int page,
-            @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-            @QueryParam("serviceName") String serviceName,
-            @QueryParam("statusCode") @DefaultValue("0") int statusCode) {
+  @Path("/getAllDataByServiceNameAndStatusCode")
+  public Response findRecentDataPaged(
+      @QueryParam("page") @DefaultValue("1") int page,
+      @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+      @QueryParam("serviceName") String serviceName,
+      @QueryParam("statusCode") @DefaultValue("0") int statusCode) {
 
-        try {
-            long totalCount = traceQueryHandler.countData();
-            // Call your service method to retrieve the data
-            List<TraceDTO> traceList = traceQueryHandler.findByServiceNameAndStatusCode(page, pageSize, serviceName, statusCode);
+    try {
+      long totalCount = traceQueryHandler.countData();
+      // Call your service method to retrieve the data
+      List<TraceDTO> traceList = traceQueryHandler.findByServiceNameAndStatusCode(page, pageSize, serviceName,
+          statusCode);
 
-            Map<String, Object> jsonResponse = new HashMap<>();
-            jsonResponse.put("totalCount", totalCount);
-            jsonResponse.put("data", traceList);
+      Map<String, Object> jsonResponse = new HashMap<>();
+      jsonResponse.put("totalCount", totalCount);
+      jsonResponse.put("data", traceList);
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            String responseJson = objectMapper.writeValueAsString(jsonResponse);
-            
-            return Response.ok(responseJson).build();
-        } catch (Exception e) {
-            e.printStackTrace();
-            
-            return Response
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("An error occurred: " + e.getMessage())
-                    .build();
-        }
+      ObjectMapper objectMapper = new ObjectMapper();
+      String responseJson = objectMapper.writeValueAsString(jsonResponse);
+
+      return Response.ok(responseJson).build();
+    } catch (Exception e) {
+      e.printStackTrace();
+
+      return Response
+          .status(Response.Status.INTERNAL_SERVER_ERROR)
+          .entity("An error occurred: " + e.getMessage())
+          .build();
     }
+  }
 
   @GET
   @Path("/count")
@@ -142,29 +139,30 @@ public class TraceController {
     return traceQueryHandler.getTraceCountWithinHour();
   }
 
-@GET
-@Path("/countbyparam")
-@Produces(MediaType.APPLICATION_JSON)
-public List<TraceMetrics> getTraceMetricsForServiceNameInMinutes(@QueryParam("timeAgoMinutes") int timeAgoMinutes) {
+  @GET
+  @Path("/countbyparam")
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<TraceMetrics> getTraceMetricsForServiceNameInMinutes(@QueryParam("timeAgoMinutes") int timeAgoMinutes) {
     return traceQueryHandler.getTraceMetricsForServiceNameInMinutes(timeAgoMinutes);
-}
+  }
 
+  @GET
+  @Path("/getalldata-paginated-in-minute")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getPaginatedTraces(
+      @QueryParam("page") int page,
+      @QueryParam("pageSize") int pageSize,
+      @QueryParam("timeAgoMinutes") int timeAgoMinutes) throws JsonProcessingException {
+    List<TraceDTO> traces = traceQueryHandler.getPaginatedTraces(page, pageSize, timeAgoMinutes);
+    long totalCount = traceQueryHandler.getTraceCountInMinutes(timeAgoMinutes);
 
+    Map<String, Object> response = new HashMap<>();
+    response.put("data", traces);
+    response.put("totalCount", totalCount);
 
-@GET
-@Path("/getalldata-paginated-in-minute")
-@Produces(MediaType.APPLICATION_JSON)
-public Map<String, Object> getPaginatedTraces(
-  @QueryParam("page") int page,
-  @QueryParam("pageSize") int pageSize,
-  @QueryParam("timeAgoMinutes") int timeAgoMinutes) {
-List<TraceDTO> traces = traceQueryHandler.getPaginatedTraces(page, pageSize, timeAgoMinutes);
-long totalCount = traceQueryHandler.getTraceCountInMinutes(timeAgoMinutes);
+    ObjectMapper objectMapper = new ObjectMapper();
+    String responseJson = objectMapper.writeValueAsString(response);
 
-Map<String, Object> response = new HashMap<>();
-response.put("datas", traces);
-response.put("totalCount", totalCount);
-
-return response;
-}
+    return Response.ok(responseJson).build();
+  }
 }
