@@ -18,7 +18,6 @@ import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.repo.TraceQueryRepo;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
-import io.quarkus.mongodb.panache.runtime.PanacheQueryImpl;
 import io.quarkus.panache.common.Page;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -263,11 +262,11 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, in
 
   // getTrace by multiple queries like serviceName, method, duration and statuscode from TraceDTO entity
   public List<TraceDTO> searchTracesPaged(TraceQuery query, int page, int pageSize, int minutesAgo) {
-    int skip = (page - 1) * pageSize;
+    int skip = (page - 0) * pageSize;
     int limit = pageSize;
 
     FindIterable<Document> result = getFilteredResults(query, skip, limit, minutesAgo);
-
+   
     List<TraceDTO> traceDTOList = new ArrayList<>();
     try (MongoCursor<Document> cursor = result.iterator()) {
         while (cursor.hasNext()) {
@@ -622,8 +621,8 @@ public Map<String, Object> getErrorTracesWithCount(int page, int pageSize, int t
     aggregationStages.add(
             Aggregates.match(
                     Filters.and(
-                            Filters.gte("statusCode", 400), // Minimum HTTP status code for errors
-                            Filters.lte("statusCode", 599) // Maximum HTTP status code for errors
+                            Filters.gte("statusCode", 400),
+                            Filters.lte("statusCode", 599) 
                     )
             )
     );
