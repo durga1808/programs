@@ -15,6 +15,8 @@ import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.repo.TraceQueryRepo;
+
+import io.quarkus.panache.common.Page;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -529,5 +531,21 @@ public List<TraceMetrics> getTraceMetricsForServiceNameInMinutes(
     }
 
     return peakLatency;
+  }
+
+
+
+   public List<TraceDTO> getPaginatedTraces(int page, int pageSize, int timeAgoMinutes) {
+        Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+        List<TraceDTO> traces = traceQueryRepo.find("createdTime >= ?1", startTime)
+                .page(Page.of(page - 1, pageSize))
+                .list();
+
+        return traces;
+    }
+
+    public long getTraceCountInMinutes(int timeAgoMinutes) {
+      Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+      return traceQueryRepo.find("createdTime >= ?1", startTime).count();
   }
 }

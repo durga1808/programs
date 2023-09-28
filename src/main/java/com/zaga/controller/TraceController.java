@@ -149,4 +149,22 @@ public List<TraceMetrics> getTraceMetricsForServiceNameInMinutes(@QueryParam("ti
     return traceQueryHandler.getTraceMetricsForServiceNameInMinutes(timeAgoMinutes);
 }
 
+
+
+@GET
+@Path("/getalldata-paginated-in-minute")
+@Produces(MediaType.APPLICATION_JSON)
+public Map<String, Object> getPaginatedTraces(
+  @QueryParam("page") int page,
+  @QueryParam("pageSize") int pageSize,
+  @QueryParam("timeAgoMinutes") int timeAgoMinutes) {
+List<TraceDTO> traces = traceQueryHandler.getPaginatedTraces(page, pageSize, timeAgoMinutes);
+long totalCount = traceQueryHandler.getTraceCountInMinutes(timeAgoMinutes);
+
+Map<String, Object> response = new HashMap<>();
+response.put("datas", traces);
+response.put("totalCount", totalCount);
+
+return response;
+}
 }
