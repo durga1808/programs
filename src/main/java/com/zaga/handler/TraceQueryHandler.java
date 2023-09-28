@@ -28,6 +28,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
@@ -42,46 +46,90 @@ public class TraceQueryHandler {
 
   //getting all the datas from traceDTO entity
 
-  public List<TraceDTO> getTraceProduct() {
-    List<TraceDTO> traceList = traceQueryRepo.listAll();
+//   public List<TraceDTO> getTraceProduct() {
+//     List<TraceDTO> traceList = traceQueryRepo.listAll();
 
-    traceList.forEach(this::sortSpans);
+//     traceList.forEach(this::sortSpans);
 
-    // Sort the traceList based on the comparison logic
-    traceList.sort(this::compareTraceDTOs);
+//     // Sort the traceList based on the comparison logic
+//     traceList.sort(this::compareTraceDTOs);
 
-    return traceList;
+//     return traceList;
+// }
+
+
+
+public List<TraceDTO> getTraceProduct() {
+  List<TraceDTO> traceList = traceQueryRepo.listAll();
+
+  // Sort the traceList using a custom comparator
+  traceList.sort(Comparator.comparing(this::getTraceSortingKey));
+
+  return traceList;
 }
+
+// Define a method to create a sorting key for a TraceDTO
+private String getTraceSortingKey(TraceDTO trace) {
+  List<Spans> spans = trace.getSpans();
+
+  if (spans.isEmpty()) {
+      return "";
+  }
+
+  // Create a map to store spans by their spanId
+  Map<String, Spans> spanMap = spans.stream()
+          .collect(Collectors.toMap(Spans::getSpanId, span -> span));
+
+  // Create a list to store the sorted spans
+  List<Spans> sortedSpans = new ArrayList<>();
+
+  // Find the first span with an empty parentSpanId
+  Spans currentSpan = spans.stream()
+          .filter(span -> span.getParentSpanId().isEmpty())
+          .findFirst()
+          .orElse(null);
+
+  while (currentSpan != null) {
+      sortedSpans.add(currentSpan);
+      String nextSpanId = currentSpan.getSpanId();
+      currentSpan = spanMap.get(nextSpanId);
+      spanMap.remove(nextSpanId); // Remove the span from the map to free memory
+  }
+
+  // Build the sorting key based on the sorted spans
+  StringBuilder keyBuilder = new StringBuilder();
+  for (Spans span : sortedSpans) {
+      keyBuilder.append(span.getParentSpanId()).append(span.getSpanId());
+  }
+
+  return keyBuilder.toString();
+}
+
+
 
 // Method to compare two TraceDTOs for sorting
 private int compareTraceDTOs(TraceDTO trace1, TraceDTO trace2) {
   List<Spans> spans1 = trace1.getSpans();
   List<Spans> spans2 = trace2.getSpans();
 
-  if (spans1.isEmpty() && spans2.isEmpty()) {
-      return 0;
-  } else if (spans1.isEmpty()) {
-      return -1;
-  } else if (spans2.isEmpty()) {
-      return 1;
-  } else {
-      // Compare spans within the TraceDTOs
-      for (int i = 0; i < Math.min(spans1.size(), spans2.size()); i++) {
-          Spans span1 = spans1.get(i);
-          Spans span2 = spans2.get(i);
+  // Compare spans one by one
+  for (int i = 0; i < Math.min(spans1.size(), spans2.size()); i++) {
+      Spans span1 = spans1.get(i);
+      Spans span2 = spans2.get(i);
 
-          int parentSpanIdComparison = span1.getParentSpanId().compareTo(span2.getParentSpanId());
-          if (parentSpanIdComparison != 0) {
-              return parentSpanIdComparison;
-          }
-
-          int spanIdComparison = span1.getSpanId().compareTo(span2.getSpanId());
-          if (spanIdComparison != 0) {
-              return spanIdComparison;
-          }
+      int parentSpanIdComparison = span1.getParentSpanId().compareTo(span2.getParentSpanId());
+      if (parentSpanIdComparison != 0) {
+          return parentSpanIdComparison;
       }
-      return Integer.compare(spans1.size(), spans2.size());
+
+      int spanIdComparison = span1.getSpanId().compareTo(span2.getSpanId());
+      if (spanIdComparison != 0) {
+          return spanIdComparison;
+      }
   }
+
+  // If all compared spans are equal, the trace with fewer spans should come first
+  return Integer.compare(spans1.size(), spans2.size());
 }
 
 private void sortSpans(TraceDTO trace) {
@@ -202,6 +250,8 @@ private void sortSpans(TraceDTO trace) {
         } else if (statusCodeObject instanceof Long) {
           traceDTO.setStatusCode((Long) statusCodeObject);
         }
+        traceDTO.setMethodName(document.getString("methodName"));
+        traceDTO.setOperationName(document.getString("operationName"));
         traceDTO.setSpanCount(document.getString("spanCount"));
         traceDTO.setCreatedTime(document.getDate("createdTime"));
         traceDTO.setSpans((List<Spans>) document.get("spans"));
