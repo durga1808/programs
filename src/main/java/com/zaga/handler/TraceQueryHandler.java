@@ -196,8 +196,15 @@ private void sortSpans(TraceDTO trace) {
     return mergedTraceDTOs;
   }
 
-private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, int limit) {
+private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, int limit, int minutesAgo) {
     List<Bson> filters = new ArrayList<>();
+
+    if (minutesAgo > 0) {
+      long currentTimeInMillis = System.currentTimeMillis();
+      long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000); // Convert minutes to milliseconds
+      Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
+      filters.add(timeFilter);
+  }
 
     if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
         Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
@@ -251,11 +258,11 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, in
 
 
   // getTrace by multiple queries like serviceName, method, duration and statuscode from TraceDTO entity
-  public List<TraceDTO> searchTracesPaged(TraceQuery query, int page, int pageSize) {
+  public List<TraceDTO> searchTracesPaged(TraceQuery query, int page, int pageSize, int minutesAgo) {
     int skip = (page - 1) * pageSize;
     int limit = pageSize;
 
-    FindIterable<Document> result = getFilteredResults(query, skip, limit);
+    FindIterable<Document> result = getFilteredResults(query, skip, limit, minutesAgo);
 
     List<TraceDTO> traceDTOList = new ArrayList<>();
     try (MongoCursor<Document> cursor = result.iterator()) {
@@ -292,12 +299,16 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, in
     return traceDTOList;
 }
 
-  public long countQueryTraces(TraceQuery query) {
-    FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE);
-    long totalCount = result.into(new ArrayList<>()).size(); // Count all results
+public long countQueryTraces(TraceQuery query, int minutesAgo) {
+  FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, minutesAgo);
+  long totalCount = result.into(new ArrayList<>()).size(); // Count all results
 
-    return totalCount;
+  return totalCount;
 }
+
+
+
+
 
   // pagination data with merge and sorting implementations
   public List<TraceDTO> findRecentDataPaged(int page, int pageSize) {
@@ -316,6 +327,9 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, in
     );
     return traceQueryRepo.count();
   }
+
+
+
 
   // pagination data for trace summary page based on serviceName and statusCode
   public List<TraceDTO> findByServiceNameAndStatusCode(

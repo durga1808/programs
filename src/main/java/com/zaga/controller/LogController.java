@@ -3,12 +3,8 @@ package com.zaga.controller;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.bson.Document;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.zaga.entity.otellog.OtelLog;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.handler.LogQueryHandler;
 
@@ -17,9 +13,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;

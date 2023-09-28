@@ -57,16 +57,17 @@ public class TraceController {
 public Response queryTraces(
     TraceQuery traceQuery,
     @QueryParam("page") int page,
-    @QueryParam("pageSize") int pageSize) {
+    @QueryParam("pageSize") int pageSize,
+    @QueryParam("minutesAgo") int minutesAgo) {
     try {
         // Calculate the offset based on the page and pageSize
         int offset = (page - 1) * pageSize;
 
         // Retrieve a subset of traceList based on pagination parameters
-        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery, offset, pageSize);
+        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery, offset, pageSize, minutesAgo);
 
         // long totalCount = traceList.size(); // Total count for this specific query
-        long totalCount = traceQueryHandler.countQueryTraces(traceQuery);
+        long totalCount = traceQueryHandler.countQueryTraces(traceQuery,minutesAgo);
 
         Map<String, Object> jsonResponse = new HashMap<>();
         jsonResponse.put("totalCount", totalCount);
