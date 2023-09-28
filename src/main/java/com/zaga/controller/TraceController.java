@@ -169,7 +169,6 @@ public Response queryTraces(
 
 
 
-
   @GET
   @Path("/getalldata-paginated-in-minute")
   @Produces(MediaType.APPLICATION_JSON)
@@ -218,6 +217,7 @@ public Response queryTraces(
   
       return Response.ok(responseJson).build();
 }
+  
 
 
 
@@ -320,5 +320,6 @@ public static List<Spans> sortingParentChildOrder(List<Spans> spanData) {
     return Response.ok(dto).build();
 }
 
+  
   
 }

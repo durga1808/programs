@@ -613,64 +613,64 @@ return sortedTraces;
 
 //error data listout in sorted order
 public Map<String, Object> getErrorTracesWithCount(int page, int pageSize, int timeAgoMinutes) {
-MongoCollection<Document> traceCollection = mongoClient
-      .getDatabase("OtelTrace")
-      .getCollection("TraceDto");
+  MongoCollection<Document> traceCollection = mongoClient
+          .getDatabase("OtelTrace")
+          .getCollection("TraceDto");
 
-// Define the aggregation stage to filter and count errors within the time range
-Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
-List<Bson> aggregationStages = new ArrayList<>();
-aggregationStages.add(
-      Aggregates.match(
-              Filters.and(
-                      Filters.gte("statusCode", 400), // Minimum HTTP status code for errors
-                      Filters.lte("statusCode", 599), // Maximum HTTP status code for errors
-                      Filters.gte("createdTime", Date.from(startTime)) // Created time within the time range
-              )
-      )
-);
-aggregationStages.add(
-      Aggregates.count("errorCount")
-);
+  // Define the aggregation stage to filter and count errors within the time range
+  Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+  List<Bson> aggregationStages = new ArrayList<>();
+  aggregationStages.add(
+          Aggregates.match(
+                  Filters.and(
+                          Filters.gte("statusCode", 400), // Minimum HTTP status code for errors
+                          Filters.lte("statusCode", 599), // Maximum HTTP status code for errors
+                          Filters.gte("createdTime", Date.from(startTime)) // Created time within the time range
+                  )
+          )
+  );
+  aggregationStages.add(
+          Aggregates.count("errorCount")
+  );
 
-// Execute the aggregation pipeline
-AggregateIterable<Document> result = traceCollection.aggregate(aggregationStages);
+  // Execute the aggregation pipeline
+  AggregateIterable<Document> result = traceCollection.aggregate(aggregationStages);
 
-// Extract the error count
-Long errorCount = 0L;
-for (Document doc : result) {
-  Object errorCountObj = doc.get("errorCount");
-  if (errorCountObj instanceof Number) {
-      errorCount = ((Number) errorCountObj).longValue();
-      break; // Stop iterating after finding the count
+  // Extract the error count
+  Long errorCount = 0L;
+  for (Document doc : result) {
+      Object errorCountObj = doc.get("errorCount");
+      if (errorCountObj instanceof Number) {
+          errorCount = ((Number) errorCountObj).longValue();
+          break; // Stop iterating after finding the count
+      }
   }
-}
 
-// Retrieve error data with pagination within the time range
-List<Document> errorDocuments = traceCollection.aggregate(
-Arrays.asList(
-    Aggregates.match(
-        Filters.and(
-            Filters.gte("statusCode", 400),
-            Filters.lte("statusCode", 599),
-            Filters.gte("createdTime", Date.from(startTime))
+  // Retrieve error data with pagination within the time range
+  List<Document> errorDocuments = traceCollection.aggregate(
+    Arrays.asList(
+        Aggregates.match(
+            Filters.and(
+                Filters.gte("statusCode", 400),
+                Filters.lte("statusCode", 599),
+                Filters.gte("createdTime", Date.from(startTime))
+            )
+        ),
+        Aggregates.sort(Sorts.descending("createdTime")),
+        Aggregates.skip((page - 1) * pageSize),
+        Aggregates.limit(pageSize),
+        Aggregates.project(
+            Projections.exclude("_id", "date", "timestamp")
         )
-    ),
-    Aggregates.sort(Sorts.descending("createdTime")),
-    Aggregates.skip((page - 1) * pageSize),
-    Aggregates.limit(pageSize),
-    Aggregates.project(
-        Projections.exclude("_id", "date", "timestamp")
     )
-)
 ).into(new ArrayList<>());
 
-// Create a response map
-Map<String, Object> response = new HashMap<>();
-response.put("data", errorDocuments);
-response.put("totalCount", errorCount);
+  // Create a response map
+  Map<String, Object> response = new HashMap<>();
+  response.put("data", errorDocuments);
+  response.put("totalCount", errorCount);
 
-return response;
+  return response;
 }
 
 
@@ -679,61 +679,66 @@ return response;
 
 //peak latency in sort order
 public Map<String, Object> getPeakLatencyTraces(int page, int pageSize, int timeAgoMinutes) {
-MongoCollection<Document> traceCollection = mongoClient
-      .getDatabase("OtelTrace")
-      .getCollection("TraceDto");
+  MongoCollection<Document> traceCollection = mongoClient
+          .getDatabase("OtelTrace")
+          .getCollection("TraceDto");
 
-// Define the aggregation stage to filter and count peak latency traces within the time range
-Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
-List<Bson> aggregationStages = new ArrayList<>();
-aggregationStages.add(
-      Aggregates.match(
-              Filters.and(
-                      Filters.gte("duration", 100L), // Minimum duration for peak latency (100 milliseconds)
-                      Filters.gte("createdTime", Date.from(startTime)) // Created time within the time range
-              )
-      )
-);
-aggregationStages.add(
-      Aggregates.count("peakLatencyCount")
-);
+  // Define the aggregation stage to filter and count peak latency traces within the time range
+  Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+  List<Bson> aggregationStages = new ArrayList<>();
+  aggregationStages.add(
+          Aggregates.match(
+                  Filters.and(
+                          Filters.gte("duration", 100L), // Minimum duration for peak latency (100 milliseconds)
+                          Filters.gte("createdTime", Date.from(startTime)) // Created time within the time range
+                  )
+          )
+  );
+  aggregationStages.add(
+          Aggregates.count("peakLatencyCount")
+  );
 
-// Execute the aggregation pipeline to get the peak latency count
-AggregateIterable<Document> countResult = traceCollection.aggregate(aggregationStages);
+  // Execute the aggregation pipeline to get the peak latency count
+  AggregateIterable<Document> countResult = traceCollection.aggregate(aggregationStages);
 
-// Extract the peak latency count
-Long peakLatencyCount = 0L;
-for (Document doc : countResult) {
-  Object peakLatencyCountObj = doc.get("peakLatencyCount");
-  if (peakLatencyCountObj instanceof Number) {
-      peakLatencyCount = ((Number) peakLatencyCountObj).longValue();
-      break; // Stop iterating after finding the count
+  // Extract the peak latency count
+  Long peakLatencyCount = 0L;
+  for (Document doc : countResult) {
+      Object peakLatencyCountObj = doc.get("peakLatencyCount");
+      if (peakLatencyCountObj instanceof Number) {
+          peakLatencyCount = ((Number) peakLatencyCountObj).longValue();
+          break; // Stop iterating after finding the count
+      }
   }
+
+  // Retrieve peak latency data with pagination within the time range
+  List<Document> peakLatencyDocuments = traceCollection.aggregate(
+          Arrays.asList(
+                  Aggregates.match(
+                          Filters.and(
+                                  Filters.gte("duration", 100L), // Minimum duration for peak latency (100 milliseconds)
+                                  Filters.gte("createdTime", Date.from(startTime)) // Created time within the time range
+                          )
+                  ),
+                  Aggregates.sort(Sorts.descending("createdTime")),
+                  Aggregates.skip((page - 1) * pageSize),
+                  Aggregates.limit(pageSize),
+                  Aggregates.project(
+                          Projections.exclude("_id", "date", "timestamp")
+                  )
+          )
+  ).into(new ArrayList<>());
+
+  // Create a response map
+  Map<String, Object> response = new HashMap<>();
+  response.put("data", peakLatencyDocuments);
+  response.put("totalCount", peakLatencyCount);
+
+  return response;
 }
 
-// Retrieve peak latency data with pagination within the time range
-List<Document> peakLatencyDocuments = traceCollection.aggregate(
-      Arrays.asList(
-              Aggregates.match(
-                      Filters.and(
-                              Filters.gte("duration", 100L), // Minimum duration for peak latency (100 milliseconds)
-                              Filters.gte("createdTime", Date.from(startTime)) // Created time within the time range
-                      )
-              ),
-              Aggregates.sort(Sorts.descending("createdTime")),
-              Aggregates.skip((page - 1) * pageSize),
-              Aggregates.limit(pageSize),
-              Aggregates.project(
-                      Projections.exclude("_id", "date", "timestamp")
-              )
-      )
-).into(new ArrayList<>());
 
-// Create a response map
-Map<String, Object> response = new HashMap<>();
-response.put("data", peakLatencyDocuments);
-response.put("totalCount", peakLatencyCount);
 
-return response;
-}
+
+
 }
