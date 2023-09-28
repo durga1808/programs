@@ -567,106 +567,173 @@ public List<TraceMetrics> getTraceMetricCount(
 
 
 //method for filtering page and page size, time and sortorder list out the data
+   //method for filtering page and page size, time and sortorder list out the data
    public List<TraceDTO> getPaginatedTraces(int page, int pageSize, int timeAgoMinutes) {
-        Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
-        List<TraceDTO> traces = traceQueryRepo.find("createdTime >= ?1", startTime)
-                .page(Page.of(page - 1, pageSize))
-                .list();
-
-        return traces;
-    }
-
-    //time method for sortorder pagination
-    public long getTraceCountInMinutes(int timeAgoMinutes) {
-        Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
-        return traceQueryRepo.find("createdTime >= ?1", startTime).count();
-    }
-
-    //newest data listout based on time 
-    public List<TraceDTO> getNewestTraces(int page, int pageSize, int timeAgoMinutes) {
-      Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
-
-      // Create a PanacheQuery to find traces with createdTime >= startTime
-      PanacheQuery<TraceDTO> query = TraceDTO.find("createdTime >= ?1", startTime);
-
-      // Manually sort the query by createdTime in descending order
-      List<TraceDTO> sortedTraces = query.page(Page.of(page - 1, pageSize)).list();
-      sortedTraces.sort((trace1, trace2) -> trace2.getCreatedTime().compareTo(trace1.getCreatedTime()));
-
-      return sortedTraces;
-  }
-
-  //oldest data listout based on time 
-  public List<TraceDTO> getOldestTraces(int page, int pageSize, int timeAgoMinutes) {
     Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+    List<TraceDTO> traces = traceQueryRepo.find("createdTime >= ?1", startTime)
+            .page(Page.of(page - 1, pageSize))
+            .list();
 
-    PanacheQuery<TraceDTO> query = TraceDTO.find("createdTime >= ?1", startTime);
+    return traces;
+}
 
-    List<TraceDTO> sortedTraces = query.page(Page.of(page - 1, pageSize)).list();
-    sortedTraces.sort((trace1, trace2) -> trace1.getCreatedTime().compareTo(trace2.getCreatedTime()));
+//time method for sortorder pagination
+public long getTraceCountInMinutes(int timeAgoMinutes) {
+    Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+    return traceQueryRepo.find("createdTime >= ?1", startTime).count();
+}
 
-    return sortedTraces;
+//newest data listout based on time 
+public List<TraceDTO> getNewestTraces(int page, int pageSize, int timeAgoMinutes) {
+  Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+
+  // Create a PanacheQuery to find traces with createdTime >= startTime
+  PanacheQuery<TraceDTO> query = TraceDTO.find("createdTime >= ?1", startTime);
+
+  // Manually sort the query by createdTime in descending order
+  List<TraceDTO> sortedTraces = query.page(Page.of(page - 1, pageSize)).list();
+  sortedTraces.sort((trace1, trace2) -> trace2.getCreatedTime().compareTo(trace1.getCreatedTime()));
+
+  return sortedTraces;
+}
+
+//oldest data listout based on time 
+public List<TraceDTO> getOldestTraces(int page, int pageSize, int timeAgoMinutes) {
+Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+
+PanacheQuery<TraceDTO> query = TraceDTO.find("createdTime >= ?1", startTime);
+
+List<TraceDTO> sortedTraces = query.page(Page.of(page - 1, pageSize)).list();
+sortedTraces.sort((trace1, trace2) -> trace1.getCreatedTime().compareTo(trace2.getCreatedTime()));
+
+return sortedTraces;
 }
 
 
 
 //error data listout in sorted order
 public Map<String, Object> getErrorTracesWithCount(int page, int pageSize, int timeAgoMinutes) {
-    MongoCollection<Document> traceCollection = mongoClient
-            .getDatabase("OtelTrace")
-            .getCollection("TraceDto");
+MongoCollection<Document> traceCollection = mongoClient
+      .getDatabase("OtelTrace")
+      .getCollection("TraceDto");
 
-    // Define the aggregation stage to filter and count errors
-    List<Bson> aggregationStages = new ArrayList<>();
-    aggregationStages.add(
-            Aggregates.match(
-                    Filters.and(
-                            Filters.gte("statusCode", 400),
-                            Filters.lte("statusCode", 599) 
-                    )
-            )
-    );
-    aggregationStages.add(
-            Aggregates.count("errorCount")
-    );
+// Define the aggregation stage to filter and count errors within the time range
+Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+List<Bson> aggregationStages = new ArrayList<>();
+aggregationStages.add(
+      Aggregates.match(
+              Filters.and(
+                      Filters.gte("statusCode", 400), // Minimum HTTP status code for errors
+                      Filters.lte("statusCode", 599), // Maximum HTTP status code for errors
+                      Filters.gte("createdTime", Date.from(startTime)) // Created time within the time range
+              )
+      )
+);
+aggregationStages.add(
+      Aggregates.count("errorCount")
+);
 
-    // Execute the aggregation pipeline
-    AggregateIterable<Document> result = traceCollection.aggregate(aggregationStages);
+// Execute the aggregation pipeline
+AggregateIterable<Document> result = traceCollection.aggregate(aggregationStages);
 
-    // Extract the error count
-    Long errorCount = 0L;
-    for (Document doc : result) {
-        Object errorCountObj = doc.get("errorCount");
-        if (errorCountObj instanceof Number) {
-            errorCount = ((Number) errorCountObj).longValue();
-            break; // Stop iterating after finding the count
-        }
-    }
+// Extract the error count
+Long errorCount = 0L;
+for (Document doc : result) {
+  Object errorCountObj = doc.get("errorCount");
+  if (errorCountObj instanceof Number) {
+      errorCount = ((Number) errorCountObj).longValue();
+      break; // Stop iterating after finding the count
+  }
+}
 
-    // Retrieve error data with pagination
-    List<Document> errorDocuments = traceCollection.aggregate(
-            Arrays.asList(
-                    Aggregates.match(
-                            Filters.and(
-                                    Filters.gte("statusCode", 400), // Minimum HTTP status code for errors
-                                    Filters.lte("statusCode", 599), // Maximum HTTP status code for errors
-                                    Filters.gte("createdTime", Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES)) // Filter by time
-                            )
-                    ),
-                    Aggregates.sort(Sorts.descending("createdTime")), // Sort by createdTime in descending order
-                    Aggregates.skip((page - 1) * pageSize), // Skip records for pagination
-                    Aggregates.limit(pageSize) // Limit the number of records per page
-            )
-    ).into(new ArrayList<>());
+// Retrieve error data with pagination within the time range
+List<Document> errorDocuments = traceCollection.aggregate(
+Arrays.asList(
+    Aggregates.match(
+        Filters.and(
+            Filters.gte("statusCode", 400),
+            Filters.lte("statusCode", 599),
+            Filters.gte("createdTime", Date.from(startTime))
+        )
+    ),
+    Aggregates.sort(Sorts.descending("createdTime")),
+    Aggregates.skip((page - 1) * pageSize),
+    Aggregates.limit(pageSize),
+    Aggregates.project(
+        Projections.exclude("_id", "date", "timestamp")
+    )
+)
+).into(new ArrayList<>());
 
-    // Create a response map
-    Map<String, Object> response = new HashMap<>();
-    response.put("data", errorDocuments);
-    response.put("totalCount", errorCount);
+// Create a response map
+Map<String, Object> response = new HashMap<>();
+response.put("data", errorDocuments);
+response.put("totalCount", errorCount);
 
-    return response;
+return response;
 }
 
 
 
+
+
+//peak latency in sort order
+public Map<String, Object> getPeakLatencyTraces(int page, int pageSize, int timeAgoMinutes) {
+MongoCollection<Document> traceCollection = mongoClient
+      .getDatabase("OtelTrace")
+      .getCollection("TraceDto");
+
+// Define the aggregation stage to filter and count peak latency traces within the time range
+Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+List<Bson> aggregationStages = new ArrayList<>();
+aggregationStages.add(
+      Aggregates.match(
+              Filters.and(
+                      Filters.gte("duration", 100L), // Minimum duration for peak latency (100 milliseconds)
+                      Filters.gte("createdTime", Date.from(startTime)) // Created time within the time range
+              )
+      )
+);
+aggregationStages.add(
+      Aggregates.count("peakLatencyCount")
+);
+
+// Execute the aggregation pipeline to get the peak latency count
+AggregateIterable<Document> countResult = traceCollection.aggregate(aggregationStages);
+
+// Extract the peak latency count
+Long peakLatencyCount = 0L;
+for (Document doc : countResult) {
+  Object peakLatencyCountObj = doc.get("peakLatencyCount");
+  if (peakLatencyCountObj instanceof Number) {
+      peakLatencyCount = ((Number) peakLatencyCountObj).longValue();
+      break; // Stop iterating after finding the count
+  }
+}
+
+// Retrieve peak latency data with pagination within the time range
+List<Document> peakLatencyDocuments = traceCollection.aggregate(
+      Arrays.asList(
+              Aggregates.match(
+                      Filters.and(
+                              Filters.gte("duration", 100L), // Minimum duration for peak latency (100 milliseconds)
+                              Filters.gte("createdTime", Date.from(startTime)) // Created time within the time range
+                      )
+              ),
+              Aggregates.sort(Sorts.descending("createdTime")),
+              Aggregates.skip((page - 1) * pageSize),
+              Aggregates.limit(pageSize),
+              Aggregates.project(
+                      Projections.exclude("_id", "date", "timestamp")
+              )
+      )
+).into(new ArrayList<>());
+
+// Create a response map
+Map<String, Object> response = new HashMap<>();
+response.put("data", peakLatencyDocuments);
+response.put("totalCount", peakLatencyCount);
+
+return response;
+}
 }
