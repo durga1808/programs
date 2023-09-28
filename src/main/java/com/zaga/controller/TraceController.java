@@ -165,45 +165,57 @@ public Response queryTraces(
 
 
 
-
   @GET
-@Path("/getalldata-paginated-in-minute")
-@Produces(MediaType.APPLICATION_JSON)
-public Response getPaginatedTraces(
-    @QueryParam("page") int page,
-    @QueryParam("pageSize") int pageSize,
-    @QueryParam("timeAgoMinutes") int timeAgoMinutes,
-    @QueryParam("sortOrder") String sortOrder // Add a new query parameter for sorting
-) throws JsonProcessingException {
-    List<TraceDTO> traces;
-    long totalCount = 0L; // Initialize total count to 0
-
-    if ("new".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.getNewestTraces(page, pageSize, timeAgoMinutes);
-        totalCount = traceQueryHandler.getTraceCountInMinutes(timeAgoMinutes);
-    } else if ("old".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.getOldestTraces(page, pageSize, timeAgoMinutes);
-        totalCount = traceQueryHandler.getTraceCountInMinutes(timeAgoMinutes);
-    } else if ("error".equalsIgnoreCase(sortOrder)) {
-        // Retrieve error traces and count using the new method
-        Map<String, Object> errorData = traceQueryHandler.getErrorTracesWithCount(page, pageSize, timeAgoMinutes);
-        traces = (List<TraceDTO>) errorData.get("data");
-        totalCount = (long) errorData.get("totalCount");
-    } else {
-        // Default to the existing method for paginated traces
-        traces = traceQueryHandler.getPaginatedTraces(page, pageSize, timeAgoMinutes);
-        totalCount = traceQueryHandler.getTraceCountInMinutes(timeAgoMinutes);
+  @Path("/getalldata-paginated-in-minute")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getPaginatedTraces(
+      @QueryParam("page") int page,
+      @QueryParam("pageSize") int pageSize,
+      @QueryParam("timeAgoMinutes") int timeAgoMinutes,
+      @QueryParam("sortOrder") String sortOrder // Add a new query parameter for sorting
+  ) throws JsonProcessingException {
+      List<TraceDTO> traces;
+      long totalCount = 0L; // Initialize total count to 0
+  
+      if ("error".equalsIgnoreCase(sortOrder)) {
+          // Retrieve error traces and count using the new method
+          Map<String, Object> errorData = traceQueryHandler.getErrorTracesWithCount(page, pageSize, timeAgoMinutes);
+          traces = (List<TraceDTO>) errorData.get("data");
+          totalCount = (long) errorData.get("totalCount");
+      }
+      else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
+        // Retrieve peak latency traces and count using the new method
+        Map<String, Object> peakLatencyData = traceQueryHandler.getPeakLatencyTraces(page, pageSize, timeAgoMinutes);
+        traces = (List<TraceDTO>) peakLatencyData.get("data");
+        totalCount = (long) peakLatencyData.get("totalCount");
     }
+       else {
+          // For other sort orders, use the existing methods
+          if ("new".equalsIgnoreCase(sortOrder)) {
+              traces = traceQueryHandler.getNewestTraces(page, pageSize, timeAgoMinutes);
+          } else if ("old".equalsIgnoreCase(sortOrder)) {
+              traces = traceQueryHandler.getOldestTraces(page, pageSize, timeAgoMinutes);
+          } else {
+              // Default to the existing method for paginated traces
+              traces = traceQueryHandler.getPaginatedTraces(page, pageSize, timeAgoMinutes);
+          }
+  
+          // Get the total count for non-error data
+          totalCount = traceQueryHandler.getTraceCountInMinutes(timeAgoMinutes);
+      }
+  
+      Map<String, Object> response = new HashMap<>();
+      response.put("data", traces);
+      response.put("totalCount", totalCount);
+  
+      ObjectMapper objectMapper = new ObjectMapper();
+      String responseJson = objectMapper.writeValueAsString(response);
+  
+      return Response.ok(responseJson).build();
+  }
+  
+  
 
-    Map<String, Object> response = new HashMap<>();
-    response.put("data", traces);
-    response.put("totalCount", totalCount);
-
-    ObjectMapper objectMapper = new ObjectMapper();
-    String responseJson = objectMapper.writeValueAsString(response);
-
-    return Response.ok(responseJson).build();
-}
-
+  
   
 }

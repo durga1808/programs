@@ -13,6 +13,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class TraceQueryRepo implements PanacheMongoRepository<TraceDTO> {
     
    public List<TraceDTO> findRecentDataPaged(String serviceName, int page, int pageSize) {
+
+        
         PanacheQuery<TraceDTO> query = find("serviceName = ?1 order by createdTime desc", serviceName);
         query.page(page, pageSize); // Apply paging
 
