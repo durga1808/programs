@@ -340,19 +340,15 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
   ) {
     List<TraceDTO> traceList = traceQueryRepo.listAll();
     traceList = mergeAndSortTraceDTOs(traceList);
-
-    // Filter by serviceName and statusCode
     traceList =
       filterByServiceNameAndStatusCode(traceList, serviceName, statusCode);
 
     int startIndex = (page - 1) * pageSize;
     int endIndex = Math.min(startIndex + pageSize, traceList.size());
-
-    // System.out.println(
-    //     "traceList of pagination: " + traceList.subList(startIndex, endIndex)
-    // );
     return traceList.subList(startIndex, endIndex);
   }
+
+
 
   // Create a method to filter TraceDTOs by serviceName and statusCode
   private List<TraceDTO> filterByServiceNameAndStatusCode(
@@ -380,6 +376,7 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
     return filteredTraceList;
   }
 
+
   // appicalll counts calculations
   public Map<String, Long> getTraceCountWithinHour() {
     List<TraceDTO> traceList = TraceDTO.listAll();
@@ -397,6 +394,8 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
     return serviceNameCounts;
   }
 
+
+  
 public List<TraceMetrics> getTraceMetricCount(
     int timeAgoMinutes
 ) {
