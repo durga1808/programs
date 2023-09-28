@@ -171,95 +171,8 @@ private void sortSpans(TraceDTO trace) {
     return mergedTrace;
   }
 
-  // getTrace by multiple queries like serviceName, method, duration and statuscode from TraceDTO entity
-  public List<TraceDTO> searchTraces(TraceQuery query) {
-    List<Bson> filters = new ArrayList<>();
 
-    if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
-      Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
-      filters.add(methodNameFilter);
-    }
-
-    if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
-      Bson serviceNameFilter = Filters.in(
-        "serviceName",
-        query.getServiceName()
-      );
-      filters.add(serviceNameFilter);
-    }
-
-    if (query.getDuration() != null) {
-      Bson durationFilter = Filters.and(
-        Filters.gte("duration", query.getDuration().getMin()),
-        Filters.lte("duration", query.getDuration().getMax())
-      );
-      filters.add(durationFilter);
-    }
-
-    List<Bson> statusCodeFilters = new ArrayList<>();
-    if (query.getStatusCode() != null && !query.getStatusCode().isEmpty()) {
-      for (StatusCodeRange statusCodeRange : query.getStatusCode()) {
-        statusCodeFilters.add(
-          Filters.and(
-            Filters.gte("statusCode", statusCodeRange.getMin()),
-            Filters.lte("statusCode", statusCodeRange.getMax())
-          )
-        );
-      }
-    }
-
-    if (!statusCodeFilters.isEmpty()) {
-      Bson statusCodeFilter = Filters.or(statusCodeFilters);
-      filters.add(statusCodeFilter);
-    }
-
-    Bson filter = Filters.and(filters);
-
-    MongoCollection<Document> collection = mongoClient
-      .getDatabase("OtelTrace")
-      .getCollection("TraceDto");
-
-    Bson projection = Projections.excludeId();
-
-    FindIterable<Document> result = collection
-      .find(filter)
-      .projection(projection);
-
-    List<TraceDTO> traceDTOList = new ArrayList<>();
-    try (MongoCursor<Document> cursor = result.iterator()) {
-      while (cursor.hasNext()) {
-        Document document = cursor.next();
-        TraceDTO traceDTO = new TraceDTO();
-
-        traceDTO.setTraceId(document.getString("traceId"));
-        traceDTO.setServiceName(document.getString("serviceName"));
-        Object durationObject = document.get("duration");
-        if (durationObject instanceof Integer) {
-          traceDTO.setDuration(((Integer) durationObject).longValue());
-        } else if (durationObject instanceof Long) {
-          traceDTO.setDuration((Long) durationObject);
-        }
-
-        // Handle casting for statusCode field
-        Object statusCodeObject = document.get("statusCode");
-        if (statusCodeObject instanceof Integer) {
-          traceDTO.setStatusCode(((Integer) statusCodeObject).longValue());
-        } else if (statusCodeObject instanceof Long) {
-          traceDTO.setStatusCode((Long) statusCodeObject);
-        }
-        traceDTO.setMethodName(document.getString("methodName"));
-        traceDTO.setOperationName(document.getString("operationName"));
-        traceDTO.setSpanCount(document.getString("spanCount"));
-        traceDTO.setCreatedTime(document.getDate("createdTime"));
-        traceDTO.setSpans((List<Spans>) document.get("spans"));
-
-        traceDTOList.add(traceDTO);
-      }
-    }
-
-    return traceDTOList;
-  }
-
+  
   // Create a method to merge and sort TraceDTOs
   private List<TraceDTO> mergeAndSortTraceDTOs(List<TraceDTO> traceList) {
     // Merge records with the same traceId
@@ -287,6 +200,120 @@ private void sortSpans(TraceDTO trace) {
     return mergedTraceDTOs;
   }
 
+private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, int limit, int minutesAgo) {
+    List<Bson> filters = new ArrayList<>();
+
+    if (minutesAgo > 0) {
+      long currentTimeInMillis = System.currentTimeMillis();
+      long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000); 
+      Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
+      filters.add(timeFilter);
+  }
+
+    if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
+        Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
+        filters.add(methodNameFilter);
+    }
+
+    if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
+        Bson serviceNameFilter = Filters.in("serviceName", query.getServiceName());
+        filters.add(serviceNameFilter);
+    }
+
+    if (query.getDuration() != null) {
+        Bson durationFilter = Filters.and(
+                Filters.gte("duration", query.getDuration().getMin()),
+                Filters.lte("duration", query.getDuration().getMax())
+        );
+        filters.add(durationFilter);
+    }
+
+    List<Bson> statusCodeFilters = new ArrayList<>();
+    if (query.getStatusCode() != null && !query.getStatusCode().isEmpty()) {
+        for (StatusCodeRange statusCodeRange : query.getStatusCode()) {
+            statusCodeFilters.add(
+                    Filters.and(
+                            Filters.gte("statusCode", statusCodeRange.getMin()),
+                            Filters.lte("statusCode", statusCodeRange.getMax())
+                    )
+            );
+        }
+    }
+
+    if (!statusCodeFilters.isEmpty()) {
+        Bson statusCodeFilter = Filters.or(statusCodeFilters);
+        filters.add(statusCodeFilter);
+    }
+
+    Bson filter = Filters.and(filters);
+
+    MongoCollection<Document> collection = mongoClient
+            .getDatabase("OtelTrace")
+            .getCollection("TraceDto");
+
+    Bson projection = Projections.excludeId();
+
+    return collection
+            .find(filter)
+            .projection(projection)
+            .skip(skip)
+            .limit(limit);
+}
+
+
+  // getTrace by multiple queries like serviceName, method, duration and statuscode from TraceDTO entity
+  public List<TraceDTO> searchTracesPaged(TraceQuery query, int page, int pageSize, int minutesAgo) {
+    int skip = (page - 1) * pageSize;
+    int limit = pageSize;
+
+    FindIterable<Document> result = getFilteredResults(query, skip, limit, minutesAgo);
+
+    List<TraceDTO> traceDTOList = new ArrayList<>();
+    try (MongoCursor<Document> cursor = result.iterator()) {
+        while (cursor.hasNext()) {
+            Document document = cursor.next();
+            TraceDTO traceDTO = new TraceDTO();
+
+            traceDTO.setTraceId(document.getString("traceId"));
+            traceDTO.setServiceName(document.getString("serviceName"));
+            Object durationObject = document.get("duration");
+            if (durationObject instanceof Integer) {
+                traceDTO.setDuration(((Integer) durationObject).longValue());
+            } else if (durationObject instanceof Long) {
+                traceDTO.setDuration((Long) durationObject);
+            }
+
+            // Handle casting for statusCode field
+            Object statusCodeObject = document.get("statusCode");
+            if (statusCodeObject instanceof Integer) {
+                traceDTO.setStatusCode(((Integer) statusCodeObject).longValue());
+            } else if (statusCodeObject instanceof Long) {
+                traceDTO.setStatusCode((Long) statusCodeObject);
+            }
+            traceDTO.setMethodName(document.getString("methodName"));
+            traceDTO.setOperationName(document.getString("operationName"));
+            traceDTO.setSpanCount(document.getString("spanCount"));
+            traceDTO.setCreatedTime(document.getDate("createdTime"));
+            traceDTO.setSpans((List<Spans>) document.get("spans"));
+
+            traceDTOList.add(traceDTO);
+        }
+    }
+
+    return traceDTOList;
+}
+
+public long countQueryTraces(TraceQuery query, int minutesAgo) {
+  FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, minutesAgo);
+  long totalCount = result.into(new ArrayList<>()).size(); 
+
+  return totalCount;
+}
+
+
+
+
+
   // pagination data with merge and sorting implementations
   public List<TraceDTO> findRecentDataPaged(int page, int pageSize) {
     List<TraceDTO> traceList = traceQueryRepo.listAll();
@@ -305,6 +332,9 @@ private void sortSpans(TraceDTO trace) {
     return traceQueryRepo.count();
   }
 
+
+
+
   // pagination data for trace summary page based on serviceName and statusCode
   public List<TraceDTO> findByServiceNameAndStatusCode(
     int page,
@@ -314,19 +344,15 @@ private void sortSpans(TraceDTO trace) {
   ) {
     List<TraceDTO> traceList = traceQueryRepo.listAll();
     traceList = mergeAndSortTraceDTOs(traceList);
-
-    // Filter by serviceName and statusCode
     traceList =
       filterByServiceNameAndStatusCode(traceList, serviceName, statusCode);
 
     int startIndex = (page - 1) * pageSize;
     int endIndex = Math.min(startIndex + pageSize, traceList.size());
-
-    // System.out.println(
-    //     "traceList of pagination: " + traceList.subList(startIndex, endIndex)
-    // );
     return traceList.subList(startIndex, endIndex);
   }
+
+
 
   // Create a method to filter TraceDTOs by serviceName and statusCode
   private List<TraceDTO> filterByServiceNameAndStatusCode(
@@ -354,6 +380,7 @@ private void sortSpans(TraceDTO trace) {
     return filteredTraceList;
   }
 
+
   // appicalll counts calculations
   public Map<String, Long> getTraceCountWithinHour() {
     List<TraceDTO> traceList = TraceDTO.listAll();
@@ -371,7 +398,9 @@ private void sortSpans(TraceDTO trace) {
     return serviceNameCounts;
   }
 
-public List<TraceMetrics> getTraceMetricsForServiceNameInMinutes(
+
+  
+public List<TraceMetrics> getTraceMetricCount(
     int timeAgoMinutes
 ) {
     List<TraceDTO> traceList = TraceDTO.listAll();

@@ -55,30 +55,44 @@ public class TraceController {
   }
 
   @POST
-  @Path("/TraceQueryFilter")
-  public Response queryTraces(TraceQuery traceQuery) {
+@Path("/TraceQueryFilter")
+public Response queryTraces(
+    TraceQuery traceQuery,
+    @QueryParam("page") @DefaultValue("1") int page,
+    @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+    @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo) {
     try {
-      List<TraceDTO> traceList = traceQueryHandler.searchTraces(traceQuery);
+        int offset = (page - 1) * pageSize;
 
-      ObjectMapper objectMapper = new ObjectMapper();
-      String responseJson = objectMapper.writeValueAsString(traceList);
+        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery, offset, pageSize, minutesAgo);
 
-      return Response.ok(responseJson).build();
+        long totalCount = traceQueryHandler.countQueryTraces(traceQuery,minutesAgo);
+
+        Map<String, Object> jsonResponse = new HashMap<>();
+        jsonResponse.put("totalCount", totalCount);
+        jsonResponse.put("data", traceList);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(jsonResponse);
+
+        return Response.ok(responseJson).build();
     } catch (Exception e) {
-      e.printStackTrace();
+        e.printStackTrace();
 
-      return Response
-          .status(Response.Status.INTERNAL_SERVER_ERROR)
-          .entity("An error occurred: " + e.getMessage())
-          .build();
+        return Response
+            .status(Response.Status.INTERNAL_SERVER_ERROR)
+            .entity("An error occurred: " + e.getMessage())
+            .build();
     }
-  }
+}
+
+
 
   @GET
   @Path("/getAllDataByPagination")
   public Response findRecentData(
-      @QueryParam("page") int page,
-      @QueryParam("pageSize") int pageSize) {
+      @QueryParam("page") @DefaultValue("1") int page,
+      @QueryParam("pageSize") @DefaultValue("10") int pageSize) {
     try {
       long totalCount = traceQueryHandler.countData();
       // long totalPages = (long) Math.ceil((double) totalCount / pageSize);
@@ -102,6 +116,8 @@ public class TraceController {
     }
   }
 
+
+
   @GET
   @Path("/getAllDataByServiceNameAndStatusCode")
   public Response findRecentDataPaged(
@@ -112,7 +128,6 @@ public class TraceController {
 
     try {
       long totalCount = traceQueryHandler.countData();
-      // Call your service method to retrieve the data
       List<TraceDTO> traceList = traceQueryHandler.findByServiceNameAndStatusCode(page, pageSize, serviceName,
           statusCode);
 
@@ -142,10 +157,10 @@ public class TraceController {
   }
 
   @GET
-  @Path("/countbyparam")
+  @Path("/TraceSumaryChartDataCount")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<TraceMetrics> getTraceMetricsForServiceNameInMinutes(@QueryParam("timeAgoMinutes") int timeAgoMinutes) {
-    return traceQueryHandler.getTraceMetricsForServiceNameInMinutes(timeAgoMinutes);
+  public List<TraceMetrics> getTraceMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes) {
+    return traceQueryHandler.getTraceMetricCount(timeAgoMinutes);
   }
 
 
