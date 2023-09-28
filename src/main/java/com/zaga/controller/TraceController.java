@@ -17,6 +17,8 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -146,15 +148,37 @@ public class TraceController {
     return traceQueryHandler.getTraceMetricsForServiceNameInMinutes(timeAgoMinutes);
   }
 
+
+
+
   @GET
-  @Path("/getalldata-paginated-in-minute")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response getPaginatedTraces(
-      @QueryParam("page") int page,
-      @QueryParam("pageSize") int pageSize,
-      @QueryParam("timeAgoMinutes") int timeAgoMinutes) throws JsonProcessingException {
-    List<TraceDTO> traces = traceQueryHandler.getPaginatedTraces(page, pageSize, timeAgoMinutes);
-    long totalCount = traceQueryHandler.getTraceCountInMinutes(timeAgoMinutes);
+@Path("/getalldata-paginated-in-minute")
+@Produces(MediaType.APPLICATION_JSON)
+public Response getPaginatedTraces(
+    @QueryParam("page") int page,
+    @QueryParam("pageSize") int pageSize,
+    @QueryParam("timeAgoMinutes") int timeAgoMinutes,
+    @QueryParam("sortOrder") String sortOrder // Add a new query parameter for sorting
+) throws JsonProcessingException {
+    List<TraceDTO> traces;
+    long totalCount = 0L; // Initialize total count to 0
+
+    if ("new".equalsIgnoreCase(sortOrder)) {
+        traces = traceQueryHandler.getNewestTraces(page, pageSize, timeAgoMinutes);
+        totalCount = traceQueryHandler.getTraceCountInMinutes(timeAgoMinutes);
+    } else if ("old".equalsIgnoreCase(sortOrder)) {
+        traces = traceQueryHandler.getOldestTraces(page, pageSize, timeAgoMinutes);
+        totalCount = traceQueryHandler.getTraceCountInMinutes(timeAgoMinutes);
+    } else if ("error".equalsIgnoreCase(sortOrder)) {
+        // Retrieve error traces and count using the new method
+        Map<String, Object> errorData = traceQueryHandler.getErrorTracesWithCount(page, pageSize, timeAgoMinutes);
+        traces = (List<TraceDTO>) errorData.get("data");
+        totalCount = (long) errorData.get("totalCount");
+    } else {
+        // Default to the existing method for paginated traces
+        traces = traceQueryHandler.getPaginatedTraces(page, pageSize, timeAgoMinutes);
+        totalCount = traceQueryHandler.getTraceCountInMinutes(timeAgoMinutes);
+    }
 
     Map<String, Object> response = new HashMap<>();
     response.put("data", traces);
@@ -164,5 +188,7 @@ public class TraceController {
     String responseJson = objectMapper.writeValueAsString(response);
 
     return Response.ok(responseJson).build();
-  }
+}
+
+  
 }

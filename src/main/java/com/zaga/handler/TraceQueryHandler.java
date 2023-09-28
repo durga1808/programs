@@ -9,6 +9,7 @@ import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Sorts;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
@@ -16,6 +17,8 @@ import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.repo.TraceQueryRepo;
 
+import io.quarkus.mongodb.panache.PanacheQuery;
+import io.quarkus.mongodb.panache.runtime.PanacheQueryImpl;
 import io.quarkus.panache.common.Page;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,6 +26,7 @@ import jakarta.inject.Inject;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -534,7 +538,7 @@ public List<TraceMetrics> getTraceMetricsForServiceNameInMinutes(
   }
 
 
-
+//method for filtering page and page size, time and sortorder list out the data
    public List<TraceDTO> getPaginatedTraces(int page, int pageSize, int timeAgoMinutes) {
         Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
         List<TraceDTO> traces = traceQueryRepo.find("createdTime >= ?1", startTime)
@@ -544,8 +548,97 @@ public List<TraceMetrics> getTraceMetricsForServiceNameInMinutes(
         return traces;
     }
 
+    //time method for sortorder pagination
     public long getTraceCountInMinutes(int timeAgoMinutes) {
+        Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+        return traceQueryRepo.find("createdTime >= ?1", startTime).count();
+    }
+
+    //newest data listout based on time 
+    public List<TraceDTO> getNewestTraces(int page, int pageSize, int timeAgoMinutes) {
       Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
-      return traceQueryRepo.find("createdTime >= ?1", startTime).count();
+
+      // Create a PanacheQuery to find traces with createdTime >= startTime
+      PanacheQuery<TraceDTO> query = TraceDTO.find("createdTime >= ?1", startTime);
+
+      // Manually sort the query by createdTime in descending order
+      List<TraceDTO> sortedTraces = query.page(Page.of(page - 1, pageSize)).list();
+      sortedTraces.sort((trace1, trace2) -> trace2.getCreatedTime().compareTo(trace1.getCreatedTime()));
+
+      return sortedTraces;
   }
+
+  //oldest data listout based on time 
+  public List<TraceDTO> getOldestTraces(int page, int pageSize, int timeAgoMinutes) {
+    Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+
+    PanacheQuery<TraceDTO> query = TraceDTO.find("createdTime >= ?1", startTime);
+
+    List<TraceDTO> sortedTraces = query.page(Page.of(page - 1, pageSize)).list();
+    sortedTraces.sort((trace1, trace2) -> trace1.getCreatedTime().compareTo(trace2.getCreatedTime()));
+
+    return sortedTraces;
+}
+
+
+
+//error data listout in sorted order
+public Map<String, Object> getErrorTracesWithCount(int page, int pageSize, int timeAgoMinutes) {
+    MongoCollection<Document> traceCollection = mongoClient
+            .getDatabase("OtelTrace")
+            .getCollection("TraceDto");
+
+    // Define the aggregation stage to filter and count errors
+    List<Bson> aggregationStages = new ArrayList<>();
+    aggregationStages.add(
+            Aggregates.match(
+                    Filters.and(
+                            Filters.gte("statusCode", 400), // Minimum HTTP status code for errors
+                            Filters.lte("statusCode", 599) // Maximum HTTP status code for errors
+                    )
+            )
+    );
+    aggregationStages.add(
+            Aggregates.count("errorCount")
+    );
+
+    // Execute the aggregation pipeline
+    AggregateIterable<Document> result = traceCollection.aggregate(aggregationStages);
+
+    // Extract the error count
+    Long errorCount = 0L;
+    for (Document doc : result) {
+        Object errorCountObj = doc.get("errorCount");
+        if (errorCountObj instanceof Number) {
+            errorCount = ((Number) errorCountObj).longValue();
+            break; // Stop iterating after finding the count
+        }
+    }
+
+    // Retrieve error data with pagination
+    List<Document> errorDocuments = traceCollection.aggregate(
+            Arrays.asList(
+                    Aggregates.match(
+                            Filters.and(
+                                    Filters.gte("statusCode", 400), // Minimum HTTP status code for errors
+                                    Filters.lte("statusCode", 599), // Maximum HTTP status code for errors
+                                    Filters.gte("createdTime", Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES)) // Filter by time
+                            )
+                    ),
+                    Aggregates.sort(Sorts.descending("createdTime")), // Sort by createdTime in descending order
+                    Aggregates.skip((page - 1) * pageSize), // Skip records for pagination
+                    Aggregates.limit(pageSize) // Limit the number of records per page
+            )
+    ).into(new ArrayList<>());
+
+    // Create a response map
+    Map<String, Object> response = new HashMap<>();
+    response.put("data", errorDocuments);
+    response.put("totalCount", errorCount);
+
+    return response;
+}
+
+
+
 }
