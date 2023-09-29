@@ -199,7 +199,7 @@ private void sortSpans(TraceDTO trace) {
     return mergedTraceDTOs;
   }
 
-private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, int limit, int minutesAgo) {
+private FindIterable<Document> getFilteredResults(TraceQuery query,int page, int pageSize, int minutesAgo) {
     List<Bson> filters = new ArrayList<>();
 
     if (minutesAgo > 0) {
@@ -252,20 +252,22 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, in
 
     Bson projection = Projections.excludeId();
 
+                System.out.println("Skip: " + (page - 1) * pageSize);
+System.out.println("Limit: " + pageSize);
+
     return collection
             .find(filter)
             .projection(projection)
-            .skip(skip)
-            .limit(limit);
+            .skip((page - 1) * pageSize)
+            .limit(pageSize);
+
 }
 
 
   // getTrace by multiple queries like serviceName, method, duration and statuscode from TraceDTO entity
   public List<TraceDTO> searchTracesPaged(TraceQuery query, int page, int pageSize, int minutesAgo) {
-    int skip = (page - 0) * pageSize;
-    int limit = pageSize;
-
-    FindIterable<Document> result = getFilteredResults(query, skip, limit, minutesAgo);
+  
+    FindIterable<Document> result = getFilteredResults(query,page,pageSize,minutesAgo);
    
     List<TraceDTO> traceDTOList = new ArrayList<>();
     try (MongoCursor<Document> cursor = result.iterator()) {
@@ -304,6 +306,7 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, in
 
 public long countQueryTraces(TraceQuery query, int minutesAgo) {
   FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, minutesAgo);
+  System.out.println("countQueryTraces"+ result.into(new ArrayList<>()).size());
   long totalCount = result.into(new ArrayList<>()).size(); 
 
   return totalCount;

@@ -19,13 +19,10 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.bson.types.ObjectId;
 
 @Path("/traces")
 @Produces(MediaType.APPLICATION_JSON)
@@ -66,9 +63,8 @@ public Response queryTraces(
     @QueryParam("pageSize") @DefaultValue("10") int pageSize,
     @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo) {
     try {
-        int offset = (page - 1) * pageSize;
 
-        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery,offset, pageSize, minutesAgo);
+        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery,page, pageSize, minutesAgo);
 
         long totalCount = traceQueryHandler.countQueryTraces(traceQuery,minutesAgo);
 
