@@ -19,6 +19,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -168,62 +170,7 @@ public Response queryTraces(
   }
 
 
-
-  @GET
-  @Path("/getalldata-paginated-in-minute")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response getPaginatedTraces(
-      @QueryParam("page") int page,
-      @QueryParam("pageSize") int pageSize,
-      @QueryParam("timeAgoMinutes") int timeAgoMinutes,
-      @QueryParam("sortOrder") String sortOrder // Add a new query parameter for sorting
-  ) throws JsonProcessingException {
-      List<TraceDTO> traces;
-      long totalCount = 0L; // Initialize total count to 0
   
-      if ("error".equalsIgnoreCase(sortOrder)) {
-          // Retrieve error traces and count using the new method
-          Map<String, Object> errorData = traceQueryHandler.getErrorTracesWithCount(page, pageSize, timeAgoMinutes);
-          traces = (List<TraceDTO>) errorData.get("data");
-          totalCount = (long) errorData.get("totalCount");
-      }
-      else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
-        // Retrieve peak latency traces and count using the new method
-        Map<String, Object> peakLatencyData = traceQueryHandler.getPeakLatencyTraces(page, pageSize, timeAgoMinutes);
-        traces = (List<TraceDTO>) peakLatencyData.get("data");
-        totalCount = (long) peakLatencyData.get("totalCount");
-    }
-       else {
-          // For other sort orders, use the existing methods
-          if ("new".equalsIgnoreCase(sortOrder)) {
-              traces = traceQueryHandler.getNewestTraces(page, pageSize, timeAgoMinutes);
-          } else if ("old".equalsIgnoreCase(sortOrder)) {
-              traces = traceQueryHandler.getOldestTraces(page, pageSize, timeAgoMinutes);
-          } else {
-              // Default to the existing method for paginated traces
-              traces = traceQueryHandler.getPaginatedTraces(page, pageSize, timeAgoMinutes);
-          }
-  
-          // Get the total count for non-error data
-          totalCount = traceQueryHandler.getTraceCountInMinutes(timeAgoMinutes);
-      }
-  
-      Map<String, Object> response = new HashMap<>();
-      response.put("data", traces);
-      response.put("totalCount", totalCount);
-  
-      ObjectMapper objectMapper = new ObjectMapper();
-      String responseJson = objectMapper.writeValueAsString(response);
-  
-      return Response.ok(responseJson).build();
-}
-  
-
-
-
-
-
-
 public static List<Spans> sortingParentChildOrder(List<Spans> spanData) {
     // Create a dictionary to map parent spans to their child spans
     Map<String, List<Spans>> spanTree = new HashMap<>();
@@ -322,4 +269,81 @@ public static List<Spans> sortingParentChildOrder(List<Spans> spanData) {
 
   
   
+
+
+
+
+//  @GET
+//   @Path("/getalldata-sortorder")
+//   @Produces(MediaType.APPLICATION_JSON)
+//   public Response sortOrderTrace(@QueryParam("sortOrder") String sortOrder) {
+//     List<TraceDTO> traces;
+
+//     if ("new".equalsIgnoreCase(sortOrder)) {
+//         traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc();
+//     } else if ("old".equalsIgnoreCase(sortOrder)) {
+//         traces = traceQueryHandler.getAllTracesAsc();
+//     }
+//      else if ("error".equalsIgnoreCase(sortOrder)) {
+//         traces = traceQueryHandler.findAllOrderByErrorFirst();
+//     } 
+//     else if("peakLatency".equalsIgnoreCase(sortOrder)){
+//       traces = traceQueryHandler.findAllOrderByDuration();
+//     }
+//     else {
+//         return Response.status(Response.Status.BAD_REQUEST)
+//                        .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error','peakLatency'.")
+//                        .build();
+//     }    
+//     return Response.ok(traces).build();
+// }
+
+
+@GET
+@Path("/getalldata-sortorder")
+@Produces(MediaType.APPLICATION_JSON)
+public Response sortOrderTrace(
+    @QueryParam("sortOrder") String sortOrder,
+    @QueryParam("page") @DefaultValue("1") int page,
+    @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+    @QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes
+) {
+    if (page <= 0 || pageSize <= 0 || timeAgoMinutes < 0) {
+        return Response.status(Response.Status.BAD_REQUEST)
+                       .entity("Invalid pagination parameters.")
+                       .build();
+    }
+
+    List<TraceDTO> traces;
+    long totalCount;
+
+    Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+
+    if ("new".equalsIgnoreCase(sortOrder)) {
+        traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc(page, pageSize, startTime);
+        totalCount = traceQueryHandler.getTraceCountInMinutes(page, pageSize, timeAgoMinutes);
+       } else if ("old".equalsIgnoreCase(sortOrder)) {
+        traces = traceQueryHandler.getAllTracesAsc(page, pageSize, startTime);
+        totalCount = traceQueryHandler.getTraceCountInMinutes(page, pageSize, timeAgoMinutes);
+         } else if ("error".equalsIgnoreCase(sortOrder)) {
+        traces = traceQueryHandler.findAllOrderByErrorFirst(page, pageSize, startTime);
+        totalCount = traceQueryHandler.getTraceCountInMinutes(page, pageSize, timeAgoMinutes);
+       } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
+        traces = traceQueryHandler.findAllOrderByDuration(page, pageSize, startTime);
+        totalCount = traceQueryHandler.getTraceCountInMinutes(page, pageSize, timeAgoMinutes);
+         } else {
+        return Response.status(Response.Status.BAD_REQUEST)
+                       .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error','peakLatency'.")
+                       .build();
+    }
+
+    Map<String, Object> response = new HashMap<>();
+    response.put("data", traces);
+    response.put("totalCount", totalCount);
+
+    return Response.ok(response).build();
 }
+
+
+}
+
