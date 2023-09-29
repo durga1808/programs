@@ -39,7 +39,7 @@ public class TraceController {
   TraceQueryRepo traceQueryRepo;
 
   @GET
-  @Path("/getAllTraceData")
+  @Path("/getTraceData")
   public Response getDetails() {
     try {
       List<TraceDTO> traceList = traceQueryHandler.getTraceProduct();
