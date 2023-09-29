@@ -173,7 +173,6 @@ public Response queryTraces(
 
 
 //get data by traceId and also have same traceId then merge it as a one
-//get data by traceId and also have same traceId then merge it as a one
 @GET
 @Path("/findByTraceId")
 public Response findByTraceId(@QueryParam("traceId") String traceId) {
@@ -258,17 +257,19 @@ public Response findByTraceId(@QueryParam("traceId") String traceId) {
 @GET
 @Path("/getalldata-sortorder")
 @Produces(MediaType.APPLICATION_JSON)
-public Response sortOrderTrace(
-    @QueryParam("sortOrder") String sortOrder,
-    @QueryParam("page") @DefaultValue("1") int page,
-    @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-    @QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes
-) {
+public Response sortOrderTrace(@QueryParam("page") int page,
+                               @QueryParam("pageSize") int pageSize,
+                               @QueryParam("sortOrder") String sortOrder,
+                               @QueryParam("timeAgoMinutes") int timeAgoMinutes) {
+  
     if (page <= 0 || pageSize <= 0 || timeAgoMinutes < 0) {
         return Response.status(Response.Status.BAD_REQUEST)
-                       .entity("Invalid pagination parameters.")
+                       .entity("Invalid page, pageSize, or timeAgoMinutes parameters.")
                        .build();
     }
+                          
+    // Calculate the start index based on the page and pageSize
+    int startIndex = (page - 1) * pageSize;
 
     List<TraceDTO> traces;
     long totalCount;
@@ -278,16 +279,16 @@ public Response sortOrderTrace(
     if ("new".equalsIgnoreCase(sortOrder)) {
         traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc(page, pageSize, startTime);
         totalCount = traceQueryHandler.getTraceCountInMinutes(page, pageSize, timeAgoMinutes);
-       } else if ("old".equalsIgnoreCase(sortOrder)) {
+    } else if ("old".equalsIgnoreCase(sortOrder)) {
         traces = traceQueryHandler.getAllTracesAsc(page, pageSize, startTime);
         totalCount = traceQueryHandler.getTraceCountInMinutes(page, pageSize, timeAgoMinutes);
-         } else if ("error".equalsIgnoreCase(sortOrder)) {
+    } else if ("error".equalsIgnoreCase(sortOrder)) {
         traces = traceQueryHandler.findAllOrderByErrorFirst(page, pageSize, startTime);
         totalCount = traceQueryHandler.getTraceCountInMinutes(page, pageSize, timeAgoMinutes);
-       } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
+    } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
         traces = traceQueryHandler.findAllOrderByDuration(page, pageSize, startTime);
         totalCount = traceQueryHandler.getTraceCountInMinutes(page, pageSize, timeAgoMinutes);
-         } else {
+    } else {
         return Response.status(Response.Status.BAD_REQUEST)
                        .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error','peakLatency'.")
                        .build();
@@ -299,4 +300,5 @@ public Response sortOrderTrace(
 
     return Response.ok(response).build();
 }
+
 }
