@@ -5,12 +5,10 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Sorts;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
@@ -18,7 +16,6 @@ import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.repo.TraceQueryRepo;
 
-import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -26,7 +23,6 @@ import jakarta.inject.Inject;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -46,160 +42,20 @@ public class TraceQueryHandler {
   @Inject
   MongoClient mongoClient;
 
-  //getting all the datas from traceDTO entity
-
-//   public List<TraceDTO> getTraceProduct() {
-//     List<TraceDTO> traceList = traceQueryRepo.listAll();
-
-//     traceList.forEach(this::sortSpans);
-
-//     // Sort the traceList based on the comparison logic
-//     traceList.sort(this::compareTraceDTOs);
-
-//     return traceList;
-// }
+  // getting all the datas from traceDTO entity
+  public List<TraceDTO> getSampleTrace() {
+    List<TraceDTO> traceList = traceQueryRepo.listAll();
+    return traceList;
+}
 
 
 
 public List<TraceDTO> getTraceProduct() {
   List<TraceDTO> traceList = traceQueryRepo.listAll();
-
-  // Sort the traceList using a custom comparator
-  traceList.sort(Comparator.comparing(this::getTraceSortingKey));
-
   return traceList;
 }
 
-private String getTraceSortingKey(TraceDTO trace) {
-  List<Spans> spans = trace.getSpans();
-
-  if (spans.isEmpty()) {
-      return "";
-  }
-
-  Map<String, Spans> spanMap = spans.stream()
-          .collect(Collectors.toMap(Spans::getSpanId, span -> span));
-
-  List<Spans> sortedSpans = new ArrayList<>();
-
-  Spans currentSpan = spans.stream()
-          .filter(span -> span.getParentSpanId().isEmpty())
-          .findFirst()
-          .orElse(null);
-
-  while (currentSpan != null) {
-      sortedSpans.add(currentSpan);
-      String nextSpanId = currentSpan.getSpanId();
-      currentSpan = spanMap.get(nextSpanId);
-      spanMap.remove(nextSpanId); 
-  }
-
-  StringBuilder keyBuilder = new StringBuilder();
-  for (Spans span : sortedSpans) {
-      keyBuilder.append(span.getParentSpanId()).append(span.getSpanId());
-  }
-
-  return keyBuilder.toString();
-}
-
-
-
-// Method to compare two TraceDTOs for sorting
-private int compareTraceDTOs(TraceDTO trace1, TraceDTO trace2) {
-  List<Spans> spans1 = trace1.getSpans();
-  List<Spans> spans2 = trace2.getSpans();
-
-  // Compare spans one by one
-  for (int i = 0; i < Math.min(spans1.size(), spans2.size()); i++) {
-      Spans span1 = spans1.get(i);
-      Spans span2 = spans2.get(i);
-
-      int parentSpanIdComparison = span1.getParentSpanId().compareTo(span2.getParentSpanId());
-      if (parentSpanIdComparison != 0) {
-          return parentSpanIdComparison;
-      }
-
-      int spanIdComparison = span1.getSpanId().compareTo(span2.getSpanId());
-      if (spanIdComparison != 0) {
-          return spanIdComparison;
-      }
-  }
-
-  // If all compared spans are equal, the trace with fewer spans should come first
-  return Integer.compare(spans1.size(), spans2.size());
-}
-
-private void sortSpans(TraceDTO trace) {
-    trace.getSpans().sort(Comparator.comparing(Spans::getParentSpanId)
-            .thenComparing(Spans::getSpanId));
-}
-
-  private TraceDTO mergeTraceDTOs(List<TraceDTO> traceDTOList) {
-    TraceDTO mergedTrace = new TraceDTO();
-
-    TraceDTO firstTraceDTO = traceDTOList.get(0);
-    mergedTrace.setTraceId(firstTraceDTO.getTraceId());
-    mergedTrace.setServiceName(firstTraceDTO.getServiceName());
-    mergedTrace.setMethodName(firstTraceDTO.getMethodName());
-    mergedTrace.setOperationName(firstTraceDTO.getOperationName());
-    mergedTrace.setDuration(firstTraceDTO.getDuration());
-    mergedTrace.setStatusCode(firstTraceDTO.getStatusCode());
-    mergedTrace.setSpanCount(firstTraceDTO.getSpanCount());
-    mergedTrace.setCreatedTime(firstTraceDTO.getCreatedTime());
-
-    // Merge the spans from all records into one list
-    List<Spans> mergedSpans = new ArrayList<>();
-    for (TraceDTO traceDTO : traceDTOList) {
-      mergedSpans.addAll(traceDTO.getSpans());
-    }
-
-    // Sort the merged spans
-    mergedSpans.sort(
-      Comparator.comparing(span -> {
-        if (
-          span.getParentSpanId() == null || span.getParentSpanId().isEmpty()
-        ) {
-          return "0";
-        } else {
-          return span.getParentSpanId() + span.getSpanId();
-        }
-      })
-    );
-
-    mergedTrace.setSpans(mergedSpans);
-
-    return mergedTrace;
-  }
-
-
-  
-  // Create a method to merge and sort TraceDTOs
-  private List<TraceDTO> mergeAndSortTraceDTOs(List<TraceDTO> traceList) {
-    // Merge records with the same traceId
-    List<TraceDTO> mergedTraceDTOs = new ArrayList<>();
-    Map<String, List<TraceDTO>> groupedTraceDTOs = new HashMap<>();
-
-    for (TraceDTO traceDTO : traceList) {
-      groupedTraceDTOs
-        .computeIfAbsent(traceDTO.getTraceId(), k -> new ArrayList<>())
-        .add(traceDTO);
-    }
-
-    for (List<TraceDTO> traceDTOList : groupedTraceDTOs.values()) {
-      if (traceDTOList.size() > 1) {
-        TraceDTO mergedTrace = mergeTraceDTOs(traceDTOList);
-        mergedTraceDTOs.add(mergedTrace);
-      } else {
-        mergedTraceDTOs.addAll(traceDTOList);
-      }
-    }
-
-    // Sort the mergedTraceDTOs
-    mergedTraceDTOs.sort(this::compareTraceDTOs);
-
-    return mergedTraceDTOs;
-  }
-
+//filter query for the trace section queryy for UI
 private FindIterable<Document> getFilteredResults(TraceQuery query,int page, int pageSize, int minutesAgo) {
     List<Bson> filters = new ArrayList<>();
 
@@ -285,7 +141,6 @@ System.out.println("Limit: " + pageSize);
                 traceDTO.setDuration((Long) durationObject);
             }
 
-            // Handle casting for statusCode field
             Object statusCodeObject = document.get("statusCode");
             if (statusCodeObject instanceof Integer) {
                 traceDTO.setStatusCode(((Integer) statusCodeObject).longValue());
@@ -320,8 +175,6 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
   // pagination data with merge and sorting implementations
   public List<TraceDTO> findRecentDataPaged(int page, int pageSize) {
     List<TraceDTO> traceList = traceQueryRepo.listAll();
-    traceList = mergeAndSortTraceDTOs(traceList);
-
     int startIndex = (page - 1) * pageSize;
     int endIndex = Math.min(startIndex + pageSize, traceList.size());
     return traceList.subList(startIndex, endIndex);
@@ -346,7 +199,6 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
     int statusCode
   ) {
     List<TraceDTO> traceList = traceQueryRepo.listAll();
-    traceList = mergeAndSortTraceDTOs(traceList);
     traceList =
       filterByServiceNameAndStatusCode(traceList, serviceName, statusCode);
 
@@ -526,7 +378,7 @@ public List<TraceMetrics> getTraceMetricCount(
       Aggregates.group("$serviceName", Accumulators.sum("successCount", 1L))
     );
 
-    // Execute the aggregation pipeline
+    // Executing the aggregation pipeline
     AggregateIterable<Document> results = traceCollection.aggregate(
       aggregationStages
     );
@@ -639,7 +491,7 @@ public List<Spans> sortingParentChildOrder(List<Spans> spanData) {
   List<Spans> rootSpans = new ArrayList<>();
 
   for (Spans span : spanData) {
-    String spanId = span.getSpanId();
+    // String spanId = span.getSpanId();
     String parentId = span.getParentSpanId();
     if (parentId == null || parentId.isEmpty()) {
       // Span with empty parentSpanId is a root span

@@ -1,6 +1,5 @@
 package com.zaga.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.trace.TraceDTO;
@@ -19,11 +18,6 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import javax.swing.SortOrder;
 
 
 @Path("/traces")
@@ -65,6 +58,26 @@ public class TraceController {
     }
   }
 
+  @GET
+  @Path("/getAllTraceData")
+  public Response getAllDetails() {
+    try {
+      List<TraceDTO> traceList = traceQueryHandler.getSampleTrace();
+
+      ObjectMapper objectMapper = new ObjectMapper();
+      String responseJson = objectMapper.writeValueAsString(traceList);
+
+      return Response.ok(responseJson).build();
+    } catch (Exception e) {
+
+      e.printStackTrace();
+      return Response
+          .status(Response.Status.INTERNAL_SERVER_ERROR)
+          .entity("An error occurred: " + e.getMessage())
+          .build();
+    }
+  }
+  
 @POST
 @Path("/TraceQueryFilter")
 public Response queryTraces(
@@ -275,7 +288,6 @@ public Response sortOrderTrace(
             .collect(Collectors.toList());
 }
 
-    // Calculate the start index for pagination
     int startIndex = (page - 1) * pageSize;
     int endIndex = Math.min(startIndex + pageSize, traces.size());
 
@@ -288,7 +300,6 @@ public Response sortOrderTrace(
     List<TraceDTO> paginatedTraces = traces.subList(startIndex, endIndex);
     int totalCount = traces.size();
 
-    // Create a response object that includes both the paginated data and the total count
     Map<String, Object> response = new HashMap<>();
     response.put("data", paginatedTraces);
     response.put("totalCount", totalCount);
@@ -305,22 +316,5 @@ public Response sortOrderTrace(
 }
 
 
-
-// @GET
-// @Path("/getalldata-sortorder")
-// @Produces(MediaType.APPLICATION_JSON)
-// public Response sortOrderTrace(@QueryParam("sortOrder") String sortOrder) {
-//     List<TraceDTO> traces;
-
-//     try {
-//         traces = traceQueryHandler.getAllTracesBySortOrder(SortOrder.valueOf(sortOrder.toUpperCase()));
-//     } catch (IllegalArgumentException e) {
-//         return Response.status(Response.Status.BAD_REQUEST)
-//                 .entity("Invalid sortOrder parameter. Use 'new', 'old', 'error', or 'peakLatency'.")
-//                 .build();
-//     }
-
-//     return Response.ok(traces).build();
-// }
 
 }

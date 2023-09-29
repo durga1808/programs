@@ -1,18 +1,14 @@
 package com.zaga.repo;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import org.bson.Document;
-
-import com.mongodb.client.MongoCollection;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+
 
 
 @ApplicationScoped
