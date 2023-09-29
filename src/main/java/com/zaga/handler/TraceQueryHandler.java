@@ -200,7 +200,7 @@ private void sortSpans(TraceDTO trace) {
     return mergedTraceDTOs;
   }
 
-private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, int limit, int minutesAgo) {
+private FindIterable<Document> getFilteredResults(TraceQuery query,int page, int pageSize, int minutesAgo) {
     List<Bson> filters = new ArrayList<>();
 
     if (minutesAgo > 0) {
@@ -253,20 +253,22 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, in
 
     Bson projection = Projections.excludeId();
 
+                System.out.println("Skip: " + (page - 1) * pageSize);
+System.out.println("Limit: " + pageSize);
+
     return collection
             .find(filter)
             .projection(projection)
-            .skip(skip)
-            .limit(limit);
+            .skip((page - 1) * pageSize)
+            .limit(pageSize);
+
 }
 
 
   // getTrace by multiple queries like serviceName, method, duration and statuscode from TraceDTO entity
   public List<TraceDTO> searchTracesPaged(TraceQuery query, int page, int pageSize, int minutesAgo) {
-    int skip = (page - 0) * pageSize;
-    int limit = pageSize;
-
-    FindIterable<Document> result = getFilteredResults(query, skip, limit, minutesAgo);
+  
+    FindIterable<Document> result = getFilteredResults(query,page,pageSize,minutesAgo);
    
     List<TraceDTO> traceDTOList = new ArrayList<>();
     try (MongoCursor<Document> cursor = result.iterator()) {
@@ -305,6 +307,7 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int skip, in
 
 public long countQueryTraces(TraceQuery query, int minutesAgo) {
   FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, minutesAgo);
+  System.out.println("countQueryTraces"+ result.into(new ArrayList<>()).size());
   long totalCount = result.into(new ArrayList<>()).size(); 
 
   return totalCount;
@@ -621,5 +624,59 @@ public List<TraceDTO> findAllOrderByDuration(int page, int pageSize, Instant sta
           .collect(Collectors.toList());
 
   return sortedTraces;
+}
+
+// getByTraceId sort the spans and if some traceId Has same value it will merge the value
+public List<Spans> sortingParentChildOrder(List<Spans> spanData) {
+  Map<String, List<Spans>> spanTree = new HashMap<>();
+
+  List<Spans> rootSpans = new ArrayList<>();
+
+  for (Spans span : spanData) {
+    String spanId = span.getSpanId();
+    String parentId = span.getParentSpanId();
+    if (parentId == null || parentId.isEmpty()) {
+      // Span with empty parentSpanId is a root span
+      rootSpans.add(span);
+    } else {
+      spanTree.computeIfAbsent(parentId, k -> new ArrayList<>()).add(span);
+    }
+  }
+
+  List<Spans> sortedSpans = new ArrayList<>();
+
+  for (Spans rootSpan : rootSpans) {
+    sortSpans(rootSpan, spanTree, sortedSpans);
+  }
+
+  return sortedSpans;
+}
+
+private void sortSpans(Spans span, Map<String, List<Spans>> spanTree, List<Spans> sortedSpans) {
+  sortedSpans.add(span);
+  List<Spans> childSpans = spanTree.get(span.getSpanId());
+  if (childSpans != null) {
+    for (Spans childSpan : childSpans) {
+      sortSpans(childSpan, spanTree, sortedSpans);
+    }
+  }
+}
+
+// Method to merge spans with the same traceId
+public List<TraceDTO> mergeTraces(List<TraceDTO> traces) {
+  Map<String, TraceDTO> traceMap = new HashMap<>();
+
+  for (TraceDTO trace : traces) {
+    String traceId = trace.getTraceId();
+
+    if (traceMap.containsKey(traceId)) {
+      System.out.println("CONTAINES SAME------------------------------------------------ " + traceId);
+      TraceDTO existingTrace = traceMap.get(traceId);
+      existingTrace.getSpans().addAll(trace.getSpans());
+    } else {
+      traceMap.put(traceId, trace);
+    }
+  }
+  return new ArrayList<>(traceMap.values());
 }
 }
