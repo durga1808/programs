@@ -587,17 +587,17 @@ public long getTraceCountInMinutes(int page, int pageSize, int timeAgoMinutes) {
 }
 
 //sort order decending
-public List<TraceDTO> getAllTracesOrderByCreatedTimeDesc(int page, int pageSize, Instant startTime) {
+public List<TraceDTO> getAllTracesOrderByCreatedTimeDesc() {
   return traceQueryRepo.findAllOrderByCreatedTimeDesc();
 }
 
 //sort order ascending
-public List<TraceDTO> getAllTracesAsc(int page, int pageSize, Instant startTime){
+public List<TraceDTO> getAllTracesAsc(){
   return traceQueryRepo.findAllOrderByCreatedTimeAsc();
 }
 
 //sort order error first
-public List<TraceDTO> findAllOrderByErrorFirst(int page, int pageSize, Instant startTime) {
+public List<TraceDTO> findAllOrderByErrorFirst() {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
           .getCollection("TraceDto");
@@ -613,7 +613,7 @@ public List<TraceDTO> findAllOrderByErrorFirst(int page, int pageSize, Instant s
 }
 
 //sort order peak value first
-public List<TraceDTO> findAllOrderByDuration(int page, int pageSize, Instant startTime) {
+public List<TraceDTO> findAllOrderByDuration() {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
           .getCollection("TraceDto");
@@ -625,6 +625,12 @@ public List<TraceDTO> findAllOrderByDuration(int page, int pageSize, Instant sta
 
   return sortedTraces;
 }
+
+
+
+
+
+
 
 // getByTraceId sort the spans and if some traceId Has same value it will merge the value
 public List<Spans> sortingParentChildOrder(List<Spans> spanData) {
