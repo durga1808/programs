@@ -284,8 +284,11 @@ public Response sortOrderTrace(
   if (minutesAgo > 0) {
     Date cutoffDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(minutesAgo));
     traces = traces.stream()
-            .filter(trace -> trace.getCreatedTime().after(cutoffDate))
-            .collect(Collectors.toList());
+    .filter(trace -> {
+        Date createdTime = trace.getCreatedTime();
+        return createdTime != null && createdTime.after(cutoffDate);
+    })
+    .collect(Collectors.toList());
 }
 
     int startIndex = (page - 1) * pageSize;
