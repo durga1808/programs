@@ -739,6 +739,58 @@ public Map<String, Object> getPeakLatencyTraces(int page, int pageSize, int time
 
 
 
+// getByTraceId sort the spans and if some traceId Has same value it will merge the value
+public List<Spans> sortingParentChildOrder(List<Spans> spanData) {
+  Map<String, List<Spans>> spanTree = new HashMap<>();
 
+  List<Spans> rootSpans = new ArrayList<>();
+
+  for (Spans span : spanData) {
+    String spanId = span.getSpanId();
+    String parentId = span.getParentSpanId();
+    if (parentId == null || parentId.isEmpty()) {
+      // Span with empty parentSpanId is a root span
+      rootSpans.add(span);
+    } else {
+      spanTree.computeIfAbsent(parentId, k -> new ArrayList<>()).add(span);
+    }
+  }
+
+  List<Spans> sortedSpans = new ArrayList<>();
+
+  for (Spans rootSpan : rootSpans) {
+    sortSpans(rootSpan, spanTree, sortedSpans);
+  }
+
+  return sortedSpans;
+}
+
+private void sortSpans(Spans span, Map<String, List<Spans>> spanTree, List<Spans> sortedSpans) {
+  sortedSpans.add(span);
+  List<Spans> childSpans = spanTree.get(span.getSpanId());
+  if (childSpans != null) {
+    for (Spans childSpan : childSpans) {
+      sortSpans(childSpan, spanTree, sortedSpans);
+    }
+  }
+}
+
+// Method to merge spans with the same traceId
+public List<TraceDTO> mergeTraces(List<TraceDTO> traces) {
+  Map<String, TraceDTO> traceMap = new HashMap<>();
+
+  for (TraceDTO trace : traces) {
+    String traceId = trace.getTraceId();
+
+    if (traceMap.containsKey(traceId)) {
+      System.out.println("CONTAINES SAME------------------------------------------------ " + traceId);
+      TraceDTO existingTrace = traceMap.get(traceId);
+      existingTrace.getSpans().addAll(trace.getSpans());
+    } else {
+      traceMap.put(traceId, trace);
+    }
+  }
+  return new ArrayList<>(traceMap.values());
+}
 
 }
