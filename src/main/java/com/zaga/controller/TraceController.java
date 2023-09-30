@@ -78,6 +78,40 @@ public class TraceController {
           .build();
     }
   }
+
+
+@GET
+@Path("/findById")
+public Response findById(@QueryParam("traceId") String traceId) {
+    if (traceId == null || traceId.isEmpty()) {
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity("traceId query parameter is required")
+                .build();
+    }
+
+    List<TraceDTO> data = traceQueryRepo.find("traceId = ?1", traceId).list();
+
+    if (data.isEmpty()) {
+        return Response.status(Response.Status.NOT_FOUND)
+                .entity("No TraceDTO found for traceId: " + traceId)
+                .build();
+    }
+
+    Map<String, Object> response = new HashMap<>();
+    response.put("data", data);
+
+    try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(response);
+
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Error converting response to JSON")
+                .build();
+    }
+}
+
   
 @POST
 @Path("/TraceQueryFilter")
