@@ -18,6 +18,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -262,10 +263,8 @@ public Response sortOrderTrace(
                 .entity("Invalid page, pageSize, or minutesAgo parameters.")
                 .build();
     }
-
     List<TraceDTO> traces;
-    
-    if ("new".equalsIgnoreCase(sortOrder)) {
+        if ("new".equalsIgnoreCase(sortOrder)) {
         traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc();
           } else if ("old".equalsIgnoreCase(sortOrder)) {
         traces = traceQueryHandler.getAllTracesAsc();
@@ -279,9 +278,7 @@ public Response sortOrderTrace(
                 .build();
     }
 
-    
-  // Filter traces based on the specified time range
-  if (minutesAgo > 0) {
+    if (minutesAgo > 0) {
     Date cutoffDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(minutesAgo));
     traces = traces.stream()
     .filter(trace -> {
@@ -294,13 +291,24 @@ public Response sortOrderTrace(
     int startIndex = (page - 1) * pageSize;
     int endIndex = Math.min(startIndex + pageSize, traces.size());
 
-    if (startIndex >= endIndex) {
-        return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Invalid page or pageSize parameters. They exceed the available data.")
-                .build();
+if (startIndex >= endIndex || traces.isEmpty()) {
+        Map<String, Object> emptyResponse = new HashMap<>();
+        emptyResponse.put("data", Collections.emptyList());
+        emptyResponse.put("totalCount", 0);
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseJson = objectMapper.writeValueAsString(emptyResponse);
+
+            return Response.ok(responseJson).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error converting response to JSON")
+                    .build();
+        }
     }
 
-    List<TraceDTO> paginatedTraces = traces.subList(startIndex, endIndex);
+  List<TraceDTO> paginatedTraces = traces.subList(startIndex, endIndex);
     int totalCount = traces.size();
 
     Map<String, Object> response = new HashMap<>();
