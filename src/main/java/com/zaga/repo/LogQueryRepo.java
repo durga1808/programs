@@ -1,5 +1,6 @@
 package com.zaga.repo;
 
+import java.util.Date;
 import java.util.List;
 
 import com.zaga.entity.otellog.OtelLog;
@@ -31,4 +32,5 @@ public class LogQueryRepo implements PanacheMongoRepository<LogDTO> {
         return listAll(Sort.ascending("createdTime"));
     }
     
+
 }
