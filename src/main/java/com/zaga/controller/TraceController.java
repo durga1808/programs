@@ -156,40 +156,61 @@ public Response queryTraces(
 
 
 
+// @GET
+// @Path("/getErroredDataForLastTwo")
+// public Response findRecentDataPaged(
+//     @QueryParam("page") @DefaultValue("1") int page,
+//     @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+//     @QueryParam("serviceName") String serviceName) {
+
+//      try {
+//         // Corrected method name to match the one in TraceQueryHandler
+//         Map<String, Object> result = traceQueryHandler.findByMatchingWithTotalCount(page, pageSize, serviceName);
+
+//         ObjectMapper objectMapper = new ObjectMapper();
+//         String responseJson = objectMapper.writeValueAsString(result);
+
+//         return Response.ok(responseJson).build();
+//     } catch (Exception e) {
+//         e.printStackTrace();
+
+//         return Response
+//                 .status(Response.Status.INTERNAL_SERVER_ERROR)
+//                 .entity("An error occurred: " + e.getMessage())
+//                 .build();
+//     }
+// }
+
 @GET
 @Path("/getErroredDataForLastTwo")
+@Produces(MediaType.APPLICATION_JSON)
 public Response findRecentDataPaged(
-    @QueryParam("page") @DefaultValue("1") int page,
-    @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-    @QueryParam("serviceName") String serviceName) {
+        @QueryParam("page") @DefaultValue("1") int page,
+        @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+        @QueryParam("serviceName") String serviceName) {
 
-    try {
-        List<TraceDTO> traceList = traceQueryHandler.findByMatching(page, pageSize, serviceName);
-        
-        Map<String, Object> jsonResponse = new HashMap<>();
+    Map<String, Object> result = traceQueryHandler.findByMatchingWithTotalCount(page, pageSize, serviceName);
 
-        // Check if traceList is empty after pagination
-        if (traceList.isEmpty()) {
-            jsonResponse.put("totalCount", 0);
-            jsonResponse.put("data", Collections.emptyList());
-        } else {
-            jsonResponse.put("totalCount", traceList.size());
-            jsonResponse.put("data", traceList);
-        }
+    // Extract the paginated data and total count from the result
+    List<TraceDTO> paginatedData = (List<TraceDTO>) result.get("data");
+    int totalCount = (int) result.get("totalCount");
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        String responseJson = objectMapper.writeValueAsString(jsonResponse);
-
-        return Response.ok(responseJson).build();
-    } catch (Exception e) {
-        e.printStackTrace();
-
-        return Response
-                .status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("An error occurred: " + e.getMessage())
-                .build();
+    // Check if paginatedData is null or empty and return an empty list if true
+    if (paginatedData == null || paginatedData.isEmpty()) {
+        return Response.ok(Collections.emptyList()).build();
     }
+
+    // Construct a response object with the paginated data and total count
+    Map<String, Object> responseMap = new HashMap<>();
+    responseMap.put("data", paginatedData);
+    responseMap.put("totalCount", totalCount);
+
+    return Response.ok(responseMap).build();
 }
+
+
+
+
 
   
   @GET
