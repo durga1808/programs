@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.log.LogQuery;
+import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.handler.LogQueryHandler;
 import com.zaga.repo.LogQueryRepo;
@@ -266,5 +267,41 @@ try {
         .build();
 }
 }
+
+@GET
+@Path("/getErroredLogDataForLastTwo")
+public Response findRecentDataPaged(
+    @QueryParam("page") @DefaultValue("1") int page,
+    @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+    @QueryParam("serviceName") String serviceName) {
+
+    try {
+        List<LogDTO> logList = logQueryHandler.findByMatching(page, pageSize, serviceName);
+        
+        Map<String, Object> jsonResponse = new HashMap<>();
+
+        if (logList.isEmpty()) {
+            jsonResponse.put("totalCount", 0);
+            jsonResponse.put("data", Collections.emptyList());
+        } else {
+            jsonResponse.put("totalCount", logList.size());
+            jsonResponse.put("data", logList);
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(jsonResponse);
+
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        e.printStackTrace();
+
+        return Response
+                .status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("An error occurred: " + e.getMessage())
+                .build();
+    }
+}
+
+
 
 }

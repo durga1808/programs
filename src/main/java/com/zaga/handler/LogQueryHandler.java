@@ -2,6 +2,8 @@ package com.zaga.handler;
 
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
@@ -28,6 +30,7 @@ import com.zaga.entity.otellog.scopeLogs.LogRecord;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.log.LogQuery;
+import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.repo.LogQueryRepo;
 
@@ -329,6 +332,50 @@ private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
     }
 }
 
+public List<LogDTO> findByMatching(int page, int pageSize, String serviceName) {
+    LocalDateTime currentTime = LocalDateTime.now();
+    LocalDateTime startTime = currentTime.minusHours(82);
+
+    // Convert LocalDateTime to Instant
+    Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
+    Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
+
+    // Convert Instant to Date
+    Date currentDate = Date.from(currentInstant);
+    Date startDate = Date.from(startInstant);
+
+    // Fetch data by serviceName and createdTime
+    List<LogDTO> logList = logQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
+
+    // Filter logList to include only records with severityText "ERROR"
+    List<LogDTO> filteredLogList = new ArrayList<>();
+    for (LogDTO logDTO : logList) {
+        List<ScopeLogs> scopeLogsList = logDTO.getScopeLogs();
+        boolean hasError = false;
+
+        for (ScopeLogs scopeLogs : scopeLogsList) {
+            for (LogRecord logRecord : scopeLogs.getLogRecords()) {
+                if ("ERROR".equals(logRecord.getSeverityText())) {
+                    hasError = true;
+                    break;
+                }
+            }
+
+            if (hasError) {
+                filteredLogList.add(logDTO);
+                break;
+            }
+        }
+    }
+
+    // Calculate data count
+    int dataCount = filteredLogList.size();
+
+    // Paginate the results
+    int startIndex = (page - 1) * pageSize;
+    int endIndex = Math.min(startIndex + pageSize, dataCount);
+    return filteredLogList.subList(startIndex, endIndex);
+}
 
 }
 
