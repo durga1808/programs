@@ -6,6 +6,7 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaga.entity.queryentity.log.LogDTO;
+import com.zaga.entity.queryentity.log.LogQuery;
 import com.zaga.handler.LogQueryHandler;
 
 
@@ -13,6 +14,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
@@ -64,7 +66,9 @@ public Response getAllDataByServiceName(
 
     @GET
     @Path("/getAllLogDataByPagination")
-    public Response getAllLogDataByPagination(@QueryParam("page") int page,  @QueryParam("pageSize") int pageSize) {
+    public Response getAllLogDataByPagination(
+        
+        @QueryParam("page") int page,  @QueryParam("pageSize") int pageSize) {
         try {
             long totalCount = logQueryHandler.countLogRecords(); // Use the new method.
 
@@ -84,8 +88,39 @@ public Response getAllDataByServiceName(
                 .entity(e.getMessage())
                 .build();
         }
-    }
 
+    }
+        @POST
+        @Path("/LogQueryfilter")
+        public Response queryLog(
+            LogQuery logQuery,
+            @QueryParam("page") @DefaultValue("1") int page,
+            @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+            @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo) {
+            try {
+                // Replace traceQuery with logQuery and trace-related functions with log-related ones.
+                List<LogDTO> logList = logQueryHandler.searchLogsPaged(logQuery, page, pageSize, minutesAgo);
+        
+                long totalCount = logQueryHandler.countQueryLogs(logQuery, minutesAgo);
+        
+                Map<String, Object> jsonResponse = new HashMap<>();
+                jsonResponse.put("totalCount", totalCount);
+                jsonResponse.put("data", logList);
+        
+                ObjectMapper objectMapper = new ObjectMapper();
+                String responseJson = objectMapper.writeValueAsString(jsonResponse);
+        
+                return Response.ok(responseJson).build();
+            } catch (Exception e) {
+                e.printStackTrace();
+        
+                return Response
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("An error occurred: " + e.getMessage())
+                    .build();
+            }
+        }
+   
     
 
     
