@@ -303,4 +303,25 @@ public Response findRecentLogDataPaged(
     }
 }
 
+
+    @GET
+    @Path("/search")
+    public Response search(@QueryParam("keyword") String keyword) {
+        if (keyword == null || keyword.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+               .entity("keyword query parameter is required")
+               .build();
+        }
+
+    List<LogDTO> data = repo.find("keyword=?1", keyword).list();
+    System.out.println(data);
+    if (data.isEmpty()){
+        return Response.status(Response.Status.NOT_FOUND)
+          .entity("No LogDTO found for keyword: " + keyword)
+          .build();
+    }
+    return Response.status(200).entity(data).build();
+
+
+    }
 }
