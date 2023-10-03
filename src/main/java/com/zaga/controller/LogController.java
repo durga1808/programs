@@ -204,4 +204,67 @@ if (startIndex >= endIndex || logs.isEmpty()) {
             .build();
     }
 }
+
+
+
+// @POST
+// @Path("/LogQueryFilter")
+// public Response queryLogs(
+//     LogQuery logQuery,
+//     @QueryParam("page") @DefaultValue("1") int page,
+//     @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+//     @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo) {
+//     try {
+//         List<LogDTO> logList = logQueryHandler.searchLogsPaged(logQuery, page, pageSize, minutesAgo);
+//         long totalCount = logQueryHandler.countQueryLogs(logQuery, minutesAgo);
+        
+//         Map<String, Object> jsonResponse = new HashMap<>();
+//         jsonResponse.put("totalCount", totalCount);
+//         jsonResponse.put("data", logList);
+        
+//         ObjectMapper objectMapper = new ObjectMapper();
+//         String responseJson = objectMapper.writeValueAsString(jsonResponse);
+        
+//         return Response.ok(responseJson).build();
+//     } catch (Exception e) {
+//         e.printStackTrace();
+//         return Response
+//             .status(Response.Status.INTERNAL_SERVER_ERROR)
+//             .entity("An error occurred: " + e.getMessage())
+//             .build();
+//     }
+// }
+
+
+@POST
+@Path("/LogFilterQuery")
+public Response filterLogs(LogQuery logQuery,
+                       @QueryParam("page") @DefaultValue("1") int page,
+                       @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+                       @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo) {
+try {
+    List<LogDTO> filteredLogs = logQueryHandler.searchLogs(logQuery, page, pageSize, minutesAgo);
+    System.out.println(filteredLogs);
+
+    // long totalCount = logQueryHandler.countFilteredLogs(logQuery, minutesAgo);
+
+    Map<String, Object> jsonResponse = new HashMap<>();
+    // jsonResponse.put("totalCount", totalCount);
+    // jsonResponse.put("data", filteredLogs);
+    jsonResponse.put("totalCount", 0);
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    String responseJson = objectMapper.writeValueAsString(jsonResponse);
+
+    return Response.ok(responseJson).build();
+} catch (Exception e) {
+    e.printStackTrace();
+
+    return Response
+        .status(Response.Status.INTERNAL_SERVER_ERROR)
+        .entity("An error occurred: " + e.getMessage())
+        .build();
+}
+}
+
 }

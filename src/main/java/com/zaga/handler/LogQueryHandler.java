@@ -9,12 +9,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.bson.Document;
+import org.bson.conversions.Bson;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
-
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.zaga.entity.otellog.ScopeLogs;
 import com.zaga.entity.otellog.scopeLogs.LogRecord;
 import com.zaga.entity.queryentity.log.LogDTO;
@@ -34,6 +42,9 @@ public class LogQueryHandler {
 
     @Inject
     LogQueryRepo logQueryRepo;
+
+    @Inject
+    MongoClient mongoClient;
     
     
     public List<LogDTO> getLogsByServiceName(String serviceName, int page, int pageSize) {
@@ -61,89 +72,190 @@ public class LogQueryHandler {
         return logQueryRepo.count();
     }
 
-//     public List<LogDTO> searchLogsPaged(LogQuery query, int page, int pageSize, int minutesAgo) {
-//     FindIterable<Document> result = getFilteredLogResults(query, page, pageSize, minutesAgo);
-//     List<LogDTO> logDTOList = new ArrayList<>();
-    
-//     try (MongoCursor<Document> cursor = result.iterator()) {
-//         while (cursor.hasNext()) {
-//             Document document = cursor.next();
-//             LogDTO logDTO = new LogDTO();
-            
-//             logDTO.setServiceName(document.getString("serviceName"));
-//             logDTO.setTraceId(document.getString("traceId"));
-            
-//             // Assuming you have a method to fetch scope logs based on traceId
-//             List<ScopeLogs> scopeLogs = fetchScopeLogsByTraceId(logDTO.getTraceId());
-//             logDTO.setScopeLogs(scopeLogs);
-            
-//             logDTOList.add(logDTO);
-//         }
-//     }
-    
-//     return logDTOList;
-// }
-
-// private List<ScopeLogs> fetchScopeLogsByTraceId(String traceId) {
-//     // Implement logic to fetch scope logs by traceId
-//     // Return the actual scope logs or an empty list if not found
-//     return new ArrayList<>();
-// }
-
-// private FindIterable<Document> getFilteredLogResults(LogQuery query, int page, int pageSize, int minutesAgo) {
-//     // Construct a query based on LogQuery's serviceName and severityText fields
-//     Document filter = new Document();
-    
-//     if (query.getServiceName() != null) {
-//         filter.append("serviceName", query.getServiceName());
-//     }
-    
-//     if (query.getSeverityText() != null) {
-//         filter.append("severityText", query.getSeverityText());
-//     }
-    
-//     // Apply additional filters based on page, pageSize, and minutesAgo
-    
-//     // Use your MongoDB driver to apply the filter and return the results
-//     // Example: collection.find(filter).skip((page - 1) * pageSize).limit(pageSize).sort(Sorts.descending("timestamp"))
-//     return LogDTO .find(filter).skip((page - 1) * pageSize).limit(pageSize);
-// }
-
-// public long countQueryLogs(LogQuery query, int minutesAgo) {
-//     FindIterable<Document> result = getFilteredLogResults(query, 0, Integer.MAX_VALUE, minutesAgo);
-//     long totalCount = result.into(new ArrayList<>()).size();
-//     return totalCount;
-// }
 
 
-// public List<LogDTO> searchLogsPaged(LogQuery query, int page, int pageSize, int minutesAgo) {
-//     try {
-//         FindIterable<Document> result = getFilteredLogResults(query, page, pageSize, minutesAgo);
-//         List<LogDTO> logDTOList = new ArrayList<>();
-        
-//         try (MongoCursor<Document> cursor = result.iterator()) {
-//             while (cursor.hasNext()) {
-//                 Document document = cursor.next();
-//                 LogDTO logDTO = new LogDTO();
-                
-//                 logDTO.setServiceName(document.getString("serviceName"));
-//                 logDTO.setSeverityText(document.getString("severityText"));
-                
-//                 // Assuming you have a method to fetch scope logs based on traceId
-//                 List<ScopeLogs> scopeLogs = fetchScopeLogsByTraceId(logDTO.getTraceId());
-//                 logDTO.setScopeLogs(scopeLogs);
-                
-//                 logDTOList.add(logDTO);
-//             }
-//         }
-        
-//         return logDTOList;
-//     } catch (Exception e) {
-//         // Log the exception and handle it appropriately
-//         e.printStackTrace(); // Replace this with your actual logging mechanism
-//         throw new InternalServerErrorException("An error occurred: " + e.getMessage());
-//     }
-// }
+    
+ // public List<LogDTO> searchLogsPaged(LogQuery query, int page, int pageSize,
+    // int minutesAgo) {
+    // FindIterable<Document> result = getFilteredLogResults(query, page, pageSize,
+    // minutesAgo);
+    // List<LogDTO> logDTOList = new ArrayList<>();
+
+    // try (MongoCursor<Document> cursor = result.iterator()) {
+    // while (cursor.hasNext()) {
+    // Document document = cursor.next();
+    // LogDTO logDTO = new LogDTO();
+
+    // logDTO.setServiceName(document.getString("serviceName"));
+    // logDTO.setTraceId(document.getString("traceId"));
+
+    // // Assuming you have a method to fetch scope logs based on traceId
+    // List<ScopeLogs> scopeLogs = fetchScopeLogsByTraceId(logDTO.getTraceId());
+    // logDTO.setScopeLogs(scopeLogs);
+
+    // logDTOList.add(logDTO);
+    // }
+    // }
+
+    // return logDTOList;
+    // }
+
+    // private List<ScopeLogs> fetchScopeLogsByTraceId(String traceId) {
+    // // Implement logic to fetch scope logs by traceId
+    // // Return the actual scope logs or an empty list if not found
+    // return new ArrayList<>();
+    // }
+
+    // private FindIterable<Document> getFilteredLogResults(LogQuery query, int
+    // page, int pageSize, int minutesAgo) {
+    // // Construct a query based on LogQuery's serviceName and severityText fields
+    // Document filter = new Document();
+
+    // if (query.getServiceName() != null) {
+    // filter.append("serviceName", query.getServiceName());
+    // }
+
+    // if (query.getSeverityText() != null) {
+    // filter.append("severityText", query.getSeverityText());
+    // }
+
+    // // Apply additional filters based on page, pageSize, and minutesAgo
+
+    // // Use your MongoDB driver to apply the filter and return the results
+    // // Example: collection.find(filter).skip((page - 1) *
+    // pageSize).limit(pageSize).sort(Sorts.descending("timestamp"))
+    // return LogDTO .find(filter).skip((page - 1) * pageSize).limit(pageSize);
+    // }
+
+    // public long countQueryLogs(LogQuery query, int minutesAgo) {
+    // FindIterable<Document> result = getFilteredLogResults(query, 0,
+    // Integer.MAX_VALUE, minutesAgo);
+    // long totalCount = result.into(new ArrayList<>()).size();
+    // return totalCount;
+    // }
+
+    // public List<LogDTO> searchLogsPaged(LogQuery query, int page, int pageSize,
+    // int minutesAgo) {
+    // try {
+    // FindIterable<Document> result = getFilteredLogResults(query, page, pageSize,
+    // minutesAgo);
+    // List<LogDTO> logDTOList = new ArrayList<>();
+
+    // try (MongoCursor<Document> cursor = result.iterator()) {
+    // while (cursor.hasNext()) {
+    // Document document = cursor.next();
+    // LogDTO logDTO = new LogDTO();
+
+    // logDTO.setServiceName(document.getString("serviceName"));
+    // logDTO.setSeverityText(document.getString("severityText"));
+
+    // // Assuming you have a method to fetch scope logs based on traceId
+    // List<ScopeLogs> scopeLogs = fetchScopeLogsByTraceId(logDTO.getTraceId());
+    // logDTO.setScopeLogs(scopeLogs);
+
+    // logDTOList.add(logDTO);
+    // }
+    // }
+
+    // return logDTOList;
+    // } catch (Exception e) {
+    // // Log the exception and handle it appropriately
+    // e.printStackTrace(); // Replace this with your actual logging mechanism
+    // throw new InternalServerErrorException("An error occurred: " +
+    // e.getMessage());
+    // }
+    // }
+
+    // private List<ScopeLogs> fetchScopeLogsByTraceId(String traceId) {
+    // return null;
+    // }
+
+    // public long countQueryLogs(LogQuery logQuery, int minutesAgo) {
+    // return 0;
+    // }
+
+    // getLogs by multiple queries like serviceName and severityText from LogDTO
+    // entity
+
+
+
+
+    public List<LogDTO> searchLogs(LogQuery query, int page, int pageSize, int minutesAgo) {
+        FindIterable<Document> result = getFilteredLogResults(query, page, pageSize, minutesAgo);
+        // System.out.println(result);
+        List<LogDTO> logDTOList = new ArrayList<>();
+        try (MongoCursor<Document> cursor = result.iterator()) {
+            while (cursor.hasNext()) {
+                Document document = cursor.next();
+                LogDTO logDTO = new LogDTO();
+
+                logDTO.setTraceId(document.getString("traceId"));
+                logDTO.setServiceName(document.getString("serviceName"));
+                // logDTO.setSeverityText(document.getString("severity"));
+                // logDTO.setMessage(document.getString("message"));
+                // logDTO.setTimestamp(document.getDate("timestamp"));
+
+                logDTOList.add(logDTO);
+            }
+        }
+        System.out.println("-----result--------- "  + logDTOList.toString());
+        return logDTOList;
+    }
+
+    public long countFilteredLogs(LogQuery query, int minutesAgo) {
+        FindIterable<Document> result = getFilteredLogResults(query, 0, Integer.MAX_VALUE, minutesAgo);
+        System.out.println("countFilteredLogs: " + result.into(new ArrayList<>()).size());
+        long totalCount = result.into(new ArrayList<>()).size();
+
+        return totalCount;
+    }
+
+    private FindIterable<Document> getFilteredLogResults(LogQuery query, int page, int pageSize, int minutesAgo) {
+        // Document filter = new Document();
+        List<Bson> filters = new ArrayList<>();
+
+        if (minutesAgo > 0) {
+            long currentTimeInMillis = System.currentTimeMillis();
+            long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000);
+            Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
+            filters.add(timeFilter);
+        }
+
+        // Add conditions for filtering by serviceName and severityText
+
+        System.out.println("----query--- " + query);
+        System.out.println("---page--- " + page);
+        System.out.println("---pagesize--- " + pageSize);
+        System.out.println("---minute--- " + minutesAgo);
+
+        if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
+            // filter.append("serviceName", query.getServiceName());
+            Bson serviceFilter = Filters.in("serviceName", query.getServiceName());
+            filters.add(serviceFilter);
+        }
+
+        if (query.getSeverityText() != null && !query.getSeverityText().isEmpty()) {
+            // filter.append("severity", query.getSeverityText());
+            Bson severityFilter = Filters.in("severityText", query.getSeverityText());
+            filters.add(severityFilter);
+        }
+
+        Bson filter = Filters.and(filters);
+     
+
+        MongoCollection<Document> collection = mongoClient
+                .getDatabase("OtelLog")
+                .getCollection("LogDTO");
+
+        Bson projection = Projections.excludeId();
+        return collection
+            .find(filter)
+            .projection(projection)
+            .skip((page - 1) * pageSize)
+            .limit(pageSize);
+
+    }
+
 
 
 private List<ScopeLogs> fetchScopeLogsByTraceId(String traceId) {
