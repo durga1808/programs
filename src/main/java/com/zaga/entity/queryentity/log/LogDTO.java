@@ -17,6 +17,8 @@ import lombok.NoArgsConstructor;
 public class LogDTO {
     private String serviceName;
     private String traceId;
+    private String spanId;
     private Date createdTime;
+    private String severityText;
     private List<ScopeLogs> scopeLogs;
   }
