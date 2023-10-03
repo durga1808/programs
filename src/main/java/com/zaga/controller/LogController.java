@@ -150,8 +150,8 @@ public Response getAllDataByServiceName(
   @Path("/LogSumaryChartDataCount")
   @Produces(MediaType.APPLICATION_JSON)
   public List<LogMetrics> getLogMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes) {
-    // return logQueryHandler.getLogMetricCount(timeAgoMinutes);
-    return null;
+    return logQueryHandler.getLogMetricCount(timeAgoMinutes);
+
   }
 
 }

@@ -4,17 +4,18 @@ package com.zaga.handler;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.bson.Document;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.zaga.entity.otellog.ScopeLogs;
+import com.zaga.entity.otellog.scopeLogs.LogRecord;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.log.LogQuery;
@@ -98,56 +99,55 @@ public List<LogDTO> getAllTracesAsc() {
 }
 
 
-// public List<LogMetrics> getLogMetricCount(int timeMinutesAgo){
 
-            
+public List<LogMetrics> getLogMetricCount(int timeAgoMinutes) {
+    List<LogDTO> logList = logQueryRepo.listAll(); // Replace with your data source retrieval logic
+    Map<String, LogMetrics> metricsMap = new HashMap<>();
 
-//             // Get the current time in milliseconds since epoch
-//             long currentTimeMillis = Instant.now().toEpochMilli();
+    Instant cutoffTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
 
-//             // Calculate the threshold time in milliseconds
-//             long thresholdTimeMillis = currentTimeMillis - (timeMinutesAgo * 60 * 1000);
+    for (LogDTO logDTO : logList) {
+        Date logCreateTime = logDTO.getCreatedTime();
+        if (logCreateTime != null) {
+            Instant logInstant = logCreateTime.toInstant();
 
-//             // Group log records by serviceName
-//             Map<String, LogMetrics> logMetricsMap = new HashMap<>();
+            if (!logInstant.isBefore(cutoffTime)) {
+                String serviceName = logDTO.getServiceName();
 
-//             JsonNode scopeLogs = jsonData.get("scopeLogs");
-//             for (JsonNode scopeLog : scopeLogs) {
-//                 String serviceName = scopeLog.get("scope").get("name").asText();
-//                 JsonNode logRecords = scopeLog.get("logRecords");
+                LogMetrics metrics = metricsMap.get(serviceName);
+                if (metrics == null) {
+                    metrics = new LogMetrics();
+                    metrics.setServiceName(serviceName);
+                    metrics.setErrorCallCount(0L); // Initialize errorCallCount to 0
+                    metrics.setWarnCallCount(0L);
+                    metrics.setDebugCallCount(0L);
+                }
 
-//                 LogMetrics logMetrics = logMetricsMap.computeIfAbsent(serviceName, k -> new LogMetrics(serviceName, 0L, 0L, 0L));
+                // Calculate the call counts based on the severityText
+                calculateCallCounts(logDTO, metrics);
 
-//                 for (JsonNode logRecord : logRecords) {
-//                     String severityText = logRecord.get("severityText").asText();
-//                     long logTimeMillis = Long.parseLong(logRecord.get("timeUnixNano").asText()) / 1_000_000;
+                metricsMap.put(serviceName, metrics);
+            }
+        }
+    }
 
-//                     // Check if the log record is within the time threshold
-//                     if (logTimeMillis >= thresholdTimeMillis) {
-//                         switch (severityText) {
-//                             case "ERROR":
-//                                 logMetrics.setErrorCallCount(logMetrics.getErrorCallCount() + 1);
-//                                 break;
-//                             case "WARN":
-//                                 logMetrics.setWarnCallCount(logMetrics.getWarnCallCount() + 1);
-//                                 break;
-//                             case "DEBUG":
-//                                 logMetrics.setDebugCallCount(logMetrics.getDebugCallCount() + 1);
-//                                 break;
-//                         }
-//                     }
-//                 }
-//             }
+    return new ArrayList<>(metricsMap.values());
+}
 
-//             // Add the logMetrics to the result list
-//             logMetricsList.addAll(logMetricsMap.values());
-//         } catch (Exception e) {
-//             e.printStackTrace();
-//         }
+private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
+    for (ScopeLogs scopeLogs : logDTO.getScopeLogs()) {
+        for (LogRecord logRecord : scopeLogs.getLogRecords()) {
+            String severityText = logRecord.getSeverityText();
+            if ("ERROR".equals(severityText)) {
+                metrics.setErrorCallCount(metrics.getErrorCallCount() + 1);
+            } else if ("WARN".equals(severityText)) {
+                metrics.setWarnCallCount(metrics.getWarnCallCount() + 1);
+            } else if ("DEBUG".equals(severityText)) {
+                metrics.setDebugCallCount(metrics.getDebugCallCount() + 1);
+            }
+        }
+    }
+}
 
-//         return logMetricsList;
-//     }
 
-// }
-// }
 }
