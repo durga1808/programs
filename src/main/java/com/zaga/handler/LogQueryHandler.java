@@ -2,6 +2,8 @@ package com.zaga.handler;
 
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
@@ -329,6 +331,43 @@ private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
     }
 }
 
+
+//Log Summary with With Error severity Text based on last 2 hrs data or recent data
+public List<LogDTO> getLogSummary(int page, int pageSize, String serviceName) {
+        LocalDateTime currentTime = LocalDateTime.now();
+        LocalDateTime startTime = currentTime.minusHours(2);
+
+        // Convert LocalDateTime to Instant
+        Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
+        Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
+
+        // Convert Instant to Date
+        Date currentDate = Date.from(currentInstant);
+        Date startDate = Date.from(startInstant);
+
+        System.out.println("Start Time: " + startTime);
+        System.out.println("Start Date: " + startDate);
+        System.out.println("Current Date: " + currentDate);
+        System.out.println("serviceName: " + serviceName);
+
+        List<LogDTO> logList = logQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
+        System.out.println("last 2 hrs data: " + logList.size());
+
+        // Filter by error severity
+        logList = filterByErrorSeverity(logList);
+
+        // Calculate data count
+        int dataCount = logList.size();
+
+        // Paginate the results
+        int startIndex = (page - 1) * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, dataCount);
+        return logList.subList(startIndex, endIndex);
+    }
+
+    private List<LogDTO> filterByErrorSeverity(List<LogDTO> logList) {
+      return logList; 
+    }
 
 }
 

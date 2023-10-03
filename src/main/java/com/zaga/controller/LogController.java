@@ -267,4 +267,40 @@ try {
 }
 }
 
+
+@GET
+@Path("/getErroredDataForLastTwo")
+public Response findRecentLogDataPaged(
+        @QueryParam("page") @DefaultValue("1") int page,
+        @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+        @QueryParam("serviceName") String serviceName) {
+
+    try {
+        List<LogDTO> logList = logQueryHandler.getLogSummary(page, pageSize, serviceName);
+
+        Map<String, Object> jsonResponse = new HashMap<>();
+
+        // Check if logList is empty after pagination
+        if (logList.isEmpty()) {
+            jsonResponse.put("totalCount", 0);
+            jsonResponse.put("data", Collections.emptyList());
+        } else {
+            jsonResponse.put("totalCount", logList.size());
+            jsonResponse.put("data", logList);
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(jsonResponse);
+
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        e.printStackTrace();
+
+        return Response
+                .status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("An error occurred: " + e.getMessage())
+                .build();
+    }
+}
+
 }
