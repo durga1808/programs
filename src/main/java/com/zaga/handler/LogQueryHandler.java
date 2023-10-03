@@ -1,36 +1,22 @@
 package com.zaga.handler;
 
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import org.bson.Document;
-import org.bson.conversions.Bson;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.Aggregates;
-import com.mongodb.client.model.Sorts;
-import com.mongodb.client.model.Filters;
+
 import com.zaga.entity.otellog.ScopeLogs;
-import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogQuery;
-import com.zaga.entity.queryentity.trace.TraceDTO;
-import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.repo.LogQueryRepo;
-import com.mongodb.client.model.Filters;
+
 
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.InternalServerErrorException;
+
 
 @ApplicationScoped
 public class LogQueryHandler {
@@ -39,9 +25,6 @@ public class LogQueryHandler {
     LogQueryRepo logQueryRepo;
     
     
-
-    private static final String MONGO_CONNECTION_STRING = "mongodb+srv://devteam:Zagateam2023*@applicationcluster.tvbngn1.mongodb.net/test";
-
     public List<LogDTO> getLogsByServiceName(String serviceName, int page, int pageSize) {
         return logQueryRepo.findByServiceName(serviceName, page, pageSize);
     }
@@ -162,36 +145,15 @@ private List<ScopeLogs> fetchScopeLogsByTraceId(String traceId) {
 
     
   //sort orer decending 
-  public List<LogDTO> getAllTracesOrderByCreatedTimeDesc() {
+  public List<LogDTO> getAllLogssOrderByCreatedTimeDesc() {
     return logQueryRepo.findAllOrderByCreatedTimeDesc();
   }
 
 
 //sort order ascending
-public List<LogDTO> getAllTracesAsc() {
+public List<LogDTO> getAllLogssAsc() {
     return logQueryRepo.findAllOrderByCreatedTimeAsc();
 }
-
-//sort error first
-
-    // public List<LogDTO> getAllLogsSortedByErrorFirst() {
-    //     try (MongoClient mongoClient = MongoClients.create(MONGO_CONNECTION_STRING)) {
-    //         // Specify your database and collection
-    //         MongoCollection<Document> logCollection = mongoClient.getDatabase("OtelLog").getCollection("LogDTO");
-
-    //         // Aggregation pipeline stages
-    //         List<Document> pipeline = List.of(
-    //                 Aggregates.unwind("$scopeLogs"),
-    //                 Aggregates.unwind("$scopeLogs.logRecords"),
-    //                 Aggregates.match(Filters.eq("scopeLogs.logRecords.severityText", "ERROR")),
-    //                 Aggregates.sort(Sorts.descending("scopeLogs.logRecords.severityNumber"))
-    //                 // Add more stages as needed
-    //         );
-
-    //         List<LogDTO> sortedLogs = logQueryRepo.fromDocuments(logCollection.aggregate(pipeline).into(new ArrayList<>()));
-
-    //         return sortedLogs;
-    //     }
 
 }
 

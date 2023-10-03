@@ -22,6 +22,4 @@ public class LogDTO {
     private String traceId;
     private Date createdTime;
     private List<ScopeLogs> scopeLogs;
-  private String severityText;
- 
-}
+  }

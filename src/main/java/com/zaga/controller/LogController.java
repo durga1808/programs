@@ -120,6 +120,7 @@ public Response getAllDataByServiceName(
 }
 
 
+
 @GET
 @Path("/getallLogdata-sortorder")
 @Produces(MediaType.APPLICATION_JSON)
@@ -136,12 +137,13 @@ public Response sortOrderTrace(
     }
     List<LogDTO> logs;
         if ("new".equalsIgnoreCase(sortOrder)) {
-        logs = logQueryHandler.getAllTracesOrderByCreatedTimeDesc();
+        logs = logQueryHandler.getAllLogssOrderByCreatedTimeDesc();
           } else if ("old".equalsIgnoreCase(sortOrder)) {
-        logs = logQueryHandler.getAllTracesAsc();
-          } else {
+        logs = logQueryHandler.getAllLogssAsc();
+          }  
+          else {
         return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.")
+                .entity("Invalid sortOrder parameter. Use 'new', 'old'.")
                 .build();
     }
 
