@@ -40,26 +40,6 @@ public class TraceController {
   TraceQueryRepo traceQueryRepo;
 
   @GET
-  @Path("/getTraceData")
-  public Response getDetails() {
-    try {
-      List<TraceDTO> traceList = traceQueryHandler.getTraceProduct();
-
-      ObjectMapper objectMapper = new ObjectMapper();
-      String responseJson = objectMapper.writeValueAsString(traceList);
-
-      return Response.ok(responseJson).build();
-    } catch (Exception e) {
-
-      e.printStackTrace();
-      return Response
-          .status(Response.Status.INTERNAL_SERVER_ERROR)
-          .entity("An error occurred: " + e.getMessage())
-          .build();
-    }
-  }
-
-  @GET
   @Path("/getAllTraceData")
   public Response getAllDetails() {
     try {
@@ -176,36 +156,33 @@ public Response queryTraces(
 
 
 
-  @GET
-  @Path("/getAllDataByServiceNameAndStatusCode")
-  public Response findRecentDataPaged(
-      @QueryParam("page") @DefaultValue("1") int page,
-      @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-      @QueryParam("serviceName") String serviceName,
-      @QueryParam("statusCode") @DefaultValue("0") int statusCode) {
+@GET
+@Path("/getAllDataByServiceNameAndStatusCode")
+public Response findRecentDataPaged(
+    @QueryParam("page") @DefaultValue("1") int page,
+    @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+    @QueryParam("serviceName") String serviceName) {
 
     try {
-      long totalCount = traceQueryHandler.countData();
-      List<TraceDTO> traceList = traceQueryHandler.findByServiceNameAndStatusCode(page, pageSize, serviceName,
-          statusCode);
+        List<TraceDTO> traceList = traceQueryHandler.findByMatching(page, pageSize, serviceName);
+        
+        Map<String, Object> jsonResponse = new HashMap<>();
+        jsonResponse.put("totalCount", traceList.size());
+        jsonResponse.put("data", traceList);
 
-      Map<String, Object> jsonResponse = new HashMap<>();
-      jsonResponse.put("totalCount", totalCount);
-      jsonResponse.put("data", traceList);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(jsonResponse);
 
-      ObjectMapper objectMapper = new ObjectMapper();
-      String responseJson = objectMapper.writeValueAsString(jsonResponse);
-
-      return Response.ok(responseJson).build();
+        return Response.ok(responseJson).build();
     } catch (Exception e) {
-      e.printStackTrace();
+        e.printStackTrace();
 
-      return Response
-          .status(Response.Status.INTERNAL_SERVER_ERROR)
-          .entity("An error occurred: " + e.getMessage())
-          .build();
+        return Response
+                .status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("An error occurred: " + e.getMessage())
+                .build();
     }
-  }
+}
 
   @GET
   @Path("/count")

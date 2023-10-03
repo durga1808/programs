@@ -21,6 +21,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -192,49 +194,45 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
 
 
   // pagination data for trace summary page based on serviceName and statusCode
-  public List<TraceDTO> findByServiceNameAndStatusCode(
+  public List<TraceDTO> findByMatching(
     int page,
     int pageSize,
-    String serviceName,
-    int statusCode
-  ) {
-    List<TraceDTO> traceList = traceQueryRepo.listAll();
-    traceList =
-      filterByServiceNameAndStatusCode(traceList, serviceName, statusCode);
+    String serviceName
+) {
+  LocalDateTime currentTime = LocalDateTime.now();
 
+  // Calculate the start time (2 hours ago)
+  LocalDateTime startTime = currentTime.minusHours(2);
+
+  Date startDate = Date.from(startTime.toInstant(ZoneOffset.UTC));
+
+  Date endDate = Date.from(currentTime.toInstant(ZoneOffset.UTC));
+    System.out.println("Start Time: " + startTime);
+    System.out.println("Start Date: " + startDate);
+    System.out.println("End Date: " + endDate);
+    System.out.println("serviceName: " + serviceName);
+    // Fetch data from MongoDB filtered by serviceName and createdTime
+    List<TraceDTO> traceList = traceQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, endDate);
+    System.out.println("last 2 hrs data"+traceList.size());
+
+    // Filter by statusCode in the range of 400 to 599
+    traceList = filterByStatusCode(traceList);
+
+    // Calculate data count
+    int dataCount = traceList.size();
+
+    // Paginate the results
     int startIndex = (page - 1) * pageSize;
-    int endIndex = Math.min(startIndex + pageSize, traceList.size());
+    int endIndex = Math.min(startIndex + pageSize, dataCount);
     return traceList.subList(startIndex, endIndex);
-  }
+}
 
-
-
-  // Create a method to filter TraceDTOs by serviceName and statusCode
-  private List<TraceDTO> filterByServiceNameAndStatusCode(
-    List<TraceDTO> traceList,
-    String serviceName,
-    int statusCode
-  ) {
-    if (serviceName == null && statusCode == 0) {
-      return traceList;
-    }
-
-    List<TraceDTO> filteredTraceList = new ArrayList<>();
-    for (TraceDTO traceDTO : traceList) {
-      if (
-        (
-          serviceName == null ||
-          serviceName.isEmpty() ||
-          traceDTO.getServiceName().equals(serviceName)
-        ) &&
-        (statusCode == 0 || traceDTO.getStatusCode() == statusCode)
-      ) {
-        filteredTraceList.add(traceDTO);
-      }
-    }
-    return filteredTraceList;
-  }
-
+// Modify the filterByServiceNameAndStatusCode method to filter by StatusCode only
+private List<TraceDTO> filterByStatusCode(List<TraceDTO> traceList) {
+    return traceList.stream()
+        .filter(traceDTO -> traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599)
+        .collect(Collectors.toList());
+}
 
   // appicalll counts calculations
   public Map<String, Long> getTraceCountWithinHour() {
