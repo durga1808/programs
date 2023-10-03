@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogQuery;
 import com.zaga.handler.LogQueryHandler;
-
+import com.zaga.repo.LogQueryRepo;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -26,6 +26,8 @@ import jakarta.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class LogController {
     
+    @Inject
+    LogQueryRepo repo;
 
     @Inject
     LogQueryHandler logQueryHandler;
@@ -124,5 +126,21 @@ public Response getAllDataByServiceName(
     
 
     
+    @GET
+    @Path("/findByTraceId")
+    public Response findByTraceId(@QueryParam("traceId") String traceId) {
+        if (traceId == null || traceId.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("traceId query parameter is required")
+                .build();
+        }
+    List<LogDTO> data = repo.find("traceId=?1", traceId).list();
+    if (data.isEmpty()){
+        return Response.status(Response.Status.NOT_FOUND)
+           .entity("No LogDTO found for traceId: " + traceId)
+           .build();
+    }
+    return Response.status(200).entity(data).build();
 }
 
+}
