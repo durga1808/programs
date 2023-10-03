@@ -10,14 +10,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
@@ -30,8 +26,6 @@ import com.zaga.entity.otellog.scopeLogs.LogRecord;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.log.LogQuery;
-import com.zaga.entity.queryentity.trace.TraceDTO;
-import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.repo.LogQueryRepo;
 
 
@@ -261,10 +255,6 @@ public class LogQueryHandler {
 
 
 
-private List<ScopeLogs> fetchScopeLogsByTraceId(String traceId) {
-    return null;
-}
-
     public long countQueryLogs(LogQuery logQuery, int minutesAgo) {
         return 0;
     }
@@ -376,6 +366,43 @@ public List<LogDTO> findByMatching(int page, int pageSize, String serviceName) {
     int endIndex = Math.min(startIndex + pageSize, dataCount);
     return filteredLogList.subList(startIndex, endIndex);
 }
+
+//Log Summary with With Error severity Text based on last 2 hrs data or recent data
+public List<LogDTO> getLogSummary(int page, int pageSize, String serviceName) {
+        LocalDateTime currentTime = LocalDateTime.now();
+        LocalDateTime startTime = currentTime.minusHours(2);
+
+        // Convert LocalDateTime to Instant
+        Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
+        Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
+
+        // Convert Instant to Date
+        Date currentDate = Date.from(currentInstant);
+        Date startDate = Date.from(startInstant);
+
+        System.out.println("Start Time: " + startTime);
+        System.out.println("Start Date: " + startDate);
+        System.out.println("Current Date: " + currentDate);
+        System.out.println("serviceName: " + serviceName);
+
+        List<LogDTO> logList = logQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
+        System.out.println("last 2 hrs data: " + logList.size());
+
+        // Filter by error severity
+        logList = filterByErrorSeverity(logList);
+
+        // Calculate data count
+        int dataCount = logList.size();
+
+        // Paginate the results
+        int startIndex = (page - 1) * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, dataCount);
+        return logList.subList(startIndex, endIndex);
+    }
+
+    private List<LogDTO> filterByErrorSeverity(List<LogDTO> logList) {
+      return logList; 
+    }
 
 }
 

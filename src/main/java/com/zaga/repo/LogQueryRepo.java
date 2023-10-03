@@ -5,9 +5,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.zaga.entity.otellog.OtelLog;
 import com.zaga.entity.queryentity.log.LogDTO;
-import com.zaga.entity.queryentity.trace.TraceDTO;
 
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.panache.common.Sort;
@@ -58,6 +56,7 @@ public class LogQueryRepo implements PanacheMongoRepository<LogDTO> {
     
         return filteredLogList;
     }
+    
     
     
 

@@ -3,9 +3,6 @@ package com.zaga.entity.queryentity.log;
 import java.util.Date;
 import java.util.List;
 
-import org.bson.Document;
-
-import com.mongodb.client.FindIterable;
 import com.zaga.entity.otellog.ScopeLogs;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;

@@ -13,8 +13,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.log.LogQuery;
-import com.zaga.entity.queryentity.trace.TraceDTO;
-import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.handler.LogQueryHandler;
 import com.zaga.repo.LogQueryRepo;
 
@@ -303,5 +301,24 @@ public Response findRecentDataPaged(
 }
 
 
+    @GET
+    @Path("/search")
+    public Response search(@QueryParam("keyword") String keyword) {
+        if (keyword == null || keyword.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+               .entity("keyword query parameter is required")
+               .build();
+        }
 
+    List<LogDTO> data = repo.find("keyword=?1", keyword).list();
+    System.out.println(data);
+    if (data.isEmpty()){
+        return Response.status(Response.Status.NOT_FOUND)
+          .entity("No LogDTO found for keyword: " + keyword)
+          .build();
+    }
+    return Response.status(200).entity(data).build();
+
+
+    }
 }
