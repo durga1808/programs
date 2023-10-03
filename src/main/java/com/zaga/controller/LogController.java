@@ -92,36 +92,7 @@ public Response getAllDataByServiceName(
         }
 
     }
-        @POST
-        @Path("/LogQueryfilter")
-        public Response queryLog(
-            LogQuery logQuery,
-            @QueryParam("page") @DefaultValue("1") int page,
-            @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-            @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo) {
-            try {
-                // Replace traceQuery with logQuery and trace-related functions with log-related ones.
-                List<LogDTO> logList = logQueryHandler.searchLogsPaged(logQuery, page, pageSize, minutesAgo);
-        
-                long totalCount = logQueryHandler.countQueryLogs(logQuery, minutesAgo);
-        
-                Map<String, Object> jsonResponse = new HashMap<>();
-                jsonResponse.put("totalCount", totalCount);
-                jsonResponse.put("data", logList);
-        
-                ObjectMapper objectMapper = new ObjectMapper();
-                String responseJson = objectMapper.writeValueAsString(jsonResponse);
-        
-                return Response.ok(responseJson).build();
-            } catch (Exception e) {
-                e.printStackTrace();
-        
-                return Response
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("An error occurred: " + e.getMessage())
-                    .build();
-            }
-        }
+       
    
     
 
@@ -143,4 +114,32 @@ public Response getAllDataByServiceName(
     return Response.status(200).entity(data).build();
 }
 
+
+@POST
+@Path("/LogQueryFilter")
+public Response queryLogs(
+    LogQuery logQuery,
+    @QueryParam("page") @DefaultValue("1") int page,
+    @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+    @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo) {
+    try {
+        List<LogDTO> logList = logQueryHandler.searchLogsPaged(logQuery, page, pageSize, minutesAgo);
+        long totalCount = logQueryHandler.countQueryLogs(logQuery, minutesAgo);
+        
+        Map<String, Object> jsonResponse = new HashMap<>();
+        jsonResponse.put("totalCount", totalCount);
+        jsonResponse.put("data", logList);
+        
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(jsonResponse);
+        
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        e.printStackTrace();
+        return Response
+            .status(Response.Status.INTERNAL_SERVER_ERROR)
+            .entity("An error occurred: " + e.getMessage())
+            .build();
+    }
+}
 }
