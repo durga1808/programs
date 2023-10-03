@@ -157,7 +157,7 @@ public Response queryTraces(
 
 
 @GET
-@Path("/getAllDataByServiceNameAndStatusCode")
+@Path("/getErroredDataForLastTwo")
 public Response findRecentDataPaged(
     @QueryParam("page") @DefaultValue("1") int page,
     @QueryParam("pageSize") @DefaultValue("10") int pageSize,
@@ -167,8 +167,15 @@ public Response findRecentDataPaged(
         List<TraceDTO> traceList = traceQueryHandler.findByMatching(page, pageSize, serviceName);
         
         Map<String, Object> jsonResponse = new HashMap<>();
-        jsonResponse.put("totalCount", traceList.size());
-        jsonResponse.put("data", traceList);
+
+        // Check if traceList is empty after pagination
+        if (traceList.isEmpty()) {
+            jsonResponse.put("totalCount", 0);
+            jsonResponse.put("data", Collections.emptyList());
+        } else {
+            jsonResponse.put("totalCount", traceList.size());
+            jsonResponse.put("data", traceList);
+        }
 
         ObjectMapper objectMapper = new ObjectMapper();
         String responseJson = objectMapper.writeValueAsString(jsonResponse);
@@ -184,6 +191,7 @@ public Response findRecentDataPaged(
     }
 }
 
+  
   @GET
   @Path("/count")
   @Produces(MediaType.APPLICATION_JSON)

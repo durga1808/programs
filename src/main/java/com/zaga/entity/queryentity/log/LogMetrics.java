@@ -7,7 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LogQuery {
-   private String serviceName; 
-   private String severityText;
+public class LogMetrics {
+    private String serviceName;
+    private Long errorCallCount;
+    private Long warnCallCount;
+    private Long debugCallCount;
 }

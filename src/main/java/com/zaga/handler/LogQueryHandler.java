@@ -147,14 +147,11 @@ private List<ScopeLogs> fetchScopeLogsByTraceId(String traceId) {
     return null;
 }
 
-public long countQueryLogs(LogQuery query, int minutesAgo) {
-    FindIterable<Document> result = getFilteredLogResults(query, 0, Integer.MAX_VALUE, minutesAgo);
-    long totalCount = result.into(new ArrayList<>()).size();
-    return totalCount;
+    public long countQueryLogs(LogQuery logQuery, int minutesAgo) {
+        return 0;
+    }
+
+    
+  
 }
 
-private FindIterable<Document> getFilteredLogResults(LogQuery query, int i, int maxValue, int minutesAgo) {
-    return null;
-}
-
-}

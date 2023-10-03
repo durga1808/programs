@@ -6,6 +6,7 @@ import com.zaga.entity.otellog.OtelLog;
 import com.zaga.entity.queryentity.log.LogDTO;
 
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
+import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class LogQueryRepo implements PanacheMongoRepository<LogDTO> {
@@ -20,4 +21,14 @@ public class LogQueryRepo implements PanacheMongoRepository<LogDTO> {
     public long countByServiceName(String serviceName) {
         return count("serviceName", serviceName);
     }
+
+
+    public List<LogDTO> findAllOrderByCreatedTimeDesc() {
+        return listAll(Sort.descending("createdTime"));
+    }
+
+    public List<LogDTO> findAllOrderByCreatedTimeAsc() {
+        return listAll(Sort.ascending("createdTime"));
+    }
+    
 }

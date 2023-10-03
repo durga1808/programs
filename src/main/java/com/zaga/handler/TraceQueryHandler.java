@@ -22,6 +22,7 @@ import jakarta.inject.Inject;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -111,8 +112,8 @@ private FindIterable<Document> getFilteredResults(TraceQuery query,int page, int
 
     Bson projection = Projections.excludeId();
 
-                System.out.println("Skip: " + (page - 1) * pageSize);
-System.out.println("Limit: " + pageSize);
+    System.out.println("Skip: " + (page - 1) * pageSize);
+    System.out.println("Limit: " + pageSize);
 
     return collection
             .find(filter)
@@ -200,19 +201,26 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
     String serviceName
 ) {
   LocalDateTime currentTime = LocalDateTime.now();
-
-  // Calculate the start time (2 hours ago)
+  
   LocalDateTime startTime = currentTime.minusHours(2);
+  System.out.println("CreatedTime: " + currentTime);
+  System.out.println("StartTime: " + startTime);
 
-  Date startDate = Date.from(startTime.toInstant(ZoneOffset.UTC));
+  // Convert LocalDateTime to Instant
+  Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
+  Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
 
-  Date endDate = Date.from(currentTime.toInstant(ZoneOffset.UTC));
-    System.out.println("Start Time: " + startTime);
+  // Convert Instant to Date
+  Date currentDate = Date.from(currentInstant);
+  Date startDate = Date.from(startInstant);
+  
+
+     System.out.println("Start Time: " + startTime);
     System.out.println("Start Date: " + startDate);
-    System.out.println("End Date: " + endDate);
+    System.out.println("Current Date: " + currentDate);
     System.out.println("serviceName: " + serviceName);
-    // Fetch data from MongoDB filtered by serviceName and createdTime
-    List<TraceDTO> traceList = traceQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, endDate);
+
+    List<TraceDTO> traceList = traceQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
     System.out.println("last 2 hrs data"+traceList.size());
 
     // Filter by statusCode in the range of 400 to 599
