@@ -6,7 +6,9 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaga.entity.queryentity.log.LogDTO;
+import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.log.LogQuery;
+import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.handler.LogQueryHandler;
 import com.zaga.repo.LogQueryRepo;
 
@@ -142,5 +144,14 @@ public Response getAllDataByServiceName(
     }
     return Response.status(200).entity(data).build();
 }
+
+
+ @GET
+  @Path("/LogSumaryChartDataCount")
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<LogMetrics> getLogMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes) {
+    // return logQueryHandler.getLogMetricCount(timeAgoMinutes);
+    return null;
+  }
 
 }
