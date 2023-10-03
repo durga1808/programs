@@ -78,6 +78,16 @@ public class LogQueryHandler {
     }
 
     
-  
+  //sort orer decending 
+  public List<LogDTO> getAllTracesOrderByCreatedTimeDesc() {
+    return logQueryRepo.findAllOrderByCreatedTimeDesc();
+  }
+
+
+//sort order ascending
+public List<LogDTO> getAllTracesAsc() {
+    return logQueryRepo.findAllOrderByCreatedTimeAsc();
+}
+
 }
 

@@ -1,5 +1,6 @@
 package com.zaga.entity.queryentity.log;
 
+import java.util.Date;
 import java.util.List;
 
 import com.zaga.entity.otellog.ScopeLogs;
@@ -16,5 +17,6 @@ import lombok.NoArgsConstructor;
 public class LogDTO {
     private String serviceName;
     private String traceId;
+    private Date createdTime;
     private List<ScopeLogs> scopeLogs;
 }
