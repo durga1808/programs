@@ -7,11 +7,18 @@ import java.util.List;
 import org.bson.Document;
 
 import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.Sorts;
 import com.zaga.entity.otellog.ScopeLogs;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogQuery;
 import com.zaga.repo.LogQueryRepo;
+import com.mongodb.client.model.Filters;
+
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -22,6 +29,8 @@ public class LogQueryHandler {
     @Inject
     LogQueryRepo logQueryRepo;
     
+
+    private static final String MONGO_CONNECTION_STRING = "mongodb+srv://devteam:Zagateam2023*@applicationcluster.tvbngn1.mongodb.net/test";
 
     public List<LogDTO> getLogsByServiceName(String serviceName, int page, int pageSize) {
         return logQueryRepo.findByServiceName(serviceName, page, pageSize);
@@ -89,5 +98,27 @@ public List<LogDTO> getAllTracesAsc() {
     return logQueryRepo.findAllOrderByCreatedTimeAsc();
 }
 
+//sort error first
+
+    // public List<LogDTO> getAllLogsSortedByErrorFirst() {
+    //     try (MongoClient mongoClient = MongoClients.create(MONGO_CONNECTION_STRING)) {
+    //         // Specify your database and collection
+    //         MongoCollection<Document> logCollection = mongoClient.getDatabase("OtelLog").getCollection("LogDTO");
+
+    //         // Aggregation pipeline stages
+    //         List<Document> pipeline = List.of(
+    //                 Aggregates.unwind("$scopeLogs"),
+    //                 Aggregates.unwind("$scopeLogs.logRecords"),
+    //                 Aggregates.match(Filters.eq("scopeLogs.logRecords.severityText", "ERROR")),
+    //                 Aggregates.sort(Sorts.descending("scopeLogs.logRecords.severityNumber"))
+    //                 // Add more stages as needed
+    //         );
+
+    //         List<LogDTO> sortedLogs = logQueryRepo.fromDocuments(logCollection.aggregate(pipeline).into(new ArrayList<>()));
+
+    //         return sortedLogs;
+    //     }
+
 }
+
 

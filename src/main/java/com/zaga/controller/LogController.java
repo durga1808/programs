@@ -1,8 +1,13 @@
 package com.zaga.controller;
 
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaga.entity.queryentity.log.LogDTO;
@@ -143,4 +148,77 @@ public Response getAllDataByServiceName(
     return Response.status(200).entity(data).build();
 }
 
+
+@GET
+@Path("/getallLogdata-sortorder")
+@Produces(MediaType.APPLICATION_JSON)
+public Response sortOrderTrace(
+    @QueryParam("sortOrder") String sortOrder,
+    @QueryParam("page") int page,
+    @QueryParam("pageSize") int pageSize,
+    @QueryParam("minutesAgo") int minutesAgo) {
+
+      if (page <= 0 || pageSize <= 0 || minutesAgo < 0) {
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Invalid page, pageSize, or minutesAgo parameters.")
+                .build();
+    }
+    List<LogDTO> logs;
+        if ("new".equalsIgnoreCase(sortOrder)) {
+        logs = logQueryHandler.getAllTracesOrderByCreatedTimeDesc();
+          } else if ("old".equalsIgnoreCase(sortOrder)) {
+        logs = logQueryHandler.getAllTracesAsc();
+          } else {
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.")
+                .build();
+    }
+
+    if (minutesAgo > 0) {
+    Date cutoffDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(minutesAgo));
+    logs = logs.stream()
+    .filter(log -> {
+        Date createdTime = log.getCreatedTime();
+        return createdTime != null && createdTime.after(cutoffDate);
+    })
+    .collect(Collectors.toList());
+}
+
+    int startIndex = (page - 1) * pageSize;
+    int endIndex = Math.min(startIndex + pageSize, logs.size());
+
+if (startIndex >= endIndex || logs.isEmpty()) {
+        Map<String, Object> emptyResponse = new HashMap<>();
+        emptyResponse.put("data", Collections.emptyList());
+        emptyResponse.put("totalCount", 0);
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseJson = objectMapper.writeValueAsString(emptyResponse);
+
+            return Response.ok(responseJson).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error converting response to JSON")
+                    .build();
+        }
+    }
+
+  List<LogDTO> paginatedTraces = logs.subList(startIndex, endIndex);
+    int totalCount = logs.size();
+
+    Map<String, Object> response = new HashMap<>();
+    response.put("data", paginatedTraces);
+    response.put("totalCount", totalCount);
+ try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(response);
+
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+            .entity("Error converting response to JSON")
+            .build();
+    }
+}
 }
