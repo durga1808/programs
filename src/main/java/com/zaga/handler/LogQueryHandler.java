@@ -19,7 +19,10 @@ import org.bson.BsonRegularExpression;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
-
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
@@ -33,6 +36,7 @@ import com.mongodb.client.model.Sorts;
 import com.zaga.entity.otellog.ScopeLogs;
 import com.zaga.entity.otellog.scopeLogs.LogRecord;
 import com.zaga.entity.otellog.scopeLogs.Scope;
+import com.zaga.entity.otellog.scopeLogs.logRecord.Body;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.log.LogQuery;
@@ -357,78 +361,120 @@ public List<LogDTO> findByMatching(int page, int pageSize, String serviceName) {
 
 
 
-//search functionality 
-// public List<LogDTO> searchLogs(String keyword) {
-//     List<LogDTO> results = new ArrayList<>();
-//     String regexPattern = ".*" + Pattern.quote(keyword) + ".*";
-//     BsonRegularExpression regex = new BsonRegularExpression(regexPattern, "i");
+  // search functionality
+  public List<LogDTO> searchLogs(String keyword) {
+    List<LogDTO> results = new ArrayList<>();
+    String regexPattern = ".*" + Pattern.quote(keyword) + ".*";
+    BsonRegularExpression regex = new BsonRegularExpression(regexPattern, "i");
 
-//     try {
-//         MongoCollection<Document> collection = mongoClient
-//                 .getDatabase("OtelLog")
-//                 .getCollection("LogDTO");
+    try {
+        MongoCollection<Document> collection = mongoClient
+                .getDatabase("OtelLog")
+                .getCollection("LogDTO");
 
-//         Document query = new Document("$or", List.of(
-//             new Document("serviceName", regex),
-//             new Document("traceId", regex),
-//             new Document("spanId", regex),
-//             new Document("severityText", regex)
-//         ));
+        Document query = new Document("$or", List.of(
+                // new Document("serviceName", regex),
+                // new Document("traceId", regex),
+                // new Document("spanId", regex),
+                // new Document("severityText", regex),
+                // new Document("scopeLogs", regex)
+                new Document("scopeLogs.logRecords.body.stringValue", regex)
+                ));
 
-//         MongoCursor<Document> cursor = collection.find(query).iterator();
+        MongoCursor<Document> cursor = collection.find(query).iterator();
 
-//         while (cursor.hasNext()) {
-//             Document document = cursor.next();
-//             LogDTO logDTO = mapDocumentToLogDTO(document);
-//             results.add(logDTO);
-//         }
-//     } catch (Exception e) {
-//         // Handle exceptions
-//     }
+        while (cursor.hasNext()) {
+            Document document = cursor.next();
+            LogDTO logResult = mapDocumentToLogDTO(document);
+            results.add((LogDTO) logResult);
+        }
+    } catch (Exception e) {
+    }
 
-//     return results;
-// }
+    return results;
+}
 
-// private LogDTO mapDocumentToLogDTO(Document document) {
-//     LogDTO logDTO = new LogDTO();
-//     logDTO.setServiceName(document.getString("serviceName"));
-//     logDTO.setTraceId(document.getString("traceId"));
-//     logDTO.setSpanId(document.getString("spanId"));
-//     logDTO.setCreatedTime(document.getDate("createdTime"));
-//     logDTO.setSeverityText(document.getString("severityText"));
+private LogDTO mapDocumentToLogDTO(Document document) {
+    // LogDTO logDto = DocumentMapper.mapDocumentToDto(document,LogDTO.class);
+    // System.out.println("------fasfSF----" + logDto.getServiceName());
 
-//     List<Document> scopeLogsDocuments = (List<Document>) document.get("scopeLogs");
-//     if (scopeLogsDocuments != null && !scopeLogsDocuments.isEmpty()) {
-//         List<ScopeLogs> scopeLogsList = new ArrayList<>();
-//         for (Document scopeLogsDocument : scopeLogsDocuments) {
-//             ScopeLogs scopeLogs = new ScopeLogs();
-//             scopeLogs.setScope(mapScope(scopeLogsDocument.get("scope", Document.class)));
-//             scopeLogs.setLogRecords(mapLogRecords((List<Document>) scopeLogsDocument.get("logRecords")));
-//             scopeLogsList.add(scopeLogs);
-//         }
-//         logDTO.setScopeLogs(scopeLogsList);
-//     }
+    LogDTO logDTO = new LogDTO();
+    Gson gson = new Gson();
+    String data = gson.toJson(document);
+    // System.out.println("---data----  " + data);
 
-//     return logDTO;
-// }
+    JsonObject jsonObject = JsonParser.parseString(data).getAsJsonObject();
+    JsonArray jsonArray = jsonObject.getAsJsonArray("scopeLogs");
+    // System.out.println("----scope---- " + jsonArray);
 
-// private ScopeLogs mapScope(Document scopeDocument) {
-//     ScopeLogs scopeLogs = new ScopeLogs();
-//     // Map scopeDocument fields to ScopeLogs object if needed
-//     return scopeLogs;
-// }
+    logDTO.setServiceName(jsonObject.get("serviceName").getAsString());
+    logDTO.setTraceId(jsonObject.get("traceId").getAsString());
+    logDTO.setSpanId(jsonObject.get("spanId").getAsString());
+    logDTO.setCreatedTime(document.getDate("createdTime"));
+    logDTO.setSeverityText(jsonObject.get("severityText").getAsString());
 
-// private List<LogRecord> mapLogRecords(List<Document> logRecordsDocuments) {
-//     List<LogRecord> logRecordsList = new ArrayList<>();
-//     for (Document logRecordDocument : logRecordsDocuments) {
-//         LogRecord logRecord = new LogRecord();
-//         // Map logRecordDocument fields to LogRecord object if needed
-//         logRecordsList.add(logRecord);
-//     }
-//     return logRecordsList;
-// }
+    Scope scope = new Scope();
+    List<LogRecord> logRecords = new ArrayList<LogRecord>();
 
+    //scope logs
+    for(int i = 0 ; i < jsonArray.size() ; i++){
+        JsonObject jsonObject2 = jsonArray.get(i).getAsJsonObject();
+        //scope name 
+        scope.setName(jsonObject2.getAsJsonObject("scope").get("name").getAsString());
+
+        //log records 
+        JsonArray jsonArray2 = jsonObject2.getAsJsonArray("logRecords");
+        
+        for(int j = 0 ; j < jsonArray2.size() ; j++){
+            LogRecord logRecord = new LogRecord();
+            Body body = new Body();
+            JsonObject jsonObject3 = jsonArray2.get(j).getAsJsonObject();
+            System.out.println("-------" + jsonObject3.get("timeUnixNano").getAsString());
+            logRecord.setTimeUnixNano(jsonObject3.get("timeUnixNano").getAsString());
+            logRecord.setObservedTimeUnixNano(jsonObject3.get("observedTimeUnixNano").getAsString());
+            logRecord.setSeverityNumber(jsonObject3.get("severityNumber").getAsInt());
+            logRecord.setSeverityText(jsonObject3.get("severityText").getAsString());
+            logRecord.setFlags(jsonObject3.get("flags").getAsInt());
+            logRecord.setTraceId(jsonObject3.get("traceId").getAsString());
+            logRecord.setSpanId(jsonObject3.get("spanId").getAsString());
+            body.setStringValue(jsonObject3.getAsJsonObject("body").get("stringValue").getAsString());
+            logRecord.setBody(body);               
+            logRecords.add(logRecord);
+        }
+
+        System.out.println("----scope name ---- " + jsonObject2.getAsJsonObject("scope").get("name").getAsString());
+    }
     
+    ScopeLogs scopeLogs = new ScopeLogs();
+    scopeLogs.setScope(scope);
+    scopeLogs.setLogRecords(logRecords);
+    List<ScopeLogs> scopeLogsArray = new ArrayList<ScopeLogs>();
+    scopeLogsArray.add(scopeLogs);
+    logDTO.setScopeLogs(scopeLogsArray);
+    // logDTO.setServiceName(document.getString("serviceName"));
+    // logDTO.setTraceId(document.getString("traceId"));
+    // logDTO.setSpanId(document.getString("spanId"));
+    // logDTO.setCreatedTime(document.getDate("createdTime"));
+    // logDTO.setSeverityText(document.getString("severityText"));
+
+    // List<Document> scopeLogsDocuments = (List<Document>) document.get("scopeLogs");
+
+    // System.out.println("-----scoped log data---- " + scopeLogsDocuments.size());
+    // if (scopeLogsDocuments.size() > 0) {
+    // List<Map<String, Object>> scopeLogsList = new ArrayList<>();
+    // for (Document scopeLogsDocument : scopeLogsDocuments) {
+    // Map<String, Object> scopeLogsMap = new HashMap<>();
+    // scopeLogsMap.put("name", scopeLogsDocument.getString("flags"));
+    // System.out.println(scopeLogsDocument);
+    // }
+
+    // // logDTO.setScopeLogs(scopeLogsDocuments);
+    // }
+
+    return logDTO;
+}
+
+
 
 }
 
