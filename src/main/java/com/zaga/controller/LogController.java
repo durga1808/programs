@@ -169,6 +169,9 @@ public Response sortOrderTrace(
           } else if ("old".equalsIgnoreCase(sortOrder)) {
         logs = logQueryHandler.getAllLogssAsc();
           }  
+          else if ("error".equalsIgnoreCase(sortOrder)) {
+        logs = logQueryHandler.getErrorLogs();
+          }
           else {
         return Response.status(Response.Status.BAD_REQUEST)
                 .entity("Invalid sortOrder parameter. Use 'new', 'old'.")

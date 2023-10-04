@@ -21,8 +21,11 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Sorts;
 import com.zaga.entity.otellog.ScopeLogs;
 import com.zaga.entity.otellog.scopeLogs.LogRecord;
 import com.zaga.entity.queryentity.log.LogDTO;
@@ -273,6 +276,20 @@ public List<LogDTO> getAllLogssAsc() {
     return logQueryRepo.findAllOrderByCreatedTimeAsc();
 }
 
+//sort order error data decending
+public List<LogDTO> getErrorLogs() {
+    MongoDatabase database = mongoClient.getDatabase("OtelLog"); // Replace with your actual database name
+    MongoCollection<LogDTO> logDTOCollection = database.getCollection("LogDTO", LogDTO.class);
+
+    Bson matchStage = Aggregates.match(Filters.elemMatch("scopeLogs", Filters.elemMatch("logRecords", Filters.eq("severityText", "ERROR"))));
+    Bson unwindStage = Aggregates.unwind("$scopeLogs");
+    Bson sortStage = Aggregates.sort(Sorts.descending("createdTime"));
+
+    List<LogDTO> result = logDTOCollection.aggregate(List.of(matchStage, unwindStage, sortStage))
+            .into(new ArrayList<>());
+
+    return result;
+}
 
 
 public List<LogMetrics> getLogMetricCount(int timeAgoMinutes) {
