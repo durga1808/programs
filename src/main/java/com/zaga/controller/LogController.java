@@ -399,7 +399,7 @@ public Response findRecentDataPaged(
 
 
     @GET
-    @Path("/search")
+    @Path("/searchFunction")
     public List<LogDTO> searchLogs(@QueryParam("keyword") String keyword) {
         return logQueryHandler.searchLogs(keyword);
     }
