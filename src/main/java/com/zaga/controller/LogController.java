@@ -128,12 +128,15 @@ public Response getAllDataByServiceName(
                 .build();
         }
     List<LogDTO> data = repo.find("traceId=?1", traceId).list();
-    if (data.isEmpty()){
-        return Response.status(Response.Status.NOT_FOUND)
-           .entity("No LogDTO found for traceId: " + traceId)
-           .build();
+    if (data.isEmpty()) {
+        // Return an empty array if no LogDTO is found
+        return Response.status(Response.Status.OK)
+                .entity(new ArrayList<>())
+                .build();
     }
-    return Response.status(200).entity(data).build();
+
+    // Return the actual data if found
+    return Response.status(Response.Status.OK).entity(data).build();
 }
 
 
