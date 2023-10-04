@@ -6,11 +6,14 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.bson.BsonRegularExpression;
 import org.bson.Document;
@@ -23,6 +26,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.Field;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
@@ -217,19 +221,47 @@ public List<LogDTO> getAllLogssAsc() {
 }
 
 //sort order error data decending
-public List<LogDTO> getErrorLogs() {
-    MongoDatabase database = mongoClient.getDatabase("OtelLog"); // Replace with your actual database name
+// public List<LogDTO> getAllErrorLogsOrderBySeverityAndCreatedTimeDesc() {
+//     MongoDatabase database = mongoClient.getDatabase("OtelLog"); 
+//     MongoCollection<LogDTO> logDTOCollection = database.getCollection("LogDTO", LogDTO.class);
+
+//     Bson matchStage = Aggregates.match(Filters.elemMatch("scopeLogs.logRecords", Filters.eq("severityText", "ERROR")));
+//     Bson sortStage = Aggregates.sort(Sorts.orderBy(Sorts.descending("severityText"), Sorts.descending("createdTime")));
+
+//     List<LogDTO> result = logDTOCollection.aggregate(List.of(matchStage, sortStage))
+//             .into(new ArrayList<>());
+
+//     return result;
+// }
+
+public List<LogDTO> getAllErrorLogsOrderBySeverityAndCreatedTimeDesc() {
+    MongoDatabase database = mongoClient.getDatabase("OtelLog");
     MongoCollection<LogDTO> logDTOCollection = database.getCollection("LogDTO", LogDTO.class);
 
-    Bson matchStage = Aggregates.match(Filters.elemMatch("scopeLogs", Filters.elemMatch("logRecords", Filters.eq("severityText", "ERROR"))));
-    Bson unwindStage = Aggregates.unwind("$scopeLogs");
-    Bson sortStage = Aggregates.sort(Sorts.descending("createdTime"));
+    Bson addSortFieldStage = Aggregates.addFields(new Field<>("customSortField", new Document("$cond",
+            Arrays.asList(
+                    new Document("$eq", Arrays.asList("$severityText", "ERROR")),
+                    0,
+                    1
+            )
+    )));
 
-    List<LogDTO> result = logDTOCollection.aggregate(List.of(matchStage, unwindStage, sortStage))
+    Bson sortStage = Aggregates.sort(Sorts.orderBy(
+            Sorts.ascending("customSortField"),
+            Sorts.descending("createdTime")
+    ));
+
+    Bson projectStage = Aggregates.project(Projections.exclude("customSortField"));
+
+    List<LogDTO> result = logDTOCollection.aggregate(Arrays.asList(addSortFieldStage, sortStage, projectStage))
             .into(new ArrayList<>());
 
     return result;
 }
+
+
+
+
 
 
 public List<LogMetrics> getLogMetricCount(int timeAgoMinutes) {
