@@ -28,6 +28,7 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import com.zaga.entity.otellog.ScopeLogs;
 import com.zaga.entity.otellog.scopeLogs.LogRecord;
+import com.zaga.entity.otellog.scopeLogs.Scope;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.log.LogQuery;
@@ -386,56 +387,77 @@ public List<LogDTO> findByMatching(int page, int pageSize, String serviceName) {
 
 
 //search functionality 
-public List<LogDTO> searchLogs(String keyword) {
-        List<LogDTO> results = new ArrayList<>();
-        String regexPattern = ".*" + Pattern.quote(keyword) + ".*";
-        BsonRegularExpression regex = new BsonRegularExpression(regexPattern, "i");
+// public List<LogDTO> searchLogs(String keyword) {
+//     List<LogDTO> results = new ArrayList<>();
+//     String regexPattern = ".*" + Pattern.quote(keyword) + ".*";
+//     BsonRegularExpression regex = new BsonRegularExpression(regexPattern, "i");
 
-        try {
-            MongoCollection<Document> collection = mongoClient
-                    .getDatabase("OtelLog")
-                    .getCollection("LogDTO");
+//     try {
+//         MongoCollection<Document> collection = mongoClient
+//                 .getDatabase("OtelLog")
+//                 .getCollection("LogDTO");
 
-            Document query = new Document("$or", List.of(
-                new Document("serviceName", regex),
-                new Document("traceId", regex),
-                new Document("spanId", regex),
-                new Document("severityText", regex),
-                new Document("scopeLogs", regex)
-            ));
+//         Document query = new Document("$or", List.of(
+//             new Document("serviceName", regex),
+//             new Document("traceId", regex),
+//             new Document("spanId", regex),
+//             new Document("severityText", regex)
+//         ));
 
-            MongoCursor<Document> cursor = collection.find(query).iterator();
+//         MongoCursor<Document> cursor = collection.find(query).iterator();
 
-            while (cursor.hasNext()) {
-                Document document = cursor.next();
-                LogDTO logDTO = mapDocumentToLogDTO(document);
-                results.add(logDTO);
-            }
-        } catch (Exception e) {
-        }
+//         while (cursor.hasNext()) {
+//             Document document = cursor.next();
+//             LogDTO logDTO = mapDocumentToLogDTO(document);
+//             results.add(logDTO);
+//         }
+//     } catch (Exception e) {
+//         // Handle exceptions
+//     }
 
-        return results;
-    }
+//     return results;
+// }
 
-    private LogDTO mapDocumentToLogDTO(Document document) {
-        LogDTO logDTO = new LogDTO();
-        logDTO.setServiceName(document.getString("serviceName"));
-        logDTO.setTraceId(document.getString("traceId"));
-        logDTO.setSpanId(document.getString("spanId"));
-        logDTO.setCreatedTime(document.getDate("createdTime"));
-        logDTO.setSeverityText(document.getString("severityText"));
+// private LogDTO mapDocumentToLogDTO(Document document) {
+//     LogDTO logDTO = new LogDTO();
+//     logDTO.setServiceName(document.getString("serviceName"));
+//     logDTO.setTraceId(document.getString("traceId"));
+//     logDTO.setSpanId(document.getString("spanId"));
+//     logDTO.setCreatedTime(document.getDate("createdTime"));
+//     logDTO.setSeverityText(document.getString("severityText"));
 
-        List<Document> scopeLogsDocuments = (List<Document>) document.get("scopeLogs");
-        if (scopeLogsDocuments != null) {
-            List<ScopeLogs> scopeLogsList = new ArrayList<>();
-            for (Document scopeLogsDocument : scopeLogsDocuments) {
-                // Map the scopeLogsDocument to ScopeLogs if needed
-             }
-            logDTO.setScopeLogs(scopeLogsList);
-        }
+//     List<Document> scopeLogsDocuments = (List<Document>) document.get("scopeLogs");
+//     if (scopeLogsDocuments != null && !scopeLogsDocuments.isEmpty()) {
+//         List<ScopeLogs> scopeLogsList = new ArrayList<>();
+//         for (Document scopeLogsDocument : scopeLogsDocuments) {
+//             ScopeLogs scopeLogs = new ScopeLogs();
+//             scopeLogs.setScope(mapScope(scopeLogsDocument.get("scope", Document.class)));
+//             scopeLogs.setLogRecords(mapLogRecords((List<Document>) scopeLogsDocument.get("logRecords")));
+//             scopeLogsList.add(scopeLogs);
+//         }
+//         logDTO.setScopeLogs(scopeLogsList);
+//     }
 
-        return logDTO;
-    }
+//     return logDTO;
+// }
+
+// private ScopeLogs mapScope(Document scopeDocument) {
+//     ScopeLogs scopeLogs = new ScopeLogs();
+//     // Map scopeDocument fields to ScopeLogs object if needed
+//     return scopeLogs;
+// }
+
+// private List<LogRecord> mapLogRecords(List<Document> logRecordsDocuments) {
+//     List<LogRecord> logRecordsList = new ArrayList<>();
+//     for (Document logRecordDocument : logRecordsDocuments) {
+//         LogRecord logRecord = new LogRecord();
+//         // Map logRecordDocument fields to LogRecord object if needed
+//         logRecordsList.add(logRecord);
+//     }
+//     return logRecordsList;
+// }
+
+    
 
 }
 
