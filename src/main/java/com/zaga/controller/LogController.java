@@ -170,7 +170,7 @@ public Response sortOrderTrace(
         logs = logQueryHandler.getAllLogssAsc();
           }  
           else if ("error".equalsIgnoreCase(sortOrder)) {
-        logs = logQueryHandler.getErrorLogs();
+        logs = logQueryHandler.getAllErrorLogsOrderBySeverityAndCreatedTimeDesc();
           }
           else {
         return Response.status(Response.Status.BAD_REQUEST)
