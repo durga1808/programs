@@ -278,7 +278,7 @@ try {
                .build();
         }
 
-    List<LogDTO> data = repo.find("keyword=?1", keyword).list();
+    List<LogDTO> data = repo.findByKeyword(keyword);
     System.out.println(data);
     if (data.isEmpty()){
         return Response.status(Response.Status.NOT_FOUND)
