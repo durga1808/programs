@@ -38,6 +38,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
@@ -296,20 +297,22 @@ public Map<String, Object> findByMatchingWithTotalCount(
         int pageSize,
         String serviceName
 ) {
-    final int defaultInterval = 120;
+    final int defaultInterval = 420;
 
 
-    // Calculate the time 2 hours ago
-    OffsetDateTime twoHoursAgoOffset = OffsetDateTime.now().minusHours(defaultInterval);
+    // // Calculate the time 2 hours ago
+    // OffsetDateTime twoHoursAgoOffset = OffsetDateTime.now().minusHours(defaultInterval);
 
-    // Convert the OffsetDateTime to Timestamp for comparison
-    Timestamp twoHoursAgoTimestamp = Timestamp.from(twoHoursAgoOffset.toInstant());
+    // // Convert the OffsetDateTime to Timestamp for comparison
+    // Timestamp twoHoursAgoTimestamp = Timestamp.from(twoHoursAgoOffset.toInstant());
+
+    Date twoHoursAgoDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(defaultInterval));
 
     PanacheQuery<TraceDTO> traceQuery = traceQueryRepo.find(
             "serviceName = ?1 and createdTime >= ?2",
             Sort.descending("createdTime"),
             serviceName,
-            twoHoursAgoTimestamp
+            twoHoursAgoDate
     );
 
     List<TraceDTO> traceList = traceQuery.page(page, pageSize).list();
