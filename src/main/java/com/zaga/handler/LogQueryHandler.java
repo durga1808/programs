@@ -10,7 +10,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
+import org.bson.BsonRegularExpression;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
@@ -327,18 +329,14 @@ public List<LogDTO> findByMatching(int page, int pageSize, String serviceName) {
     LocalDateTime currentTime = LocalDateTime.now();
     LocalDateTime startTime = currentTime.minusHours(55182);
 
-    // Convert LocalDateTime to Instant
     Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
     Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
 
-    // Convert Instant to Date
     Date currentDate = Date.from(currentInstant);
     Date startDate = Date.from(startInstant);
 
-    // Fetch data by serviceName and createdTime
     List<LogDTO> logList = logQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
 
-    // Filter logList to include only records with severityText "ERROR"
     List<LogDTO> filteredLogList = new ArrayList<>();
     for (LogDTO logDTO : logList) {
         List<ScopeLogs> scopeLogsList = logDTO.getScopeLogs();
@@ -368,41 +366,58 @@ public List<LogDTO> findByMatching(int page, int pageSize, String serviceName) {
     return filteredLogList.subList(startIndex, endIndex);
 }
 
-//Log Summary with With Error severity Text based on last 2 hrs data or recent data
-public List<LogDTO> getLogSummary(int page, int pageSize, String serviceName) {
-        LocalDateTime currentTime = LocalDateTime.now();
-        LocalDateTime startTime = currentTime.minusHours(2);
 
-        // Convert LocalDateTime to Instant
-        Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
-        Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
 
-        // Convert Instant to Date
-        Date currentDate = Date.from(currentInstant);
-        Date startDate = Date.from(startInstant);
+//search functionality 
+public List<LogDTO> searchLogs(String keyword) {
+        List<LogDTO> results = new ArrayList<>();
+        String regexPattern = ".*" + Pattern.quote(keyword) + ".*";
+        BsonRegularExpression regex = new BsonRegularExpression(regexPattern, "i");
 
-        System.out.println("Start Time: " + startTime);
-        System.out.println("Start Date: " + startDate);
-        System.out.println("Current Date: " + currentDate);
-        System.out.println("serviceName: " + serviceName);
+        try {
+            MongoCollection<Document> collection = mongoClient
+                    .getDatabase("OtelLog")
+                    .getCollection("LogDTO");
 
-        List<LogDTO> logList = logQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
-        System.out.println("last 2 hrs data: " + logList.size());
+            Document query = new Document("$or", List.of(
+                new Document("serviceName", regex),
+                new Document("traceId", regex),
+                new Document("spanId", regex),
+                new Document("severityText", regex),
+                new Document("scopeLogs", regex)
+            ));
 
-        // Filter by error severity
-        logList = filterByErrorSeverity(logList);
+            MongoCursor<Document> cursor = collection.find(query).iterator();
 
-        // Calculate data count
-        int dataCount = logList.size();
+            while (cursor.hasNext()) {
+                Document document = cursor.next();
+                LogDTO logDTO = mapDocumentToLogDTO(document);
+                results.add(logDTO);
+            }
+        } catch (Exception e) {
+        }
 
-        // Paginate the results
-        int startIndex = (page - 1) * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, dataCount);
-        return logList.subList(startIndex, endIndex);
+        return results;
     }
 
-    private List<LogDTO> filterByErrorSeverity(List<LogDTO> logList) {
-      return logList; 
+    private LogDTO mapDocumentToLogDTO(Document document) {
+        LogDTO logDTO = new LogDTO();
+        logDTO.setServiceName(document.getString("serviceName"));
+        logDTO.setTraceId(document.getString("traceId"));
+        logDTO.setSpanId(document.getString("spanId"));
+        logDTO.setCreatedTime(document.getDate("createdTime"));
+        logDTO.setSeverityText(document.getString("severityText"));
+
+        List<Document> scopeLogsDocuments = (List<Document>) document.get("scopeLogs");
+        if (scopeLogsDocuments != null) {
+            List<ScopeLogs> scopeLogsList = new ArrayList<>();
+            for (Document scopeLogsDocument : scopeLogsDocuments) {
+                // Map the scopeLogsDocument to ScopeLogs if needed
+             }
+            logDTO.setScopeLogs(scopeLogsList);
+        }
+
+        return logDTO;
     }
 
 }
