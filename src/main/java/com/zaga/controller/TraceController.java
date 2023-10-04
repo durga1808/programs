@@ -193,7 +193,7 @@ public Response findRecentDataPaged(
     Map<String, Object> result = traceQueryHandler.findByMatchingWithTotalCount(page, pageSize, serviceName);
 
     List<TraceDTO> paginatedData = (List<TraceDTO>) result.get("data");
-    int totalCount = (int) result.get("totalCount");
+    Long totalCount = (Long) result.get("totalCount");
 
     if (paginatedData == null || paginatedData.isEmpty()) {
         return Response.ok(Collections.emptyList()).build();

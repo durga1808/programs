@@ -10,19 +10,27 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
+import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.entity.queryentity.trace.TraceQuery;
 import com.zaga.repo.TraceQueryRepo;
 
+import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Parameters;
+import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -234,56 +242,91 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
 //     return traceList.subList(startIndex, endIndex);
 // }
 
+// public Map<String, Object> findByMatchingWithTotalCount(
+//     int page,
+//     int pageSize,
+//     String serviceName
+// ) {
+//     LocalDateTime currentTime = LocalDateTime.now();
+//     LocalDateTime startTime = currentTime.minusHours(2);
+
+//     // Convert LocalDateTime to Instant
+//     Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
+//     Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
+
+//     // Convert Instant to Date
+//     Date currentDate = Date.from(currentInstant);
+//     Date startDate = Date.from(startInstant);
+
+//     System.out.println("Start Time: " + startTime);
+//     System.out.println("Start Date: " + startDate);
+//     System.out.println("Current Date: " + currentDate);
+//     System.out.println("serviceName: " + serviceName);
+
+//     // Retrieve all data for the specified time range
+//     List<TraceDTO> traceList = traceQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
+//     System.out.println("last 2 hrs data: " + traceList.size());
+
+//     // Filter by statusCode in the range of 400 to 599
+//     traceList = filterByStatusCode(traceList);
+
+//     // Calculate data count
+//     int dataCount = traceList.size();
+
+//  // Paginate the results
+// int startIndex = (page - 1) * pageSize;
+// int endIndex = Math.min(startIndex + pageSize, dataCount);
+
+// // Ensure that indices are within the valid range
+// startIndex = Math.min(Math.max(0, startIndex), dataCount);  // Ensure startIndex is non-negative and within bounds
+// endIndex = Math.max(startIndex, Math.min(dataCount, endIndex));  // Ensure endIndex is greater than or equal to startIndex and within bounds
+
+// // Create a map to hold the result
+// Map<String, Object> resultMap = new HashMap<>();
+// resultMap.put("data", traceList.subList(startIndex, endIndex));
+// resultMap.put("totalCount", dataCount);  // Use the filtered data count as total count
+
+// // Return the result map
+// return resultMap;
+
+// }
+
 public Map<String, Object> findByMatchingWithTotalCount(
-    int page,
-    int pageSize,
-    String serviceName
+        int page,
+        int pageSize,
+        String serviceName
 ) {
-    LocalDateTime currentTime = LocalDateTime.now();
-    LocalDateTime startTime = currentTime.minusHours(2);
-
-    // Convert LocalDateTime to Instant
-    Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
-    Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
-
-    // Convert Instant to Date
-    Date currentDate = Date.from(currentInstant);
-    Date startDate = Date.from(startInstant);
-
-    System.out.println("Start Time: " + startTime);
-    System.out.println("Start Date: " + startDate);
-    System.out.println("Current Date: " + currentDate);
-    System.out.println("serviceName: " + serviceName);
-
-    // Retrieve all data for the specified time range
-    List<TraceDTO> traceList = traceQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
-    System.out.println("last 2 hrs data: " + traceList.size());
-
-    // Filter by statusCode in the range of 400 to 599
-    traceList = filterByStatusCode(traceList);
-
-    // Calculate data count
-    int dataCount = traceList.size();
-
- // Paginate the results
-int startIndex = (page - 1) * pageSize;
-int endIndex = Math.min(startIndex + pageSize, dataCount);
-
-// Ensure that indices are within the valid range
-startIndex = Math.min(Math.max(0, startIndex), dataCount);  // Ensure startIndex is non-negative and within bounds
-endIndex = Math.max(startIndex, Math.min(dataCount, endIndex));  // Ensure endIndex is greater than or equal to startIndex and within bounds
-
-// Create a map to hold the result
-Map<String, Object> resultMap = new HashMap<>();
-resultMap.put("data", traceList.subList(startIndex, endIndex));
-resultMap.put("totalCount", dataCount);  // Use the filtered data count as total count
-
-// Return the result map
-return resultMap;
-
-}
+    final int defaultInterval = 120;
 
 
+    // Calculate the time 2 hours ago
+    OffsetDateTime twoHoursAgoOffset = OffsetDateTime.now().minusHours(defaultInterval);
+
+    // Convert the OffsetDateTime to Timestamp for comparison
+    Timestamp twoHoursAgoTimestamp = Timestamp.from(twoHoursAgoOffset.toInstant());
+
+    PanacheQuery<TraceDTO> traceQuery = traceQueryRepo.find(
+            "serviceName = ?1 and createdTime >= ?2",
+            Sort.descending("createdTime"),
+            serviceName,
+            twoHoursAgoTimestamp
+    );
+
+    List<TraceDTO> traceList = traceQuery.page(page, pageSize).list();
+    System.out.println("-------traceList-------" + traceList);
+
+        traceList = filterByStatusCode(traceList);
+
+        long totalCount = traceQuery.count();
+
+        // Create a map to hold the result
+        Map<String, Object> resultMap = new HashMap<>();
+        resultMap.put("data", traceList);
+        resultMap.put("totalCount", totalCount);
+
+        // Return the result map
+        return resultMap;
+    }
 
 // Modify the filterByServiceNameAndStatusCode method to filter by StatusCode only
 private List<TraceDTO> filterByStatusCode(List<TraceDTO> traceList) {
