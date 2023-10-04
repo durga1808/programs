@@ -1,5 +1,6 @@
 package com.zaga.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.trace.TraceDTO;
@@ -191,21 +192,24 @@ public Response findRecentDataPaged(
 
     Map<String, Object> result = traceQueryHandler.findByMatchingWithTotalCount(page, pageSize, serviceName);
 
-    // Extract the paginated data and total count from the result
     List<TraceDTO> paginatedData = (List<TraceDTO>) result.get("data");
     int totalCount = (int) result.get("totalCount");
 
-    // Check if paginatedData is null or empty and return an empty list if true
     if (paginatedData == null || paginatedData.isEmpty()) {
         return Response.ok(Collections.emptyList()).build();
     }
 
-    // Construct a response object with the paginated data and total count
     Map<String, Object> responseMap = new HashMap<>();
     responseMap.put("data", paginatedData);
     responseMap.put("totalCount", totalCount);
 
-    return Response.ok(responseMap).build();
+     try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonResponse = objectMapper.writeValueAsString(responseMap);
+        return Response.ok(jsonResponse).build();
+    } catch (JsonProcessingException e) {
+        return Response.serverError().entity("Error converting to JSON").build();
+    }
 }
 
 
