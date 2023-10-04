@@ -256,37 +256,70 @@ if (startIndex >= endIndex || logs.isEmpty()) {
 //     }
 // }
 
-
 @POST
 @Path("/LogFilterQuery")
-public Response filterLogs(LogQuery logQuery,
-                       @QueryParam("page") @DefaultValue("1") int page,
-                       @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-                       @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo) {
-try {
-    List<LogDTO> filteredLogs = logQueryHandler.searchLogs(logQuery, page, pageSize, minutesAgo);
-    System.out.println(filteredLogs);
+public Response filterLogs(
+        LogQuery logQuery,
+        @QueryParam("page") @DefaultValue("1") int page,
+        @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+        @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo) {
 
-    // long totalCount = logQueryHandler.countFilteredLogs(logQuery, minutesAgo);
+    // Validate parameters
+    if (page <= 0 || pageSize <= 0 || minutesAgo < 0) {
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Invalid page, pageSize, or minutesAgo parameters.")
+                .build();
+    }
 
-    Map<String, Object> jsonResponse = new HashMap<>();
-    // jsonResponse.put("totalCount", totalCount);
-    // jsonResponse.put("data", filteredLogs);
-    jsonResponse.put("totalCount", 0);
+    List<LogDTO> logs = logQueryHandler.searchlogPaged(logQuery, page, pageSize, minutesAgo);
 
-    ObjectMapper objectMapper = new ObjectMapper();
-    String responseJson = objectMapper.writeValueAsString(jsonResponse);
+    if (minutesAgo > 0) {
+        Date cutoffDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(minutesAgo));
+        logs = logs.stream()
+                .filter(log -> {
+                    Date createdTime = log.getCreatedTime();
+                    return createdTime != null && createdTime.after(cutoffDate);
+                })
+                .collect(Collectors.toList());
+    }
 
-    return Response.ok(responseJson).build();
-} catch (Exception e) {
-    e.printStackTrace();
+    int startIndex = (page - 1) * pageSize;
+    int endIndex = Math.min(startIndex + pageSize, logs.size());
 
-    return Response
-        .status(Response.Status.INTERNAL_SERVER_ERROR)
-        .entity("An error occurred: " + e.getMessage())
-        .build();
+    if (startIndex >= endIndex || logs.isEmpty()) {
+        Map<String, Object> emptyResponse = new HashMap<>();
+        emptyResponse.put("data", Collections.emptyList());
+        emptyResponse.put("totalCount", 0);
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseJson = objectMapper.writeValueAsString(emptyResponse);
+
+            return Response.ok(responseJson).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error converting response to JSON")
+                    .build();
+        }
+    }
+
+    Map<String, Object> response = new HashMap<>();
+    response.put("data", logs.subList(startIndex, endIndex));
+    response.put("totalCount", logs.size());
+
+    try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(response);
+
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Error converting response to JSON")
+                .build();
+    }
 }
-}
+
+
 
 @GET
 @Path("/getErroredLogDataForLastTwo")

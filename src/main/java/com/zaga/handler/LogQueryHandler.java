@@ -182,89 +182,28 @@ public class LogQueryHandler {
 
 
 
+// search log in a filter query
+    public List<LogDTO> searchlogPaged(LogQuery logQuery,int page, int pageSize,int minutesAgo) {
 
-    public List<LogDTO> searchLogs(LogQuery query, int page, int pageSize, int minutesAgo) {
-        FindIterable<Document> result = getFilteredLogResults(query, page, pageSize, minutesAgo);
-        // System.out.println(result);
-        List<LogDTO> logDTOList = new ArrayList<>();
-        try (MongoCursor<Document> cursor = result.iterator()) {
-            while (cursor.hasNext()) {
-                Document document = cursor.next();
-                LogDTO logDTO = new LogDTO();
 
-                logDTO.setTraceId(document.getString("traceId"));
-                logDTO.setServiceName(document.getString("serviceName"));
-                // logDTO.setSeverityText(document.getString("severity"));
-                // logDTO.setMessage(document.getString("message"));
-                // logDTO.setTimestamp(document.getDate("timestamp"));
-
-                logDTOList.add(logDTO);
+        List<String> serviceNames = logQuery.getServiceName();
+        List<String> severityTexts = logQuery.getSeverityText();
+    
+        List<LogDTO> logList = logQueryRepo.listAll(); // Replace with your data source retrieval logic
+    
+        List<LogDTO> filteredLogList = new ArrayList<>();
+    
+        for (LogDTO logDTO : logList) {
+            if ((serviceNames == null || serviceNames.contains(logDTO.getServiceName())) &&
+                (severityTexts == null || severityTexts.contains(logDTO.getSeverityText()))) {
+                filteredLogList.add(logDTO);
             }
         }
-        System.out.println("-----result--------- "  + logDTOList.toString());
-        return logDTOList;
+    
+        return filteredLogList;
     }
 
-    public long countFilteredLogs(LogQuery query, int minutesAgo) {
-        FindIterable<Document> result = getFilteredLogResults(query, 0, Integer.MAX_VALUE, minutesAgo);
-        System.out.println("countFilteredLogs: " + result.into(new ArrayList<>()).size());
-        long totalCount = result.into(new ArrayList<>()).size();
-
-        return totalCount;
-    }
-
-    private FindIterable<Document> getFilteredLogResults(LogQuery query, int page, int pageSize, int minutesAgo) {
-        // Document filter = new Document();
-        List<Bson> filters = new ArrayList<>();
-
-        if (minutesAgo > 0) {
-            long currentTimeInMillis = System.currentTimeMillis();
-            long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000);
-            Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
-            filters.add(timeFilter);
-        }
-
-        // Add conditions for filtering by serviceName and severityText
-
-        System.out.println("----query--- " + query);
-        System.out.println("---page--- " + page);
-        System.out.println("---pagesize--- " + pageSize);
-        System.out.println("---minute--- " + minutesAgo);
-
-        if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
-            // filter.append("serviceName", query.getServiceName());
-            Bson serviceFilter = Filters.in("serviceName", query.getServiceName());
-            filters.add(serviceFilter);
-        }
-
-        if (query.getSeverityText() != null && !query.getSeverityText().isEmpty()) {
-            // filter.append("severity", query.getSeverityText());
-            Bson severityFilter = Filters.in("severityText", query.getSeverityText());
-            filters.add(severityFilter);
-        }
-
-        Bson filter = Filters.and(filters);
-     
-
-        MongoCollection<Document> collection = mongoClient
-                .getDatabase("OtelLog")
-                .getCollection("LogDTO");
-
-        Bson projection = Projections.excludeId();
-        return collection
-            .find(filter)
-            .projection(projection)
-            .skip((page - 1) * pageSize)
-            .limit(pageSize);
-
-    }
-
-
-
-    public long countQueryLogs(LogQuery logQuery, int minutesAgo) {
-        return 0;
-    }
-
+    
     
   //sort orer decending 
   public List<LogDTO> getAllLogssOrderByCreatedTimeDesc() {
