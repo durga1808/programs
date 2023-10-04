@@ -1,22 +1,34 @@
 package com.zaga.controller;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.bson.BsonRegularExpression;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.zaga.entity.otellog.ScopeLogs;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.log.LogQuery;
-import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.handler.LogQueryHandler;
 import com.zaga.repo.LogQueryRepo;
 
+import io.quarkus.mongodb.panache.PanacheQuery;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
@@ -38,6 +50,9 @@ public class LogController {
 
     @Inject
     LogQueryHandler logQueryHandler;
+
+    @Inject
+    MongoClient mongoClient;
 
 @GET
 @Path("/getAllDataByServiceName")
@@ -267,9 +282,129 @@ try {
 }
 }
 
+@GET
+@Path("/getErroredLogDataForLastTwo")
+public Response findRecentDataPaged(
+    @QueryParam("page") @DefaultValue("1") int page,
+    @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+    @QueryParam("serviceName") String serviceName) {
+
+    try {
+        List<LogDTO> logList = logQueryHandler.findByMatching(page, pageSize, serviceName);
+        
+        Map<String, Object> jsonResponse = new HashMap<>();
+
+        if (logList.isEmpty()) {
+            jsonResponse.put("totalCount", 0);
+            jsonResponse.put("data", Collections.emptyList());
+        } else {
+            jsonResponse.put("totalCount", logList.size());
+            jsonResponse.put("data", logList);
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(jsonResponse);
+
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        e.printStackTrace();
+
+        return Response
+                .status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("An error occurred: " + e.getMessage())
+                .build();
+    }
+}
+
+
+    // @GET
+    // @Path("/search")
+    // public Response search(@QueryParam("keyword") String keyword) {
+    //     if (keyword == null || keyword.isEmpty()) {
+    //         return Response.status(Response.Status.BAD_REQUEST)
+    //            .entity("keyword query parameter is required")
+    //            .build();
+    //     }
+
+    // List<LogDTO> data = repo.find("keyword=?1", keyword).list();
+    // System.out.println(data);
+    // if (data.isEmpty()){
+    //     return Response.status(Response.Status.NOT_FOUND)
+    //       .entity("No LogDTO found for keyword: " + keyword)
+    //       .build();
+    // }
+    // return Response.status(200).entity(data).build();
+
+
+    // }
+   
+
+    // @GET
+    // @Path("/search")
+    // public List<LogDTO> searchLogs(@QueryParam("keyword") String keyword) {
+    //     List<LogDTO> results = new ArrayList<>();
+    //     String regexPattern = ".*" + Pattern.quote(keyword) + ".*";
+    //     BsonRegularExpression regex = new BsonRegularExpression(regexPattern, "i");
+
+    //     try {
+    //         MongoCollection<Document> collection = mongoClient
+    //                 .getDatabase("OtelLog")
+    //                 .getCollection("LogDTO");
+
+    //         Document query = new Document("$or", List.of(
+    //             new Document("serviceName", regex),
+    //             new Document("traceId", regex),
+    //             new Document("spanId", regex),
+    //             new Document("severityText", regex)
+    //         ));
+
+    //         MongoCursor<Document> cursor = collection.find(query).iterator();
+
+    //         while (cursor.hasNext()) {
+    //             Document document = cursor.next();
+    //             LogDTO logDTO = mapDocumentToLogDTO(document);
+    //             results.add(logDTO);
+    //         }
+    //     } catch (Exception e) {
+    //         // Handle any exceptions or errors
+    //     }
+
+    //     return results;
+    // }
+
+    // // Helper method to map a Document to LogDTO
+    // private LogDTO mapDocumentToLogDTO(Document document) {
+    //     LogDTO logDTO = new LogDTO();
+    //     logDTO.setServiceName(document.getString("serviceName"));
+    //     logDTO.setTraceId(document.getString("traceId"));
+    //     logDTO.setSpanId(document.getString("spanId"));
+    //     logDTO.setCreatedTime(document.getDate("createdTime"));
+    //     logDTO.setSeverityText(document.getString("severityText"));
+        
+    //     // Map the scopeLogs field
+    //     List<Document> scopeLogsDocuments = (List<Document>) document.get("scopeLogs");
+    //     if (scopeLogsDocuments != null) {
+    //         List<ScopeLogs> scopeLogsList = new ArrayList<>();
+    //         for (Document scopeLogsDocument : scopeLogsDocuments) {
+    //             // Map the scopeLogsDocument to ScopeLogs if needed
+    //             // Example: ScopeLogs scopeLogs = mapScopeLogsDocumentToScopeLogs(scopeLogsDocument);
+    //             // Add scopeLogs to the scopeLogsList
+    //         }
+    //         logDTO.setScopeLogs(scopeLogsList);
+    //     }
+        
+    //     // Set other fields as needed
+    //     return logDTO;
+    // }
 
 
     @GET
+    @Path("/search")
+    public List<LogDTO> searchLogs(@QueryParam("keyword") String keyword) {
+        return logQueryHandler.searchLogs(keyword);
+    }
+
+     @GET
     @Path("/search")
     public Response search(@QueryParam("keyword") String keyword) {
         if (keyword == null || keyword.isEmpty()) {
@@ -286,7 +421,6 @@ try {
           .build();
     }
     return Response.status(200).entity(data).build();
-
 
     }
 }

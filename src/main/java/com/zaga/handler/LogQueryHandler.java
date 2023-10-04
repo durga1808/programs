@@ -2,20 +2,20 @@ package com.zaga.handler;
 
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
+import org.bson.BsonRegularExpression;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
@@ -28,7 +28,6 @@ import com.zaga.entity.otellog.scopeLogs.LogRecord;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.log.LogQuery;
-import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.repo.LogQueryRepo;
 
 
@@ -258,10 +257,6 @@ public class LogQueryHandler {
 
 
 
-private List<ScopeLogs> fetchScopeLogsByTraceId(String traceId) {
-    return null;
-}
-
     public long countQueryLogs(LogQuery logQuery, int minutesAgo) {
         return 0;
     }
@@ -317,7 +312,7 @@ public List<LogMetrics> getLogMetricCount(int timeAgoMinutes) {
 private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
     for (ScopeLogs scopeLogs : logDTO.getScopeLogs()) {
         for (LogRecord logRecord : scopeLogs.getLogRecords()) {
-            String severityText = logRecord.getSeverityText();
+            String severityText = logDTO.getSeverityText(); // Get severityText from LogDTO
             if ("ERROR".equals(severityText)) {
                 metrics.setErrorCallCount(metrics.getErrorCallCount() + 1);
             } else if ("WARN".equals(severityText)) {
@@ -329,6 +324,101 @@ private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
     }
 }
 
+
+public List<LogDTO> findByMatching(int page, int pageSize, String serviceName) {
+    LocalDateTime currentTime = LocalDateTime.now();
+    LocalDateTime startTime = currentTime.minusHours(55182);
+
+    Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
+    Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
+
+    Date currentDate = Date.from(currentInstant);
+    Date startDate = Date.from(startInstant);
+
+    List<LogDTO> logList = logQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
+
+    List<LogDTO> filteredLogList = new ArrayList<>();
+    for (LogDTO logDTO : logList) {
+        List<ScopeLogs> scopeLogsList = logDTO.getScopeLogs();
+        boolean hasError = false;
+
+        for (ScopeLogs scopeLogs : scopeLogsList) {
+            for (LogRecord logRecord : scopeLogs.getLogRecords()) {
+                if ("ERROR".equals(logRecord.getSeverityText())) {
+                    hasError = true;
+                    break;
+                }
+            }
+
+            if (hasError) {
+                filteredLogList.add(logDTO);
+                break;
+            }
+        }
+    }
+
+    // Calculate data count
+    int dataCount = filteredLogList.size();
+
+    // Paginate the results
+    int startIndex = (page - 1) * pageSize;
+    int endIndex = Math.min(startIndex + pageSize, dataCount);
+    return filteredLogList.subList(startIndex, endIndex);
+}
+
+
+
+//search functionality 
+public List<LogDTO> searchLogs(String keyword) {
+        List<LogDTO> results = new ArrayList<>();
+        String regexPattern = ".*" + Pattern.quote(keyword) + ".*";
+        BsonRegularExpression regex = new BsonRegularExpression(regexPattern, "i");
+
+        try {
+            MongoCollection<Document> collection = mongoClient
+                    .getDatabase("OtelLog")
+                    .getCollection("LogDTO");
+
+            Document query = new Document("$or", List.of(
+                new Document("serviceName", regex),
+                new Document("traceId", regex),
+                new Document("spanId", regex),
+                new Document("severityText", regex),
+                new Document("scopeLogs", regex)
+            ));
+
+            MongoCursor<Document> cursor = collection.find(query).iterator();
+
+            while (cursor.hasNext()) {
+                Document document = cursor.next();
+                LogDTO logDTO = mapDocumentToLogDTO(document);
+                results.add(logDTO);
+            }
+        } catch (Exception e) {
+        }
+
+        return results;
+    }
+
+    private LogDTO mapDocumentToLogDTO(Document document) {
+        LogDTO logDTO = new LogDTO();
+        logDTO.setServiceName(document.getString("serviceName"));
+        logDTO.setTraceId(document.getString("traceId"));
+        logDTO.setSpanId(document.getString("spanId"));
+        logDTO.setCreatedTime(document.getDate("createdTime"));
+        logDTO.setSeverityText(document.getString("severityText"));
+
+        List<Document> scopeLogsDocuments = (List<Document>) document.get("scopeLogs");
+        if (scopeLogsDocuments != null) {
+            List<ScopeLogs> scopeLogsList = new ArrayList<>();
+            for (Document scopeLogsDocument : scopeLogsDocuments) {
+                // Map the scopeLogsDocument to ScopeLogs if needed
+             }
+            logDTO.setScopeLogs(scopeLogsList);
+        }
+
+        return logDTO;
+    }
 
 }
 

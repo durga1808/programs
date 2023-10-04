@@ -23,7 +23,6 @@ import jakarta.inject.Inject;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -195,33 +194,70 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
 
 
   // pagination data for trace summary page based on serviceName and statusCode
-  public List<TraceDTO> findByMatching(
+//   public List<TraceDTO> findByMatching(
+//     int page,
+//     int pageSize,
+//     String serviceName
+// ) {
+//   LocalDateTime currentTime = LocalDateTime.now();
+  
+//   LocalDateTime startTime = currentTime.minusHours(2);
+//   System.out.println("CreatedTime: " + currentTime);
+//   System.out.println("StartTime: " + startTime);
+
+//   // Convert LocalDateTime to Instant
+//   Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
+//   Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
+
+//   // Convert Instant to Date
+//   Date currentDate = Date.from(currentInstant);
+//   Date startDate = Date.from(startInstant);
+  
+
+//      System.out.println("Start Time: " + startTime);
+//     System.out.println("Start Date: " + startDate);
+//     System.out.println("Current Date: " + currentDate);
+//     System.out.println("serviceName: " + serviceName);
+
+//     List<TraceDTO> traceList = traceQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
+//     System.out.println("last 2 hrs data"+traceList.size());
+
+//     // Filter by statusCode in the range of 400 to 599
+//     traceList = filterByStatusCode(traceList);
+
+//     // Calculate data count
+//     int dataCount = traceList.size();
+
+//     // Paginate the results
+//     int startIndex = (page - 1) * pageSize;
+//     int endIndex = Math.min(startIndex + pageSize, dataCount);
+//     return traceList.subList(startIndex, endIndex);
+// }
+
+public Map<String, Object> findByMatchingWithTotalCount(
     int page,
     int pageSize,
     String serviceName
 ) {
-  LocalDateTime currentTime = LocalDateTime.now();
-  
-  LocalDateTime startTime = currentTime.minusHours(2);
-  System.out.println("CreatedTime: " + currentTime);
-  System.out.println("StartTime: " + startTime);
+    LocalDateTime currentTime = LocalDateTime.now();
+    LocalDateTime startTime = currentTime.minusHours(2);
 
-  // Convert LocalDateTime to Instant
-  Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
-  Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
+    // Convert LocalDateTime to Instant
+    Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
+    Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
 
-  // Convert Instant to Date
-  Date currentDate = Date.from(currentInstant);
-  Date startDate = Date.from(startInstant);
-  
+    // Convert Instant to Date
+    Date currentDate = Date.from(currentInstant);
+    Date startDate = Date.from(startInstant);
 
-     System.out.println("Start Time: " + startTime);
+    System.out.println("Start Time: " + startTime);
     System.out.println("Start Date: " + startDate);
     System.out.println("Current Date: " + currentDate);
     System.out.println("serviceName: " + serviceName);
 
+    // Retrieve all data for the specified time range
     List<TraceDTO> traceList = traceQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
-    System.out.println("last 2 hrs data"+traceList.size());
+    System.out.println("last 2 hrs data: " + traceList.size());
 
     // Filter by statusCode in the range of 400 to 599
     traceList = filterByStatusCode(traceList);
@@ -229,16 +265,31 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
     // Calculate data count
     int dataCount = traceList.size();
 
-    // Paginate the results
-    int startIndex = (page - 1) * pageSize;
-    int endIndex = Math.min(startIndex + pageSize, dataCount);
-    return traceList.subList(startIndex, endIndex);
+ // Paginate the results
+int startIndex = (page - 1) * pageSize;
+int endIndex = Math.min(startIndex + pageSize, dataCount);
+
+// Ensure that indices are within the valid range
+startIndex = Math.min(Math.max(0, startIndex), dataCount);  // Ensure startIndex is non-negative and within bounds
+endIndex = Math.max(startIndex, Math.min(dataCount, endIndex));  // Ensure endIndex is greater than or equal to startIndex and within bounds
+
+// Create a map to hold the result
+Map<String, Object> resultMap = new HashMap<>();
+resultMap.put("data", traceList.subList(startIndex, endIndex));
+resultMap.put("totalCount", dataCount);  // Use the filtered data count as total count
+
+// Return the result map
+return resultMap;
+
 }
+
+
 
 // Modify the filterByServiceNameAndStatusCode method to filter by StatusCode only
 private List<TraceDTO> filterByStatusCode(List<TraceDTO> traceList) {
     return traceList.stream()
-        .filter(traceDTO -> traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599)
+        .filter(traceDTO -> traceDTO != null && traceDTO.getStatusCode() != null &&
+                traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599)
         .collect(Collectors.toList());
 }
 
