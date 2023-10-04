@@ -325,7 +325,7 @@ private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
 
 public List<LogDTO> findByMatching(int page, int pageSize, String serviceName) {
     LocalDateTime currentTime = LocalDateTime.now();
-    LocalDateTime startTime = currentTime.minusHours(5182);
+    LocalDateTime startTime = currentTime.minusHours(55182);
 
     // Convert LocalDateTime to Instant
     Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
