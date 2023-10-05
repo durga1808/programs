@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.bson.Document;
 
+import com.zaga.entity.queryentity.metric.MetricDTO;
 import com.zaga.handler.MetricQueryHandler;
 
 import jakarta.inject.Inject;
@@ -24,16 +25,11 @@ public class MetricController {
     @Inject
     MetricQueryHandler metricQueryHandler;
    
+    @GET
+    @Path("/getAllMetricData")
+    public List<MetricDTO> getAllMetricDatas() {
+        return metricQueryHandler.getAllMetricData();
+    }
   
 
-    // @GET
-    // public List<Map<String, Object>> getMetricsByServiceName(@QueryParam("serviceName") String serviceName) {
-    //     return metricQueryHandler.getMetricsByServiceName(serviceName);
-    // }
-
-    @GET
-    @Path("/getByServiceName")
-    public List<Document> getMetricsByServiceName(@QueryParam("serviceName") String serviceName){
-        return metricQueryHandler.getMetricsByServiceName(serviceName);
-    }
 }
