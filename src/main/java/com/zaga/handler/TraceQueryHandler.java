@@ -552,17 +552,17 @@ public long getTraceCountInMinutes(int page, int pageSize, int timeAgoMinutes) {
 }
 
 //sort order decending
-public List<TraceDTO> getAllTracesOrderByCreatedTimeDesc() {
-  return traceQueryRepo.findAllOrderByCreatedTimeDesc();
+public List<TraceDTO> getAllTracesOrderByCreatedTimeDesc(List<String> serviceNameList) {
+  return traceQueryRepo.findAllOrderByCreatedTimeDesc(serviceNameList);
 }
 
 //sort order ascending
-public List<TraceDTO> getAllTracesAsc(){
-  return traceQueryRepo.findAllOrderByCreatedTimeAsc();
+public List<TraceDTO> getAllTracesAsc(List<String> serviceNameList){
+  return traceQueryRepo.findAllOrderByCreatedTimeAsc(serviceNameList);
 }
 
 // sort order error first
-public List<TraceDTO> findAllOrderByErrorFirst() {
+public List<TraceDTO> findAllOrderByErrorFirst(List<String> serviceNameList) {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
           .getCollection("TraceDto");
@@ -570,6 +570,7 @@ public List<TraceDTO> findAllOrderByErrorFirst() {
   List<TraceDTO> allTraces = traceCollection.find(TraceDTO.class).into(new ArrayList<>());
 
   List<TraceDTO> sortedTraces = allTraces.stream()
+          .filter(trace -> serviceNameList.contains(trace.getServiceName())) // Filter by service name list
           .sorted(Comparator
                   // Sort by error status first (statusCode >= 400 && statusCode <= 599)
                   .comparing((TraceDTO trace) -> {
@@ -587,13 +588,30 @@ public List<TraceDTO> findAllOrderByErrorFirst() {
 
 
 
+
+
 //sort order peak value first
-public List<TraceDTO> findAllOrderByDuration() {
+// public List<TraceDTO> findAllOrderByDuration() {
+//   MongoCollection<Document> traceCollection = mongoClient
+//           .getDatabase("OtelTrace")
+//           .getCollection("TraceDto");
+//   List<TraceDTO> allTraces = traceCollection.find(TraceDTO.class).into(new ArrayList<>());
+//   List<TraceDTO> sortedTraces = allTraces.stream()
+//           .sorted(Comparator
+//                   .comparing(TraceDTO::getDuration, Comparator.reverseOrder()))
+//           .collect(Collectors.toList());
+
+//   return sortedTraces;
+// }
+public List<TraceDTO> findAllOrderByDuration(List<String> serviceNameList) {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
           .getCollection("TraceDto");
+
   List<TraceDTO> allTraces = traceCollection.find(TraceDTO.class).into(new ArrayList<>());
+
   List<TraceDTO> sortedTraces = allTraces.stream()
+          .filter(trace -> serviceNameList.contains(trace.getServiceName())) // Filter by service name list
           .sorted(Comparator
                   .comparing(TraceDTO::getDuration, Comparator.reverseOrder()))
           .collect(Collectors.toList());

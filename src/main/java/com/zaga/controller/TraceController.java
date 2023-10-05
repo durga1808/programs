@@ -336,7 +336,7 @@ public Response sortOrderTrace(
     @QueryParam("sortOrder") String sortOrder,
     @QueryParam("page") int page,
     @QueryParam("pageSize") int pageSize,
-    @QueryParam("minutesAgo") int minutesAgo) {
+    @QueryParam("minutesAgo") int minutesAgo, @QueryParam("serviceNameList") List<String> serviceNameList) {
 
       if (page <= 0 || pageSize <= 0 || minutesAgo < 0) {
         return Response.status(Response.Status.BAD_REQUEST)
@@ -345,13 +345,13 @@ public Response sortOrderTrace(
     }
     List<TraceDTO> traces;
         if ("new".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc();
+        traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc(serviceNameList);
           } else if ("old".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.getAllTracesAsc();
+        traces = traceQueryHandler.getAllTracesAsc(serviceNameList);
           } else if ("error".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.findAllOrderByErrorFirst();
+        traces = traceQueryHandler.findAllOrderByErrorFirst(serviceNameList);
     } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.findAllOrderByDuration();
+        traces = traceQueryHandler.findAllOrderByDuration(serviceNameList);
     } else {
         return Response.status(Response.Status.BAD_REQUEST)
                 .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error','peakLatency'.")

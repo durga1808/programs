@@ -28,12 +28,16 @@ public class TraceQueryRepo implements PanacheMongoRepository<TraceDTO> {
         return count("serviceName = ?1", serviceName);
     }
 
-     public List<TraceDTO> findAllOrderByCreatedTimeDesc() {
-        return listAll(Sort.descending("createdTime"));
+     public List<TraceDTO> findAllOrderByCreatedTimeDesc(List<String> serviceNameList) {
+        // List<String> serviceNameList = new ArrayList<String>();
+        // serviceNameList.add("order-project");
+        // serviceNameList.add("vendor-project");
+        // String serviceName = "order-project";
+        return find("serviceName in ?1",Sort.descending("createdTime"),serviceNameList).list();
     }
 
-    public List<TraceDTO> findAllOrderByCreatedTimeAsc() {
-        return listAll(Sort.ascending("createdTime"));
+    public List<TraceDTO> findAllOrderByCreatedTimeAsc(List<String> serviceNameList) {
+        return find("serviceName in ?1",Sort.ascending("createdTime"),serviceNameList).list();
     }
 
     
