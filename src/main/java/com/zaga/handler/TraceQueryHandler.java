@@ -369,8 +369,41 @@ public List<TraceDTO> findErrorsLastTwoHours(String serviceName) {
 
 
   
+// public List<TraceMetrics> getTraceMetricCount(
+//     int timeAgoMinutes
+// ) {
+//     List<TraceDTO> traceList = TraceDTO.listAll();
+//     Map<String, TraceMetrics> metricsMap = new HashMap<>();
+
+//     Instant cutoffTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+
+//     for (TraceDTO trace : traceList) {
+//         Date traceCreateTime = trace.getCreatedTime();
+//         if (traceCreateTime != null) {
+//             Instant traceInstant = traceCreateTime.toInstant();
+
+//             if (!traceInstant.isBefore(cutoffTime)) {
+//                 String serviceName = trace.getServiceName();
+
+//                 TraceMetrics metrics = metricsMap.get(serviceName);
+//                 if (metrics == null) {
+//                     metrics = new TraceMetrics();
+//                     metrics.setServiceName(serviceName);
+//                     metrics.setApiCallCount(0L);
+//                     metrics.setTotalErrorCalls(0L);
+//                     metrics.setTotalSuccessCalls(0L);
+//                     metrics.setPeakLatency(0L);
+//                 }
+//                 metrics.setApiCallCount(metrics.getApiCallCount() + 1);
+//                 metricsMap.put(serviceName, metrics);
+//             }
+//         }
+//     }
+
+
 public List<TraceMetrics> getTraceMetricCount(
-    int timeAgoMinutes
+        int timeAgoMinutes,
+        List<String> serviceNameList
 ) {
     List<TraceDTO> traceList = TraceDTO.listAll();
     Map<String, TraceMetrics> metricsMap = new HashMap<>();
@@ -382,7 +415,7 @@ public List<TraceMetrics> getTraceMetricCount(
         if (traceCreateTime != null) {
             Instant traceInstant = traceCreateTime.toInstant();
 
-            if (!traceInstant.isBefore(cutoffTime)) {
+            if (!traceInstant.isBefore(cutoffTime) && serviceNameList.contains(trace.getServiceName())) {
                 String serviceName = trace.getServiceName();
 
                 TraceMetrics metrics = metricsMap.get(serviceName);
@@ -400,46 +433,87 @@ public List<TraceMetrics> getTraceMetricCount(
         }
     }
 
-
     Map<String, Long> errorCounts = calculateErrorCountsByService();
     Map<String, Long> successCounts = calculateSuccessCountsByService();
     Map<String, Long> peakLatency = calculatePeakLatencyCountsByService();
 
     for (Map.Entry<String, Long> entry : errorCounts.entrySet()) {
-      String serviceName = entry.getKey();
-      Long errorCount = entry.getValue();
+        String serviceName = entry.getKey();
+        Long errorCount = entry.getValue();
 
-      // Update the TraceMetrics object in metricsMap
-      TraceMetrics metrics = metricsMap.get(serviceName);
-      if (metrics != null) {
-        metrics.setTotalErrorCalls(errorCount);
-      }
+        // Update the TraceMetrics object in metricsMap
+        TraceMetrics metrics = metricsMap.get(serviceName);
+        if (metrics != null) {
+            metrics.setTotalErrorCalls(errorCount);
+        }
     }
 
     for (Map.Entry<String, Long> entry : successCounts.entrySet()) {
-      String serviceName = entry.getKey();
-      Long successCount = entry.getValue();
+        String serviceName = entry.getKey();
+        Long successCount = entry.getValue();
 
-      // Update the TraceMetrics object in metricsMap
-      TraceMetrics metrics = metricsMap.get(serviceName);
-      if (metrics != null) {
-        metrics.setTotalSuccessCalls(successCount);
-      }
+        // Update the TraceMetrics object in metricsMap
+        TraceMetrics metrics = metricsMap.get(serviceName);
+        if (metrics != null) {
+            metrics.setTotalSuccessCalls(successCount);
+        }
     }
 
     for (Map.Entry<String, Long> entry : peakLatency.entrySet()) {
-      String serviceName = entry.getKey();
-      Long peakLatencyCount = entry.getValue();
+        String serviceName = entry.getKey();
+        Long peakLatencyCount = entry.getValue();
 
-      // Update the TraceMetrics object in metricsMap with peak latency count
-      TraceMetrics metrics = metricsMap.get(serviceName);
-      if (metrics != null) {
-        metrics.setPeakLatency(peakLatencyCount);
-      }
+        // Update the TraceMetrics object in metricsMap with peak latency count
+        TraceMetrics metrics = metricsMap.get(serviceName);
+        if (metrics != null) {
+            metrics.setPeakLatency(peakLatencyCount);
+        }
     }
 
     return new ArrayList<>(metricsMap.values());
-  }
+}
+
+
+
+  //   Map<String, Long> errorCounts = calculateErrorCountsByService();
+  //   Map<String, Long> successCounts = calculateSuccessCountsByService();
+  //   Map<String, Long> peakLatency = calculatePeakLatencyCountsByService();
+
+  //   for (Map.Entry<String, Long> entry : errorCounts.entrySet()) {
+  //     String serviceName = entry.getKey();
+  //     Long errorCount = entry.getValue();
+
+  //     // Update the TraceMetrics object in metricsMap
+  //     TraceMetrics metrics = metricsMap.get(serviceName);
+  //     if (metrics != null) {
+  //       metrics.setTotalErrorCalls(errorCount);
+  //     }
+  //   }
+
+  //   for (Map.Entry<String, Long> entry : successCounts.entrySet()) {
+  //     String serviceName = entry.getKey();
+  //     Long successCount = entry.getValue();
+
+  //     // Update the TraceMetrics object in metricsMap
+  //     TraceMetrics metrics = metricsMap.get(serviceName);
+  //     if (metrics != null) {
+  //       metrics.setTotalSuccessCalls(successCount);
+  //     }
+  //   }
+
+  //   for (Map.Entry<String, Long> entry : peakLatency.entrySet()) {
+  //     String serviceName = entry.getKey();
+  //     Long peakLatencyCount = entry.getValue();
+
+  //     // Update the TraceMetrics object in metricsMap with peak latency count
+  //     TraceMetrics metrics = metricsMap.get(serviceName);
+  //     if (metrics != null) {
+  //       metrics.setPeakLatency(peakLatencyCount);
+  //     }
+  //   }
+
+  //   return new ArrayList<>(metricsMap.values());
+  // }
 
   public Map<String, Long> calculateErrorCountsByService() {
     MongoCollection<Document> traceCollection = mongoClient
