@@ -130,13 +130,19 @@ public Response getAllDataByServiceName(
     List<LogDTO> data = repo.find("traceId=?1", traceId).list();
     if (data.isEmpty()) {
         // Return an empty array if no LogDTO is found
-        return Response.status(Response.Status.OK)
-                .entity(new ArrayList<>())
-                .build();
+        return Response.ok(new ArrayList<>()).build();
     }
 
-    // Return the actual data if found
-    return Response.status(Response.Status.OK).entity(data).build();
+    try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(data);
+
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Error converting response to JSON")
+                .build();
+    }
 }
 
 
@@ -321,7 +327,7 @@ public Response filterLogs(
 
 
 
-@GET
+    @GET
     @Path("/getErroredLogDataForLastTwo")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getErroredLogDataForLastTwo(
@@ -350,12 +356,16 @@ public Response filterLogs(
             response.put("data", paginatedLogs);
             response.put("totalCount", totalCount);
 
-            return Response.ok(response).build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Internal Server Error")
-                    .build();
-        }
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseJson = objectMapper.writeValueAsString(response);
+      
+            return Response.ok(responseJson).build();
+          } catch (Exception e) {
+            return Response
+                .status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(e.getMessage())
+                .build();
+          }
     }
 
 
@@ -443,7 +453,53 @@ public Response filterLogs(
    
     @GET
     @Path("/searchFunction")
-    public List<LogDTO> searchLogs(@QueryParam("keyword") String keyword) {
-        return logQueryHandler.searchLogs(keyword);
+    public Response searchLogs(
+            @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo,
+            @QueryParam("page") @DefaultValue("1") int page,
+            @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+            @QueryParam("keyword") String keyword) {
+
+        try {
+            List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
+
+            if (minutesAgo > 0) {
+                Date cutoffDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(minutesAgo));
+                logList = logList.stream()
+                        .filter(log -> {
+                            Date createdTime = log.getCreatedTime();
+                            return createdTime != null && createdTime.after(cutoffDate);
+                        })
+                        .collect(Collectors.toList());
+            }
+
+            int totalCount = logList.size();
+            int startIndex = (page - 1) * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, totalCount);
+
+            if (startIndex >= endIndex || logList.isEmpty()) {
+                Map<String, Object> emptyResponse = new HashMap<>();
+                emptyResponse.put("data", Collections.emptyList());
+                emptyResponse.put("totalCount", 0);
+
+                return Response.ok(emptyResponse).build();
+            }
+
+            List<LogDTO> paginatedLogs = logList.subList(startIndex, endIndex);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", paginatedLogs);
+            response.put("totalCount", totalCount);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseJson = objectMapper.writeValueAsString(response);
+
+            return Response.ok(responseJson).build();
+        } catch (Exception e) {
+            return Response
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(e.getMessage())
+                    .build();
+        }
     }
+
 }

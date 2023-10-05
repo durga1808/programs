@@ -242,11 +242,15 @@ public Response findErroredDataForLastTwo(
         response.put("data", erroredData);
         response.put("totalCount", totalCount);
 
-        return Response.ok(response).build();
+      ObjectMapper objectMapper = new ObjectMapper();
+      String responseJson = objectMapper.writeValueAsString(response);
+
+      return Response.ok(responseJson).build();
     } catch (Exception e) {
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Internal Server Error")
-                .build();
+      return Response
+          .status(Response.Status.INTERNAL_SERVER_ERROR)
+          .entity(e.getMessage())
+          .build();
     }
 }
 
