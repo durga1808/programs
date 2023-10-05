@@ -264,8 +264,8 @@ public Response findErroredDataForLastTwo(
   @Path("/TraceSumaryChartDataCount")
   @Produces(MediaType.APPLICATION_JSON)
   public List<TraceMetrics> getTraceMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes, 
-                @QueryParam("serviceNameList") List<String> serviceNameList) {
-    return traceQueryHandler.getTraceMetricCount(timeAgoMinutes, serviceNameList);
+        @QueryParam("serviceNameList") List<String> serviceNameList) {
+    return traceQueryHandler.getTraceMetricCount(timeAgoMinutes,serviceNameList);
   }
 
 
