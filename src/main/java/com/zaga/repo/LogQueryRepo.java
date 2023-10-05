@@ -30,12 +30,12 @@ public class LogQueryRepo implements PanacheMongoRepository<LogDTO> {
     }
 
 
-    public List<LogDTO> findAllOrderByCreatedTimeDesc() {
-        return listAll(Sort.descending("createdTime"));
+    public List<LogDTO> findAllOrderByCreatedTimeDesc(List<String> serviceNameList) {
+        return find("serviceName in ?1",Sort.descending("createdTime"),serviceNameList).list();
     }
 
-    public List<LogDTO> findAllOrderByCreatedTimeAsc() {
-        return listAll(Sort.ascending("createdTime"));
+    public List<LogDTO> findAllOrderByCreatedTimeAsc(List<String> serviceNameList) {
+        return find("serviceName in ?1",Sort.ascending("createdTime"),serviceNameList).list();
     }
 
 

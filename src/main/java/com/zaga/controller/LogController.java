@@ -140,11 +140,11 @@ public Response getAllDataByServiceName(
 }
 
 
- @GET
+  @GET
   @Path("/LogSumaryChartDataCount")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<LogMetrics> getLogMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes) {
-    return logQueryHandler.getLogMetricCount(timeAgoMinutes);
+  public List<LogMetrics> getLogMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes, @QueryParam("serviceNameList") List<String> serviceNameList) {
+    return logQueryHandler.getLogMetricCount(timeAgoMinutes, serviceNameList);
 
   }
 
@@ -156,7 +156,7 @@ public Response sortOrderTrace(
     @QueryParam("sortOrder") String sortOrder,
     @QueryParam("page") int page,
     @QueryParam("pageSize") int pageSize,
-    @QueryParam("minutesAgo") int minutesAgo) {
+    @QueryParam("minutesAgo") int minutesAgo, @QueryParam("serviceNameList") List<String> serviceNameList) {
 
       if (page <= 0 || pageSize <= 0 || minutesAgo < 0) {
         return Response.status(Response.Status.BAD_REQUEST)
@@ -165,12 +165,12 @@ public Response sortOrderTrace(
     }
     List<LogDTO> logs;
         if ("new".equalsIgnoreCase(sortOrder)) {
-        logs = logQueryHandler.getAllLogssOrderByCreatedTimeDesc();
+        logs = logQueryHandler.getAllLogssOrderByCreatedTimeDesc(serviceNameList);
           } else if ("old".equalsIgnoreCase(sortOrder)) {
-        logs = logQueryHandler.getAllLogssAsc();
+        logs = logQueryHandler.getAllLogssAsc(serviceNameList);
           }  
           else if ("error".equalsIgnoreCase(sortOrder)) {
-        logs = logQueryHandler.getAllErrorLogsOrderBySeverityAndCreatedTimeDesc();
+        logs = logQueryHandler.getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(serviceNameList);
           }
           else {
         return Response.status(Response.Status.BAD_REQUEST)

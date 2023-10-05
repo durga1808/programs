@@ -214,33 +214,22 @@ public class LogQueryHandler {
     
     
   //sort orer decending 
-  public List<LogDTO> getAllLogssOrderByCreatedTimeDesc() {
-    return logQueryRepo.findAllOrderByCreatedTimeDesc();
+  public List<LogDTO> getAllLogssOrderByCreatedTimeDesc(List<String> serviceNameList) {
+    return logQueryRepo.findAllOrderByCreatedTimeDesc(serviceNameList);
   }
 
 
 //sort order ascending
-public List<LogDTO> getAllLogssAsc() {
-    return logQueryRepo.findAllOrderByCreatedTimeAsc();
+public List<LogDTO> getAllLogssAsc(List<String> serviceNameList) {
+    return logQueryRepo.findAllOrderByCreatedTimeAsc(serviceNameList);
 }
 
 //sort order error data decending
-// public List<LogDTO> getAllErrorLogsOrderBySeverityAndCreatedTimeDesc() {
-//     MongoDatabase database = mongoClient.getDatabase("OtelLog"); 
-//     MongoCollection<LogDTO> logDTOCollection = database.getCollection("LogDTO", LogDTO.class);
-
-//     Bson matchStage = Aggregates.match(Filters.elemMatch("scopeLogs.logRecords", Filters.eq("severityText", "ERROR")));
-//     Bson sortStage = Aggregates.sort(Sorts.orderBy(Sorts.descending("severityText"), Sorts.descending("createdTime")));
-
-//     List<LogDTO> result = logDTOCollection.aggregate(List.of(matchStage, sortStage))
-//             .into(new ArrayList<>());
-
-//     return result;
-// }
-
-public List<LogDTO> getAllErrorLogsOrderBySeverityAndCreatedTimeDesc() {
+public List<LogDTO> getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(List<String> serviceNameList) {
     MongoDatabase database = mongoClient.getDatabase("OtelLog");
     MongoCollection<LogDTO> logDTOCollection = database.getCollection("LogDTO", LogDTO.class);
+
+    Bson matchStage = Aggregates.match(Filters.in("serviceName", serviceNameList));
 
     Bson addSortFieldStage = Aggregates.addFields(new Field<>("customSortField", new Document("$cond",
             Arrays.asList(
@@ -257,18 +246,80 @@ public List<LogDTO> getAllErrorLogsOrderBySeverityAndCreatedTimeDesc() {
 
     Bson projectStage = Aggregates.project(Projections.exclude("customSortField"));
 
-    List<LogDTO> result = logDTOCollection.aggregate(Arrays.asList(addSortFieldStage, sortStage, projectStage))
+    List<LogDTO> result = logDTOCollection.aggregate(Arrays.asList(matchStage, addSortFieldStage, sortStage, projectStage))
             .into(new ArrayList<>());
 
     return result;
 }
 
 
+// public List<LogDTO> getAllErrorLogsOrderBySeverityAndCreatedTimeDesc() {
+//     MongoDatabase database = mongoClient.getDatabase("OtelLog");
+//     MongoCollection<LogDTO> logDTOCollection = database.getCollection("LogDTO", LogDTO.class);
+
+//     Bson addSortFieldStage = Aggregates.addFields(new Field<>("customSortField", new Document("$cond",
+//             Arrays.asList(
+//                     new Document("$eq", Arrays.asList("$severityText", "ERROR")),
+//                     0,
+//                     1
+//             )
+//     )));
+
+//     Bson sortStage = Aggregates.sort(Sorts.orderBy(
+//             Sorts.ascending("customSortField"),
+//             Sorts.descending("createdTime")
+//     ));
+
+//     Bson projectStage = Aggregates.project(Projections.exclude("customSortField"));
+
+//     List<LogDTO> result = logDTOCollection.aggregate(Arrays.asList(addSortFieldStage, sortStage, projectStage))
+//             .into(new ArrayList<>());
+
+//     return result;
+// }
 
 
 
 
-public List<LogMetrics> getLogMetricCount(int timeAgoMinutes) {
+
+
+// public List<LogMetrics> getLogMetricCount(int timeAgoMinutes) {
+//     List<LogDTO> logList = logQueryRepo.listAll(); // Replace with your data source retrieval logic
+//     Map<String, LogMetrics> metricsMap = new HashMap<>();
+
+//     Instant cutoffTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+
+//     for (LogDTO logDTO : logList) {
+//         Date logCreateTime = logDTO.getCreatedTime();
+//         if (logCreateTime != null) {
+//             Instant logInstant = logCreateTime.toInstant();
+
+//             if (!logInstant.isBefore(cutoffTime)) {
+//                 String serviceName = logDTO.getServiceName();
+
+//                 LogMetrics metrics = metricsMap.get(serviceName);
+//                 if (metrics == null) {
+//                     metrics = new LogMetrics();
+//                     metrics.setServiceName(serviceName);
+//                     metrics.setErrorCallCount(0L); // Initialize errorCallCount to 0
+//                     metrics.setWarnCallCount(0L);
+//                     metrics.setDebugCallCount(0L);
+//                 }
+
+//                 // Calculate the call counts based on the severityText
+//                 calculateCallCounts(logDTO, metrics);
+
+//                 metricsMap.put(serviceName, metrics);
+//             }
+//         }
+//     }
+
+//     return new ArrayList<>(metricsMap.values());
+// }
+
+
+
+public List<LogMetrics> getLogMetricCount(int timeAgoMinutes, List<String> serviceNameList) {
     List<LogDTO> logList = logQueryRepo.listAll(); // Replace with your data source retrieval logic
     Map<String, LogMetrics> metricsMap = new HashMap<>();
 
@@ -279,7 +330,7 @@ public List<LogMetrics> getLogMetricCount(int timeAgoMinutes) {
         if (logCreateTime != null) {
             Instant logInstant = logCreateTime.toInstant();
 
-            if (!logInstant.isBefore(cutoffTime)) {
+            if (!logInstant.isBefore(cutoffTime) && serviceNameList.contains(logDTO.getServiceName())) {
                 String serviceName = logDTO.getServiceName();
 
                 LogMetrics metrics = metricsMap.get(serviceName);
@@ -301,6 +352,8 @@ public List<LogMetrics> getLogMetricCount(int timeAgoMinutes) {
 
     return new ArrayList<>(metricsMap.values());
 }
+
+
 
 private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
     for (ScopeLogs scopeLogs : logDTO.getScopeLogs()) {
