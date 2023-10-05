@@ -322,38 +322,41 @@ public Response filterLogs(
 
 
 @GET
-@Path("/getErroredLogDataForLastTwo")
-public Response findRecentDataPaged(
-    @QueryParam("page") @DefaultValue("1") int page,
-    @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-    @QueryParam("serviceName") String serviceName) {
+    @Path("/getErroredLogDataForLastTwo")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getErroredLogDataForLastTwo(
+            @QueryParam("page") @DefaultValue("1") int page,
+            @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+            @QueryParam("serviceName") String serviceName) {
 
-    try {
-        List<LogDTO> logList = logQueryHandler.findByMatching(page, pageSize, serviceName);
-        
-        Map<String, Object> jsonResponse = new HashMap<>();
+        try {
+            List<LogDTO> logList = logQueryHandler.findByMatching(serviceName);
 
-        if (logList.isEmpty()) {
-            jsonResponse.put("totalCount", 0);
-            jsonResponse.put("data", Collections.emptyList());
-        } else {
-            jsonResponse.put("totalCount", logList.size());
-            jsonResponse.put("data", logList);
+            int totalCount = logList.size();
+            int startIndex = (page - 1) * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, totalCount);
+
+            if (startIndex >= endIndex || logList.isEmpty()) {
+                Map<String, Object> emptyResponse = new HashMap<>();
+                emptyResponse.put("data", Collections.emptyList());
+                emptyResponse.put("totalCount", 0);
+
+                return Response.ok(emptyResponse).build();
+            }
+
+            List<LogDTO> paginatedLogs = logList.subList(startIndex, endIndex);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", paginatedLogs);
+            response.put("totalCount", totalCount);
+
+            return Response.ok(response).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Internal Server Error")
+                    .build();
         }
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        String responseJson = objectMapper.writeValueAsString(jsonResponse);
-
-        return Response.ok(responseJson).build();
-    } catch (Exception e) {
-        e.printStackTrace();
-
-        return Response
-                .status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("An error occurred: " + e.getMessage())
-                .build();
     }
-}
 
 
     // @GET

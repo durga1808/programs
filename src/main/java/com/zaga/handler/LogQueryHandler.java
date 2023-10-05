@@ -318,7 +318,7 @@ private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
 }
 
 
-public List<LogDTO> findByMatching(int page, int pageSize, String serviceName) {
+public List<LogDTO> findByMatching(String serviceName) {
     LocalDateTime currentTime = LocalDateTime.now();
     LocalDateTime startTime = currentTime.minusHours(55182);
 
@@ -350,14 +350,9 @@ public List<LogDTO> findByMatching(int page, int pageSize, String serviceName) {
         }
     }
 
-    // Calculate data count
-    int dataCount = filteredLogList.size();
-
-    // Paginate the results
-    int startIndex = (page - 1) * pageSize;
-    int endIndex = Math.min(startIndex + pageSize, dataCount);
-    return filteredLogList.subList(startIndex, endIndex);
+    return filteredLogList;
 }
+
 
 
 
