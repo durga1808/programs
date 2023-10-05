@@ -14,6 +14,7 @@ import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -182,37 +183,72 @@ public Response queryTraces(
 //     }
 // }
 
+// @GET
+// @Path("/getErroredDataForLastTwo")
+// @Produces(MediaType.APPLICATION_JSON)
+// public Response findRecentDataPaged(
+//         @QueryParam("page") @DefaultValue("1") int page,
+//         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+//         @QueryParam("serviceName") String serviceName) {
+
+//     Map<String, Object> result = traceQueryHandler.findByMatchingWithTotalCount(page, pageSize, serviceName);
+
+//     List<TraceDTO> paginatedData = (List<TraceDTO>) result.get("data");
+//     Long totalCount = (Long) result.get("totalCount");
+
+//     if (paginatedData == null || paginatedData.isEmpty()) {
+//         return Response.ok(Collections.emptyList()).build();
+//     }
+
+//     Map<String, Object> responseMap = new HashMap<>();
+//     responseMap.put("data", paginatedData);
+//     responseMap.put("totalCount", totalCount);
+
+//      try {
+//         ObjectMapper objectMapper = new ObjectMapper();
+//         String jsonResponse = objectMapper.writeValueAsString(responseMap);
+//         return Response.ok(jsonResponse).build();
+//     } catch (JsonProcessingException e) {
+//         return Response.serverError().entity("Error converting to JSON").build();
+//     }
+// }
+
 @GET
 @Path("/getErroredDataForLastTwo")
 @Produces(MediaType.APPLICATION_JSON)
-public Response findRecentDataPaged(
+public Response findErroredDataForLastTwo(
         @QueryParam("page") @DefaultValue("1") int page,
         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
         @QueryParam("serviceName") String serviceName) {
 
-    Map<String, Object> result = traceQueryHandler.findByMatchingWithTotalCount(page, pageSize, serviceName);
+    try {
+        List<TraceDTO> traces = traceQueryHandler.findErrorsLastTwoHours(serviceName);
 
-    List<TraceDTO> paginatedData = (List<TraceDTO>) result.get("data");
-    Long totalCount = (Long) result.get("totalCount");
+        int totalCount = traces.size();
+        int startIndex = (page - 1) * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, totalCount);
 
-    if (paginatedData == null || paginatedData.isEmpty()) {
-        return Response.ok(Collections.emptyList()).build();
-    }
+        if (startIndex >= endIndex || traces.isEmpty()) {
+            Map<String, Object> emptyResponse = new HashMap<>();
+            emptyResponse.put("data", Collections.emptyList());
+            emptyResponse.put("totalCount", 0);
 
-    Map<String, Object> responseMap = new HashMap<>();
-    responseMap.put("data", paginatedData);
-    responseMap.put("totalCount", totalCount);
+            return Response.ok(emptyResponse).build();
+        }
 
-     try {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String jsonResponse = objectMapper.writeValueAsString(responseMap);
-        return Response.ok(jsonResponse).build();
-    } catch (JsonProcessingException e) {
-        return Response.serverError().entity("Error converting to JSON").build();
+        List<TraceDTO> erroredData = traces.subList(startIndex, endIndex);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", erroredData);
+        response.put("totalCount", totalCount);
+
+        return Response.ok(response).build();
+    } catch (Exception e) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Internal Server Error")
+                .build();
     }
 }
-
-
 
 
 

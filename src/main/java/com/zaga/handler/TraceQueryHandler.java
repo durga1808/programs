@@ -291,50 +291,63 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
 
 // }
 
-public Map<String, Object> findByMatchingWithTotalCount(
-        int page,
-        int pageSize,
-        String serviceName
-) {
-    final int defaultInterval = 120;
+// public Map<String, Object> findByMatchingWithTotalCount(
+//         int page,
+//         int pageSize,
+//         String serviceName
+// ) {
+//     final int defaultInterval = 120;
 
 
-    // Calculate the time 2 hours ago
-    OffsetDateTime twoHoursAgoOffset = OffsetDateTime.now().minusHours(defaultInterval);
+//     // Calculate the time 2 hours ago
+//     OffsetDateTime twoHoursAgoOffset = OffsetDateTime.now().minusHours(defaultInterval);
 
-    // Convert the OffsetDateTime to Timestamp for comparison
-    Timestamp twoHoursAgoTimestamp = Timestamp.from(twoHoursAgoOffset.toInstant());
+//     // Convert the OffsetDateTime to Timestamp for comparison
+//     Timestamp twoHoursAgoTimestamp = Timestamp.from(twoHoursAgoOffset.toInstant());
 
-    PanacheQuery<TraceDTO> traceQuery = traceQueryRepo.find(
-            "serviceName = ?1 and createdTime >= ?2",
-            Sort.descending("createdTime"),
-            serviceName,
-            twoHoursAgoTimestamp
-    );
+//     PanacheQuery<TraceDTO> traceQuery = traceQueryRepo.find(
+//             "serviceName = ?1 and createdTime >= ?2",
+//             Sort.descending("createdTime"),
+//             serviceName,
+//             twoHoursAgoTimestamp
+//     );
 
-    List<TraceDTO> traceList = traceQuery.page(page, pageSize).list();
-    System.out.println("-------traceList-------" + traceList);
+//     List<TraceDTO> traceList = traceQuery.page(page, pageSize).list();
+//     System.out.println("-------traceList-------" + traceList);
 
-        traceList = filterByStatusCode(traceList);
+//         traceList = filterByStatusCode(traceList);
 
-        long totalCount = traceQuery.count();
+//         long totalCount = traceQuery.count();
 
-        // Create a map to hold the result
-        Map<String, Object> resultMap = new HashMap<>();
-        resultMap.put("data", traceList);
-        resultMap.put("totalCount", totalCount);
+//         // Create a map to hold the result
+//         Map<String, Object> resultMap = new HashMap<>();
+//         resultMap.put("data", traceList);
+//         resultMap.put("totalCount", totalCount);
 
-        // Return the result map
-        return resultMap;
-    }
+//         // Return the result map
+//         return resultMap;
+//     }
 
-// Modify the filterByServiceNameAndStatusCode method to filter by StatusCode only
-private List<TraceDTO> filterByStatusCode(List<TraceDTO> traceList) {
-    return traceList.stream()
-        .filter(traceDTO -> traceDTO != null && traceDTO.getStatusCode() != null &&
-                traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599)
-        .collect(Collectors.toList());
+// // Modify the filterByServiceNameAndStatusCode method to filter by StatusCode only
+// private List<TraceDTO> filterByStatusCode(List<TraceDTO> traceList) {
+//     return traceList.stream()
+//         .filter(traceDTO -> traceDTO != null && traceDTO.getStatusCode() != null &&
+//                 traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599)
+//         .collect(Collectors.toList());
+// }
+
+
+public List<TraceDTO> findErrorsLastTwoHours(String serviceName) {
+  Date twoHoursAgo = new Date(System.currentTimeMillis() - 2 * 60 * 60 * 1000);
+
+  PanacheQuery<TraceDTO> query = traceQueryRepo.find("serviceName = ?1 and createdTime >= ?2", serviceName, twoHoursAgo);
+  List<TraceDTO> traceList = query.list();
+
+  return traceList.stream()
+          .filter(traceDTO -> traceDTO.getStatusCode() != null && traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599)
+          .collect(Collectors.toList());
 }
+
 
   // appicalll counts calculations
   public Map<String, Long> getTraceCountWithinHour() {
