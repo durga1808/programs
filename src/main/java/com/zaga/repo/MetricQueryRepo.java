@@ -1,6 +1,5 @@
 package com.zaga.repo;
 
-import com.zaga.entity.otelmetric.OtelMetric;
 import com.zaga.entity.queryentity.metric.MetricDTO;
 
 import io.quarkus.mongodb.panache.PanacheMongoRepository;

@@ -8,12 +8,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.bson.BsonRegularExpression;
 import org.bson.Document;
@@ -23,7 +23,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -68,8 +67,7 @@ public class LogQueryHandler {
     
     public List<LogDTO> findLogDataPaged(int page, int pageSize) {
         List<LogDTO> logList = logQueryRepo.listAll();
-        // Perform any sorting or filtering if needed.
-    
+           
         int startIndex = (page - 1) * pageSize;
         int endIndex = Math.min(startIndex + pageSize, logList.size());
     
@@ -83,110 +81,6 @@ public class LogQueryHandler {
         return logQueryRepo.count();
     }
 
-
-
-    
- // public List<LogDTO> searchLogsPaged(LogQuery query, int page, int pageSize,
-    // int minutesAgo) {
-    // FindIterable<Document> result = getFilteredLogResults(query, page, pageSize,
-    // minutesAgo);
-    // List<LogDTO> logDTOList = new ArrayList<>();
-
-    // try (MongoCursor<Document> cursor = result.iterator()) {
-    // while (cursor.hasNext()) {
-    // Document document = cursor.next();
-    // LogDTO logDTO = new LogDTO();
-
-    // logDTO.setServiceName(document.getString("serviceName"));
-    // logDTO.setTraceId(document.getString("traceId"));
-
-    // // Assuming you have a method to fetch scope logs based on traceId
-    // List<ScopeLogs> scopeLogs = fetchScopeLogsByTraceId(logDTO.getTraceId());
-    // logDTO.setScopeLogs(scopeLogs);
-
-    // logDTOList.add(logDTO);
-    // }
-    // }
-
-    // return logDTOList;
-    // }
-
-    // private List<ScopeLogs> fetchScopeLogsByTraceId(String traceId) {
-    // // Implement logic to fetch scope logs by traceId
-    // // Return the actual scope logs or an empty list if not found
-    // return new ArrayList<>();
-    // }
-
-    // private FindIterable<Document> getFilteredLogResults(LogQuery query, int
-    // page, int pageSize, int minutesAgo) {
-    // // Construct a query based on LogQuery's serviceName and severityText fields
-    // Document filter = new Document();
-
-    // if (query.getServiceName() != null) {
-    // filter.append("serviceName", query.getServiceName());
-    // }
-
-    // if (query.getSeverityText() != null) {
-    // filter.append("severityText", query.getSeverityText());
-    // }
-
-    // // Apply additional filters based on page, pageSize, and minutesAgo
-
-    // // Use your MongoDB driver to apply the filter and return the results
-    // // Example: collection.find(filter).skip((page - 1) *
-    // pageSize).limit(pageSize).sort(Sorts.descending("timestamp"))
-    // return LogDTO .find(filter).skip((page - 1) * pageSize).limit(pageSize);
-    // }
-
-    // public long countQueryLogs(LogQuery query, int minutesAgo) {
-    // FindIterable<Document> result = getFilteredLogResults(query, 0,
-    // Integer.MAX_VALUE, minutesAgo);
-    // long totalCount = result.into(new ArrayList<>()).size();
-    // return totalCount;
-    // }
-
-    // public List<LogDTO> searchLogsPaged(LogQuery query, int page, int pageSize,
-    // int minutesAgo) {
-    // try {
-    // FindIterable<Document> result = getFilteredLogResults(query, page, pageSize,
-    // minutesAgo);
-    // List<LogDTO> logDTOList = new ArrayList<>();
-
-    // try (MongoCursor<Document> cursor = result.iterator()) {
-    // while (cursor.hasNext()) {
-    // Document document = cursor.next();
-    // LogDTO logDTO = new LogDTO();
-
-    // logDTO.setServiceName(document.getString("serviceName"));
-    // logDTO.setSeverityText(document.getString("severityText"));
-
-    // // Assuming you have a method to fetch scope logs based on traceId
-    // List<ScopeLogs> scopeLogs = fetchScopeLogsByTraceId(logDTO.getTraceId());
-    // logDTO.setScopeLogs(scopeLogs);
-
-    // logDTOList.add(logDTO);
-    // }
-    // }
-
-    // return logDTOList;
-    // } catch (Exception e) {
-    // // Log the exception and handle it appropriately
-    // e.printStackTrace(); // Replace this with your actual logging mechanism
-    // throw new InternalServerErrorException("An error occurred: " +
-    // e.getMessage());
-    // }
-    // }
-
-    // private List<ScopeLogs> fetchScopeLogsByTraceId(String traceId) {
-    // return null;
-    // }
-
-    // public long countQueryLogs(LogQuery logQuery, int minutesAgo) {
-    // return 0;
-    // }
-
-    // getLogs by multiple queries like serviceName and severityText from LogDTO
-    // entity
 
 
 
@@ -253,74 +147,9 @@ public List<LogDTO> getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(
 }
 
 
-// public List<LogDTO> getAllErrorLogsOrderBySeverityAndCreatedTimeDesc() {
-//     MongoDatabase database = mongoClient.getDatabase("OtelLog");
-//     MongoCollection<LogDTO> logDTOCollection = database.getCollection("LogDTO", LogDTO.class);
-
-//     Bson addSortFieldStage = Aggregates.addFields(new Field<>("customSortField", new Document("$cond",
-//             Arrays.asList(
-//                     new Document("$eq", Arrays.asList("$severityText", "ERROR")),
-//                     0,
-//                     1
-//             )
-//     )));
-
-//     Bson sortStage = Aggregates.sort(Sorts.orderBy(
-//             Sorts.ascending("customSortField"),
-//             Sorts.descending("createdTime")
-//     ));
-
-//     Bson projectStage = Aggregates.project(Projections.exclude("customSortField"));
-
-//     List<LogDTO> result = logDTOCollection.aggregate(Arrays.asList(addSortFieldStage, sortStage, projectStage))
-//             .into(new ArrayList<>());
-
-//     return result;
-// }
-
-
-
-
-
-
-// public List<LogMetrics> getLogMetricCount(int timeAgoMinutes) {
-//     List<LogDTO> logList = logQueryRepo.listAll(); // Replace with your data source retrieval logic
-//     Map<String, LogMetrics> metricsMap = new HashMap<>();
-
-//     Instant cutoffTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
-
-//     for (LogDTO logDTO : logList) {
-//         Date logCreateTime = logDTO.getCreatedTime();
-//         if (logCreateTime != null) {
-//             Instant logInstant = logCreateTime.toInstant();
-
-//             if (!logInstant.isBefore(cutoffTime)) {
-//                 String serviceName = logDTO.getServiceName();
-
-//                 LogMetrics metrics = metricsMap.get(serviceName);
-//                 if (metrics == null) {
-//                     metrics = new LogMetrics();
-//                     metrics.setServiceName(serviceName);
-//                     metrics.setErrorCallCount(0L); // Initialize errorCallCount to 0
-//                     metrics.setWarnCallCount(0L);
-//                     metrics.setDebugCallCount(0L);
-//                 }
-
-//                 // Calculate the call counts based on the severityText
-//                 calculateCallCounts(logDTO, metrics);
-
-//                 metricsMap.put(serviceName, metrics);
-//             }
-//         }
-//     }
-
-//     return new ArrayList<>(metricsMap.values());
-// }
-
-
 
 public List<LogMetrics> getLogMetricCount(int timeAgoMinutes, List<String> serviceNameList) {
-    List<LogDTO> logList = logQueryRepo.listAll(); // Replace with your data source retrieval logic
+    List<LogDTO> logList = logQueryRepo.listAll(); 
     Map<String, LogMetrics> metricsMap = new HashMap<>();
 
     Instant cutoffTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
@@ -337,12 +166,11 @@ public List<LogMetrics> getLogMetricCount(int timeAgoMinutes, List<String> servi
                 if (metrics == null) {
                     metrics = new LogMetrics();
                     metrics.setServiceName(serviceName);
-                    metrics.setErrorCallCount(0L); // Initialize errorCallCount to 0
+                    metrics.setErrorCallCount(0L); 
                     metrics.setWarnCallCount(0L);
                     metrics.setDebugCallCount(0L);
                 }
 
-                // Calculate the call counts based on the severityText
                 calculateCallCounts(logDTO, metrics);
 
                 metricsMap.put(serviceName, metrics);
@@ -358,7 +186,7 @@ public List<LogMetrics> getLogMetricCount(int timeAgoMinutes, List<String> servi
 private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
     for (ScopeLogs scopeLogs : logDTO.getScopeLogs()) {
         for (LogRecord logRecord : scopeLogs.getLogRecords()) {
-            String severityText = logDTO.getSeverityText(); // Get severityText from LogDTO
+            String severityText = logDTO.getSeverityText(); 
             if ("ERROR".equals(severityText)) {
                 metrics.setErrorCallCount(metrics.getErrorCallCount() + 1);
             } else if ("WARN".equals(severityText)) {
@@ -402,6 +230,7 @@ public List<LogDTO> findByMatching(String serviceName) {
             }
         }
     }
+    Collections.sort(filteredLogList, Comparator.comparing(LogDTO::getCreatedTime).reversed());
 
     return filteredLogList;
 }
@@ -421,11 +250,6 @@ public List<LogDTO> findByMatching(String serviceName) {
                 .getCollection("LogDTO");
 
         Document query = new Document("$or", List.of(
-                // new Document("serviceName", regex),
-                // new Document("traceId", regex),
-                // new Document("spanId", regex),
-                // new Document("severityText", regex),
-                // new Document("scopeLogs", regex)
                 new Document("scopeLogs.logRecords.body.stringValue", regex)
                 ));
 
@@ -443,9 +267,7 @@ public List<LogDTO> findByMatching(String serviceName) {
 }
 
 private LogDTO mapDocumentToLogDTO(Document document) {
-    // LogDTO logDto = DocumentMapper.mapDocumentToDto(document,LogDTO.class);
-    // System.out.println("------fasfSF----" + logDto.getServiceName());
-
+    
     LogDTO logDTO = new LogDTO();
     Gson gson = new Gson();
     String data = gson.toJson(document);
@@ -464,13 +286,10 @@ private LogDTO mapDocumentToLogDTO(Document document) {
     Scope scope = new Scope();
     List<LogRecord> logRecords = new ArrayList<LogRecord>();
 
-    //scope logs
     for(int i = 0 ; i < jsonArray.size() ; i++){
         JsonObject jsonObject2 = jsonArray.get(i).getAsJsonObject();
-        //scope name 
         scope.setName(jsonObject2.getAsJsonObject("scope").get("name").getAsString());
 
-        //log records 
         JsonArray jsonArray2 = jsonObject2.getAsJsonArray("logRecords");
         
         for(int j = 0 ; j < jsonArray2.size() ; j++){
@@ -499,26 +318,7 @@ private LogDTO mapDocumentToLogDTO(Document document) {
     List<ScopeLogs> scopeLogsArray = new ArrayList<ScopeLogs>();
     scopeLogsArray.add(scopeLogs);
     logDTO.setScopeLogs(scopeLogsArray);
-    // logDTO.setServiceName(document.getString("serviceName"));
-    // logDTO.setTraceId(document.getString("traceId"));
-    // logDTO.setSpanId(document.getString("spanId"));
-    // logDTO.setCreatedTime(document.getDate("createdTime"));
-    // logDTO.setSeverityText(document.getString("severityText"));
-
-    // List<Document> scopeLogsDocuments = (List<Document>) document.get("scopeLogs");
-
-    // System.out.println("-----scoped log data---- " + scopeLogsDocuments.size());
-    // if (scopeLogsDocuments.size() > 0) {
-    // List<Map<String, Object>> scopeLogsList = new ArrayList<>();
-    // for (Document scopeLogsDocument : scopeLogsDocuments) {
-    // Map<String, Object> scopeLogsMap = new HashMap<>();
-    // scopeLogsMap.put("name", scopeLogsDocument.getString("flags"));
-    // System.out.println(scopeLogsDocument);
-    // }
-
-    // // logDTO.setScopeLogs(scopeLogsDocuments);
-    // }
-
+  
     return logDTO;
 }
 

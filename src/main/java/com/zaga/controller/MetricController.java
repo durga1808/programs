@@ -2,8 +2,6 @@ package com.zaga.controller;
 
 import java.util.List;
 
-import org.bson.Document;
-
 import com.zaga.entity.queryentity.metric.MetricDTO;
 import com.zaga.handler.MetricQueryHandler;
 
@@ -12,7 +10,6 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 @Path("/metrics")

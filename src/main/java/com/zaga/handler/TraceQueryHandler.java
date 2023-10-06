@@ -10,7 +10,6 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
-import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceMetrics;
@@ -19,18 +18,10 @@ import com.zaga.repo.TraceQueryRepo;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
-import io.quarkus.panache.common.Parameters;
-import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -38,7 +29,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
@@ -202,151 +192,18 @@ public long countQueryTraces(TraceQuery query, int minutesAgo) {
 
 
 
-  // pagination data for trace summary page based on serviceName and statusCode
-//   public List<TraceDTO> findByMatching(
-//     int page,
-//     int pageSize,
-//     String serviceName
-// ) {
-//   LocalDateTime currentTime = LocalDateTime.now();
-  
-//   LocalDateTime startTime = currentTime.minusHours(2);
-//   System.out.println("CreatedTime: " + currentTime);
-//   System.out.println("StartTime: " + startTime);
-
-//   // Convert LocalDateTime to Instant
-//   Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
-//   Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
-
-//   // Convert Instant to Date
-//   Date currentDate = Date.from(currentInstant);
-//   Date startDate = Date.from(startInstant);
-  
-
-//      System.out.println("Start Time: " + startTime);
-//     System.out.println("Start Date: " + startDate);
-//     System.out.println("Current Date: " + currentDate);
-//     System.out.println("serviceName: " + serviceName);
-
-//     List<TraceDTO> traceList = traceQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
-//     System.out.println("last 2 hrs data"+traceList.size());
-
-//     // Filter by statusCode in the range of 400 to 599
-//     traceList = filterByStatusCode(traceList);
-
-//     // Calculate data count
-//     int dataCount = traceList.size();
-
-//     // Paginate the results
-//     int startIndex = (page - 1) * pageSize;
-//     int endIndex = Math.min(startIndex + pageSize, dataCount);
-//     return traceList.subList(startIndex, endIndex);
-// }
-
-// public Map<String, Object> findByMatchingWithTotalCount(
-//     int page,
-//     int pageSize,
-//     String serviceName
-// ) {
-//     LocalDateTime currentTime = LocalDateTime.now();
-//     LocalDateTime startTime = currentTime.minusHours(2);
-
-//     // Convert LocalDateTime to Instant
-//     Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
-//     Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
-
-//     // Convert Instant to Date
-//     Date currentDate = Date.from(currentInstant);
-//     Date startDate = Date.from(startInstant);
-
-//     System.out.println("Start Time: " + startTime);
-//     System.out.println("Start Date: " + startDate);
-//     System.out.println("Current Date: " + currentDate);
-//     System.out.println("serviceName: " + serviceName);
-
-//     // Retrieve all data for the specified time range
-//     List<TraceDTO> traceList = traceQueryRepo.findByServiceNameAndCreatedTime(serviceName, startDate, currentDate);
-//     System.out.println("last 2 hrs data: " + traceList.size());
-
-//     // Filter by statusCode in the range of 400 to 599
-//     traceList = filterByStatusCode(traceList);
-
-//     // Calculate data count
-//     int dataCount = traceList.size();
-
-//  // Paginate the results
-// int startIndex = (page - 1) * pageSize;
-// int endIndex = Math.min(startIndex + pageSize, dataCount);
-
-// // Ensure that indices are within the valid range
-// startIndex = Math.min(Math.max(0, startIndex), dataCount);  // Ensure startIndex is non-negative and within bounds
-// endIndex = Math.max(startIndex, Math.min(dataCount, endIndex));  // Ensure endIndex is greater than or equal to startIndex and within bounds
-
-// // Create a map to hold the result
-// Map<String, Object> resultMap = new HashMap<>();
-// resultMap.put("data", traceList.subList(startIndex, endIndex));
-// resultMap.put("totalCount", dataCount);  // Use the filtered data count as total count
-
-// // Return the result map
-// return resultMap;
-
-// }
-
-// public Map<String, Object> findByMatchingWithTotalCount(
-//         int page,
-//         int pageSize,
-//         String serviceName
-// ) {
-//     final int defaultInterval = 120;
-
-
-//     // Calculate the time 2 hours ago
-//     OffsetDateTime twoHoursAgoOffset = OffsetDateTime.now().minusHours(defaultInterval);
-
-//     // Convert the OffsetDateTime to Timestamp for comparison
-//     Timestamp twoHoursAgoTimestamp = Timestamp.from(twoHoursAgoOffset.toInstant());
-
-//     PanacheQuery<TraceDTO> traceQuery = traceQueryRepo.find(
-//             "serviceName = ?1 and createdTime >= ?2",
-//             Sort.descending("createdTime"),
-//             serviceName,
-//             twoHoursAgoTimestamp
-//     );
-
-//     List<TraceDTO> traceList = traceQuery.page(page, pageSize).list();
-//     System.out.println("-------traceList-------" + traceList);
-
-//         traceList = filterByStatusCode(traceList);
-
-//         long totalCount = traceQuery.count();
-
-//         // Create a map to hold the result
-//         Map<String, Object> resultMap = new HashMap<>();
-//         resultMap.put("data", traceList);
-//         resultMap.put("totalCount", totalCount);
-
-//         // Return the result map
-//         return resultMap;
-//     }
-
-// // Modify the filterByServiceNameAndStatusCode method to filter by StatusCode only
-// private List<TraceDTO> filterByStatusCode(List<TraceDTO> traceList) {
-//     return traceList.stream()
-//         .filter(traceDTO -> traceDTO != null && traceDTO.getStatusCode() != null &&
-//                 traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599)
-//         .collect(Collectors.toList());
-// }
-
-
 public List<TraceDTO> findErrorsLastTwoHours(String serviceName) {
   Date twoHoursAgo = new Date(System.currentTimeMillis() - 2 * 60 * 60 * 1000);
 
   PanacheQuery<TraceDTO> query = traceQueryRepo.find("serviceName = ?1 and createdTime >= ?2", serviceName, twoHoursAgo);
   List<TraceDTO> traceList = query.list();
 
-  return traceList.stream()
-          .filter(traceDTO -> traceDTO.getStatusCode() != null && traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599)
-          .collect(Collectors.toList());
+  List<TraceDTO> sortedTraceList = traceList.stream()
+  .filter(traceDTO -> traceDTO.getStatusCode() != null && traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599)
+  .sorted(Comparator.comparing(TraceDTO::getCreatedTime).reversed())
+  .collect(Collectors.toList());
+
+return sortedTraceList;
 }
 
 
@@ -369,36 +226,6 @@ public List<TraceDTO> findErrorsLastTwoHours(String serviceName) {
 
 
   
-// public List<TraceMetrics> getTraceMetricCount(
-//     int timeAgoMinutes
-// ) {
-//     List<TraceDTO> traceList = TraceDTO.listAll();
-//     Map<String, TraceMetrics> metricsMap = new HashMap<>();
-
-//     Instant cutoffTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
-
-//     for (TraceDTO trace : traceList) {
-//         Date traceCreateTime = trace.getCreatedTime();
-//         if (traceCreateTime != null) {
-//             Instant traceInstant = traceCreateTime.toInstant();
-
-//             if (!traceInstant.isBefore(cutoffTime)) {
-//                 String serviceName = trace.getServiceName();
-
-//                 TraceMetrics metrics = metricsMap.get(serviceName);
-//                 if (metrics == null) {
-//                     metrics = new TraceMetrics();
-//                     metrics.setServiceName(serviceName);
-//                     metrics.setApiCallCount(0L);
-//                     metrics.setTotalErrorCalls(0L);
-//                     metrics.setTotalSuccessCalls(0L);
-//                     metrics.setPeakLatency(0L);
-//                 }
-//                 metrics.setApiCallCount(metrics.getApiCallCount() + 1);
-//                 metricsMap.put(serviceName, metrics);
-//             }
-//         }
-//     }
 
 
 public List<TraceMetrics> getTraceMetricCount(
@@ -475,45 +302,6 @@ public List<TraceMetrics> getTraceMetricCount(
 
 
 
-  //   Map<String, Long> errorCounts = calculateErrorCountsByService();
-  //   Map<String, Long> successCounts = calculateSuccessCountsByService();
-  //   Map<String, Long> peakLatency = calculatePeakLatencyCountsByService();
-
-  //   for (Map.Entry<String, Long> entry : errorCounts.entrySet()) {
-  //     String serviceName = entry.getKey();
-  //     Long errorCount = entry.getValue();
-
-  //     // Update the TraceMetrics object in metricsMap
-  //     TraceMetrics metrics = metricsMap.get(serviceName);
-  //     if (metrics != null) {
-  //       metrics.setTotalErrorCalls(errorCount);
-  //     }
-  //   }
-
-  //   for (Map.Entry<String, Long> entry : successCounts.entrySet()) {
-  //     String serviceName = entry.getKey();
-  //     Long successCount = entry.getValue();
-
-  //     // Update the TraceMetrics object in metricsMap
-  //     TraceMetrics metrics = metricsMap.get(serviceName);
-  //     if (metrics != null) {
-  //       metrics.setTotalSuccessCalls(successCount);
-  //     }
-  //   }
-
-  //   for (Map.Entry<String, Long> entry : peakLatency.entrySet()) {
-  //     String serviceName = entry.getKey();
-  //     Long peakLatencyCount = entry.getValue();
-
-  //     // Update the TraceMetrics object in metricsMap with peak latency count
-  //     TraceMetrics metrics = metricsMap.get(serviceName);
-  //     if (metrics != null) {
-  //       metrics.setPeakLatency(peakLatencyCount);
-  //     }
-  //   }
-
-  //   return new ArrayList<>(metricsMap.values());
-  // }
 
   public Map<String, Long> calculateErrorCountsByService() {
     MongoCollection<Document> traceCollection = mongoClient
@@ -665,19 +453,7 @@ public List<TraceDTO> findAllOrderByErrorFirst(List<String> serviceNameList) {
 
 
 
-//sort order peak value first
-// public List<TraceDTO> findAllOrderByDuration() {
-//   MongoCollection<Document> traceCollection = mongoClient
-//           .getDatabase("OtelTrace")
-//           .getCollection("TraceDto");
-//   List<TraceDTO> allTraces = traceCollection.find(TraceDTO.class).into(new ArrayList<>());
-//   List<TraceDTO> sortedTraces = allTraces.stream()
-//           .sorted(Comparator
-//                   .comparing(TraceDTO::getDuration, Comparator.reverseOrder()))
-//           .collect(Collectors.toList());
 
-//   return sortedTraces;
-// }
 public List<TraceDTO> findAllOrderByDuration(List<String> serviceNameList) {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")

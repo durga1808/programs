@@ -20,7 +20,7 @@ public class TraceQueryRepo implements PanacheMongoRepository<TraceDTO> {
   
    public List<TraceDTO> findRecentDataPaged(String serviceName, int page, int pageSize) {
       PanacheQuery<TraceDTO> query = find("serviceName = ?1 order by createdTime desc", serviceName);
-        query.page(page, pageSize); // Apply paging
+        query.page(page, pageSize); 
         return query.list();
     }
 
@@ -29,11 +29,7 @@ public class TraceQueryRepo implements PanacheMongoRepository<TraceDTO> {
     }
 
      public List<TraceDTO> findAllOrderByCreatedTimeDesc(List<String> serviceNameList) {
-        // List<String> serviceNameList = new ArrayList<String>();
-        // serviceNameList.add("order-project");
-        // serviceNameList.add("vendor-project");
-        // String serviceName = "order-project";
-        return find("serviceName in ?1",Sort.descending("createdTime"),serviceNameList).list();
+      return find("serviceName in ?1",Sort.descending("createdTime"),serviceNameList).list();
     }
 
     public List<TraceDTO> findAllOrderByCreatedTimeAsc(List<String> serviceNameList) {
@@ -43,13 +39,10 @@ public class TraceQueryRepo implements PanacheMongoRepository<TraceDTO> {
     
 
     public List<TraceDTO> findByServiceNameAndCreatedTime(String serviceName, Date startDate, Date endDate) {
-        // Manually implement your custom query logic here
-    
-        // Convert the startDate and endDate to Instant
+        
         Instant startInstant = startDate.toInstant();
         Instant endInstant = endDate.toInstant();
     
-        // Fetch data from MongoDB filtered by serviceName
         List<TraceDTO> traceList = list("serviceName = ?1", serviceName);
     
         List<TraceDTO> filteredTraceList = new ArrayList<>();

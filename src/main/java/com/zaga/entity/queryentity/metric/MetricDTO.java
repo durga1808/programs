@@ -17,8 +17,7 @@ import lombok.NoArgsConstructor;
 @MongoEntity(collection = "MetricDTO", database = "OtelMetric")
 public class MetricDTO {
     private LocalDateTime date;
-    private Long cpuUsage;
-    private Long memoryUsage;
+    private Double cpuUsage;
+    private Integer memoryUsage;
     private String serviceName;
-    
 }

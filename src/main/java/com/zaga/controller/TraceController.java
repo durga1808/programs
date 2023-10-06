@@ -1,6 +1,5 @@
 package com.zaga.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.trace.TraceDTO;
@@ -14,7 +13,6 @@ import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -135,7 +133,6 @@ public Response queryTraces(
       @QueryParam("pageSize") @DefaultValue("10") int pageSize) {
     try {
       long totalCount = traceQueryHandler.countData();
-      // long totalPages = (long) Math.ceil((double) totalCount / pageSize);
       List<TraceDTO> recentData = traceQueryHandler.findRecentDataPaged(
           page,
           pageSize);
@@ -156,62 +153,6 @@ public Response queryTraces(
     }
   }
 
-
-
-// @GET
-// @Path("/getErroredDataForLastTwo")
-// public Response findRecentDataPaged(
-//     @QueryParam("page") @DefaultValue("1") int page,
-//     @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-//     @QueryParam("serviceName") String serviceName) {
-
-//      try {
-//         // Corrected method name to match the one in TraceQueryHandler
-//         Map<String, Object> result = traceQueryHandler.findByMatchingWithTotalCount(page, pageSize, serviceName);
-
-//         ObjectMapper objectMapper = new ObjectMapper();
-//         String responseJson = objectMapper.writeValueAsString(result);
-
-//         return Response.ok(responseJson).build();
-//     } catch (Exception e) {
-//         e.printStackTrace();
-
-//         return Response
-//                 .status(Response.Status.INTERNAL_SERVER_ERROR)
-//                 .entity("An error occurred: " + e.getMessage())
-//                 .build();
-//     }
-// }
-
-// @GET
-// @Path("/getErroredDataForLastTwo")
-// @Produces(MediaType.APPLICATION_JSON)
-// public Response findRecentDataPaged(
-//         @QueryParam("page") @DefaultValue("1") int page,
-//         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-//         @QueryParam("serviceName") String serviceName) {
-
-//     Map<String, Object> result = traceQueryHandler.findByMatchingWithTotalCount(page, pageSize, serviceName);
-
-//     List<TraceDTO> paginatedData = (List<TraceDTO>) result.get("data");
-//     Long totalCount = (Long) result.get("totalCount");
-
-//     if (paginatedData == null || paginatedData.isEmpty()) {
-//         return Response.ok(Collections.emptyList()).build();
-//     }
-
-//     Map<String, Object> responseMap = new HashMap<>();
-//     responseMap.put("data", paginatedData);
-//     responseMap.put("totalCount", totalCount);
-
-//      try {
-//         ObjectMapper objectMapper = new ObjectMapper();
-//         String jsonResponse = objectMapper.writeValueAsString(responseMap);
-//         return Response.ok(jsonResponse).build();
-//     } catch (JsonProcessingException e) {
-//         return Response.serverError().entity("Error converting to JSON").build();
-//     }
-// }
 
 @GET
 @Path("/getErroredDataForLastTwo")
