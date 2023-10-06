@@ -1,6 +1,5 @@
 package com.zaga.entity.queryentity.metric;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
