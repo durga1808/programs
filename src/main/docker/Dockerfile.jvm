@@ -1,7 +1,7 @@
 ####
 # mvn package -Dquarkus.profile=dev  ----  mvn package -Dquarkus.profile=prod
 #
-# docker build -f src/main/docker/Dockerfile.jvm -t mugicoder13/observai-backend-jvm .
+# docker build -f src/main/docker/Dockerfile.jvm -t mugicoder13/observai-query-backend-jvm .
 #
 # docker run -i --rm -p 8080:8080 mugicoder13/observai-backend-jvm
 ####
@@ -10,7 +10,7 @@ FROM registry.access.redhat.com/ubi8/openjdk-11:1.16
 
 ENV LANGUAGE='en_US:en'
 
-ENV DEV_APP_PORT=8080
+ENV APP_PORT=8081
 
 ENV MONGODB_URL='mongodb://mongodb-ops-manager:Devdbpass2023@zaga-mongo-ops-manager-db-0.zaga-mongo-ops-manager-db-svc.mongodb-workspace.svc.cluster.local:27017,zaga-mongo-ops-manager-db-1.zaga-mongo-ops-manager-db-svc.mongodb-workspace.svc.cluster.local:27017,zaga-mongo-ops-manager-db-2.zaga-mongo-ops-manager-db-svc.mongodb-workspace.svc.cluster.local:27017/?authMechanism=SCRAM-SHA-256&authSource=admin&connectTimeoutMS=20000&replicaSet=zaga-mongo-ops-manager-db&serverSelectionTimeoutMS=20000'
 
@@ -21,7 +21,7 @@ COPY --chown=185 target/quarkus-app/*.jar /deployments/
 COPY --chown=185 target/quarkus-app/app/ /deployments/app/
 COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
 
-EXPOSE 8080
+EXPOSE 8081
 USER 185
 ENV AB_JOLOKIA_OFF=""
 ENV JAVA_OPTS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
