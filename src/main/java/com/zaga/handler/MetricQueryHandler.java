@@ -26,6 +26,10 @@ public class MetricQueryHandler {
         return metricQueryRepo.listAll();
     }
 
+    public List<MetricDTO> getMetricData(int timeAgoMinutes, String serviceName) {
+       List<MetricDTO> results = metricQueryRepo.getMetricData(timeAgoMinutes, serviceName);
+        return results;
+    }
 
 
 }
