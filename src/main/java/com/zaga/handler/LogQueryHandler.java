@@ -186,7 +186,7 @@ public List<LogMetrics> getLogMetricCount(int timeAgoMinutes, List<String> servi
 private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
     for (ScopeLogs scopeLogs : logDTO.getScopeLogs()) {
         for (LogRecord logRecord : scopeLogs.getLogRecords()) {
-            String severityText = logDTO.getSeverityText(); 
+            String severityText = logRecord.getSeverityText(); 
             if ("ERROR".equals(severityText)) {
                 metrics.setErrorCallCount(metrics.getErrorCallCount() + 1);
             } else if ("WARN".equals(severityText)) {
@@ -201,7 +201,7 @@ private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
 
 public List<LogDTO> findByMatching(String serviceName) {
     LocalDateTime currentTime = LocalDateTime.now();
-    LocalDateTime startTime = currentTime.minusHours(55182);
+    LocalDateTime startTime = currentTime.minusHours(2);
 
     Instant currentInstant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
     Instant startInstant = startTime.atZone(ZoneId.systemDefault()).toInstant();
