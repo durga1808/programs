@@ -126,11 +126,11 @@ public List<LogDTO> getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(
     Bson matchStage = Aggregates.match(Filters.in("serviceName", serviceNameList));
 
     Bson addSortFieldStage = Aggregates.addFields(new Field<>("customSortField", new Document("$cond",
-            Arrays.asList(
-                    new Document("$eq", Arrays.asList("$severityText", "ERROR")),
-                    0,
-                    1
-            )
+    Arrays.asList(
+        new Document("$in", Arrays.asList("$scopeLogs.logRecords.severityText", Arrays.asList("ERROR", "SEVERE"))),
+        0,
+        1
+)
     )));
 
     Bson sortStage = Aggregates.sort(Sorts.orderBy(
@@ -187,7 +187,7 @@ private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
     for (ScopeLogs scopeLogs : logDTO.getScopeLogs()) {
         for (LogRecord logRecord : scopeLogs.getLogRecords()) {
             String severityText = logRecord.getSeverityText(); 
-            if ("ERROR".equals(severityText)) {
+            if ("ERROR".equals(severityText) || "SEVERE".equals(severityText)) {
                 metrics.setErrorCallCount(metrics.getErrorCallCount() + 1);
             } else if ("WARN".equals(severityText)) {
                 metrics.setWarnCallCount(metrics.getWarnCallCount() + 1);
