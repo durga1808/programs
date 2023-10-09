@@ -127,11 +127,11 @@ public List<LogDTO> getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(
 
     Bson addSortFieldStage = Aggregates.addFields(new Field<>("customSortField", new Document("$cond",
     Arrays.asList(
-        new Document("$in", Arrays.asList("$scopeLogs.logRecords.severityText", Arrays.asList("ERROR", "SEVERE"))),
-        0,
-        1
-)
-    )));
+            new Document("$eq", Arrays.asList("$severityText", "ERROR")),
+            0,
+            1
+    )
+)));
 
     Bson sortStage = Aggregates.sort(Sorts.orderBy(
             Sorts.ascending("customSortField"),
