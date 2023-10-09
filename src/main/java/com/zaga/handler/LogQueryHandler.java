@@ -126,12 +126,12 @@ public List<LogDTO> getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(
     Bson matchStage = Aggregates.match(Filters.in("serviceName", serviceNameList));
 
     Bson addSortFieldStage = Aggregates.addFields(new Field<>("customSortField", new Document("$cond",
-    Arrays.asList(
-            new Document("$eq", Arrays.asList("$severityText", "ERROR")),
-            0,
-            1
-    )
-)));
+            Arrays.asList(
+                    new Document("$in", Arrays.asList("$severityText", Arrays.asList("ERROR", "SEVERE"))),
+                    0,
+                    1
+            )
+    )));
 
     Bson sortStage = Aggregates.sort(Sorts.orderBy(
             Sorts.ascending("customSortField"),
@@ -145,7 +145,6 @@ public List<LogDTO> getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(
 
     return result;
 }
-
 
 
 public List<LogMetrics> getLogMetricCount(int timeAgoMinutes, List<String> serviceNameList) {
