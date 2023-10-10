@@ -235,7 +235,7 @@ public List<TraceMetrics> getTraceMetricCount(
     List<TraceDTO> traceList = TraceDTO.listAll();
     Map<String, TraceMetrics> metricsMap = new HashMap<>();
 
-    Instant cutoffTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+    Instant cutoffTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.MINUTES);
 
     for (TraceDTO trace : traceList) {
         Date traceCreateTime = trace.getCreatedTime();
