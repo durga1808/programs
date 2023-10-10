@@ -286,6 +286,10 @@ public List<TraceMetrics> getTraceMetricCount(
         }
     }
 
+    for (TraceMetrics metrics : metricsMap.values()) {
+      metrics.setApiCallCount(metrics.getTotalErrorCalls() + metrics.getTotalSuccessCalls());
+  }
+
     for (Map.Entry<String, Long> entry : peakLatency.entrySet()) {
         String serviceName = entry.getKey();
         Long peakLatencyCount = entry.getValue();
