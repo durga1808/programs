@@ -18,6 +18,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -205,14 +207,23 @@ public Response findErroredDataForLastTwo(
     return traceQueryHandler.getTraceCountWithinHour();
   }
 
-  @GET
-  @Path("/TraceSumaryChartDataCount")
-  @Produces(MediaType.APPLICATION_JSON)
-  public List<TraceMetrics> getTraceMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes, 
-        @QueryParam("serviceNameList") List<String> serviceNameList) {
-    return traceQueryHandler.getTraceMetricCount(timeAgoMinutes,serviceNameList);
-  }
+//   @GET
+//   @Path("/TraceSumaryChartDataCount")
+//   @Produces(MediaType.APPLICATION_JSON)
+//   public List<TraceMetrics> getTraceMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes, 
+//         @QueryParam("serviceNameList") List<String> serviceNameList) {
+//     return traceQueryHandler.getTraceMetricCount(timeAgoMinutes,serviceNameList);
+//   }
 
+
+
+  @GET
+    @Path("/TraceSumaryChartDataCount")
+    public List<TraceMetrics> getTraceMetricCount(
+            @QueryParam("serviceNames") List<String> serviceNames,
+            @QueryParam("minutesAgo") int timeAgoMinutes) {
+        return traceQueryHandler.getAllTraceMetricCount(serviceNames, timeAgoMinutes);
+    }
 
   
   
