@@ -24,6 +24,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
@@ -41,8 +42,7 @@ import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.log.LogQuery;
 import com.zaga.repo.LogQueryRepo;
 
-
-
+import io.quarkus.mongodb.panache.PanacheQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -85,8 +85,28 @@ public class LogQueryHandler {
 
 
 // search log in a filter query
-    public List<LogDTO> searchlogPaged(LogQuery logQuery,int page, int pageSize,int minutesAgo) {
+    // public List<LogDTO> searchlogPaged(LogQuery logQuery,int page, int pageSize,int minutesAgo) {
 
+
+    //     List<String> serviceNames = logQuery.getServiceName();
+    //     List<String> severityTexts = logQuery.getSeverityText();
+    
+    //     List<LogDTO> logList = logQueryRepo.listAll(); // Replace with your data source retrieval logic
+    
+    //     List<LogDTO> filteredLogList = new ArrayList<>();
+    
+    //     for (LogDTO logDTO : logList) {
+    //         if ((serviceNames == null || serviceNames.contains(logDTO.getServiceName())) &&
+    //             (severityTexts == null || severityTexts.contains(logDTO.getSeverityText()))) {
+    //             filteredLogList.add(logDTO);
+    //         }
+    //     }
+    
+    //     return filteredLogList;
+    // }
+
+
+    public List<LogDTO> searchlogPaged(LogQuery logQuery, int page, int pageSize, int minutesAgo) {
 
         List<String> serviceNames = logQuery.getServiceName();
         List<String> severityTexts = logQuery.getSeverityText();
@@ -96,8 +116,10 @@ public class LogQueryHandler {
         List<LogDTO> filteredLogList = new ArrayList<>();
     
         for (LogDTO logDTO : logList) {
+            String severityText = logDTO.getSeverityText();
             if ((serviceNames == null || serviceNames.contains(logDTO.getServiceName())) &&
-                (severityTexts == null || severityTexts.contains(logDTO.getSeverityText()))) {
+                (severityTexts == null || severityTexts.contains(severityText) ||
+                 ("ERROR".equals(severityText) || "SEVERE".equals(severityText)))) {
                 filteredLogList.add(logDTO);
             }
         }
@@ -105,7 +127,12 @@ public class LogQueryHandler {
         return filteredLogList;
     }
 
+
+
     
+    
+
+
     
   //sort orer decending 
   public List<LogDTO> getAllLogssOrderByCreatedTimeDesc(List<String> serviceNameList) {
