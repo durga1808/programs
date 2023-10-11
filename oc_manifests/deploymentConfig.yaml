@@ -3,6 +3,8 @@ kind: DeploymentConfig
 metadata:
   name: observai-query-backend
   namespace: testing-workspace
+  labels:
+      app.kubernetes.io/part-of: observai
 spec:
   triggers:
     - type: ImageChange
