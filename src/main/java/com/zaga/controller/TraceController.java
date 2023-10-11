@@ -220,8 +220,8 @@ public Response findErroredDataForLastTwo(
   @GET
     @Path("/TraceSumaryChartDataCount")
     public List<TraceMetrics> getTraceMetricCount(
-            @QueryParam("serviceNames") List<String> serviceNames,
-            @QueryParam("minutesAgo") int timeAgoMinutes) {
+            @QueryParam("serviceNameList") List<String> serviceNames,
+            @QueryParam("timeAgoMinutes") int timeAgoMinutes) {
         return traceQueryHandler.getAllTraceMetricCount(serviceNames, timeAgoMinutes);
     }
 
