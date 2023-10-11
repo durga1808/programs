@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: observai-query-backend  
+resources:
+  - configMap.yaml
+  - deploymentConfig.yaml
+  - service.yaml
+  - route.yaml
