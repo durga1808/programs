@@ -108,7 +108,7 @@ private FindIterable<Document> getFilteredResults(TraceQuery query,int page, int
 
     MongoCollection<Document> collection = mongoClient
             .getDatabase("OtelTrace")
-            .getCollection("TraceDto");
+            .getCollection("TraceDTO");
 
     Bson projection = Projections.excludeId();
 
@@ -396,7 +396,7 @@ return sortedTraceList;
 // MongoCollection<Document> traceCollection = mongoClient
 
 //   .getDatabase("OtelTrace")
-//   .getCollection("TraceDto");
+//   .getCollection("TraceDTO");
 // List<Bson> aggregationStages = new ArrayList<>();
 // aggregationStages.add(
 //   Aggregates.match(
@@ -423,7 +423,7 @@ return sortedTraceList;
 // public Map<String, Long> calculateSuccessCountsByService(List<TraceDTO> traceList) {
 // MongoCollection<Document> traceCollection = mongoClient
 //   .getDatabase("OtelTrace")
-//   .getCollection("TraceDto");
+//   .getCollection("TraceDTO");
 // // Define aggregation stages to group and count successes by serviceName and statusCode
 // List<Bson> aggregationStages = new ArrayList<>();
 // aggregationStages.add(
@@ -453,7 +453,7 @@ return sortedTraceList;
 // public Map<String, Long> calculatePeakLatencyCountsByService(List<TraceDTO> traceList) {
 // MongoCollection<Document> traceCollection = mongoClient
 //   .getDatabase("OtelTrace")
-//   .getCollection("TraceDto");
+//   .getCollection("TraceDTO");
 // List<Bson> aggregationStages = new ArrayList<>();
 // aggregationStages.add(Aggregates.match(Filters.gt("duration", 500L)));
 // aggregationStages.add(
@@ -502,7 +502,7 @@ public List<TraceDTO> getAllTracesAsc(List<String> serviceNameList){
 public List<TraceDTO> findAllOrderByErrorFirst(List<String> serviceNameList) {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
-          .getCollection("TraceDto");
+          .getCollection("TraceDTO");
 
   List<TraceDTO> allTraces = traceCollection.find(TraceDTO.class).into(new ArrayList<>());
 
@@ -531,7 +531,7 @@ public List<TraceDTO> findAllOrderByErrorFirst(List<String> serviceNameList) {
 public List<TraceDTO> findAllOrderByDuration(List<String> serviceNameList) {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
-          .getCollection("TraceDto");
+          .getCollection("TraceDTO");
 
   List<TraceDTO> allTraces = traceCollection.find(TraceDTO.class).into(new ArrayList<>());
 
@@ -761,7 +761,7 @@ private Map<String, Long> calculateErrorCountsByService(Instant since) {
   // Same as before, but add a match stage for the time range
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
-          .getCollection("TraceDto");
+          .getCollection("TraceDTO");
 
   List<Bson> aggregationStages = new ArrayList<>();
   aggregationStages.add(
@@ -797,7 +797,7 @@ private Map<String, Long> calculateSuccessCountsByService(Instant since) {
   // Same as before, but add a match stage for the time range
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
-          .getCollection("TraceDto");
+          .getCollection("TraceDTO");
 
   // Define aggregation stages to group and count successes by serviceName and statusCode
   List<Bson> aggregationStages = new ArrayList<>();
@@ -836,7 +836,7 @@ private Map<String, Long> calculatePeakLatencyCountsByService(Instant since) {
   // Same as before, but add a match stage for the time range
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
-          .getCollection("TraceDto");
+          .getCollection("TraceDTO");
 
   List<Bson> aggregationStages = new ArrayList<>();
   aggregationStages.add(
