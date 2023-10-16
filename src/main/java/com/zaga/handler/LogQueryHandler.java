@@ -82,28 +82,8 @@ public class LogQueryHandler {
 
 
 // search log in a filter query
-    public List<LogDTO> searchlogPaged(LogQuery logQuery,int page, int pageSize,int minutesAgo) {
+    // public List<LogDTO> searchlogPaged(LogQuery logQuery,int page, int pageSize,int minutesAgo) {
 
-
-        List<String> serviceNames = logQuery.getServiceName();
-        List<String> severityTexts = logQuery.getSeverityText();
-    
-        List<LogDTO> logList = logQueryRepo.listAll(); // Replace with your data source retrieval logic
-    
-        List<LogDTO> filteredLogList = new ArrayList<>();
-    
-        for (LogDTO logDTO : logList) {
-            if ((serviceNames == null || serviceNames.contains(logDTO.getServiceName())) &&
-                (severityTexts == null || severityTexts.contains(logDTO.getSeverityText()))) {
-                filteredLogList.add(logDTO);
-            }
-        }
-    
-        return filteredLogList;
-    }
-
-
-    // public List<LogDTO> searchlogPaged(LogQuery logQuery, int page, int pageSize, int minutesAgo) {
 
     //     List<String> serviceNames = logQuery.getServiceName();
     //     List<String> severityTexts = logQuery.getSeverityText();
@@ -113,10 +93,8 @@ public class LogQueryHandler {
     //     List<LogDTO> filteredLogList = new ArrayList<>();
     
     //     for (LogDTO logDTO : logList) {
-    //         String severityText = logDTO.getSeverityText();
     //         if ((serviceNames == null || serviceNames.contains(logDTO.getServiceName())) &&
-    //             (severityTexts == null || severityTexts.contains(severityText) ||
-    //              ("ERROR".equals(severityText) || "SEVERE".equals(severityText)))) {
+    //             (severityTexts == null || severityTexts.contains(logDTO.getSeverityText()))) {
     //             filteredLogList.add(logDTO);
     //         }
     //     }
@@ -126,11 +104,28 @@ public class LogQueryHandler {
 
 
 
+    public List<LogDTO> searchlogPaged(LogQuery logQuery, int page, int pageSize, int minutesAgo) {
+        List<String> serviceNames = logQuery.getServiceName();
+        List<String> severityTexts = logQuery.getSeverityText();
     
+        List<LogDTO> logList = logQueryRepo.listAll(); 
+    
+        List<LogDTO> filteredLogList = new ArrayList<>();
+    
+        for (LogDTO logDTO : logList) {
+            if ((serviceNames == null || serviceNames.isEmpty() || serviceNames.contains(logDTO.getServiceName())) &&
+                (severityTexts == null || severityTexts.isEmpty() || severityTexts.contains(logDTO.getSeverityText()))) {
+                filteredLogList.add(logDTO);
+            }
+        }
+    
+        return filteredLogList;
+    }
     
 
 
-    
+
+       
   //sort orer decending 
   public List<LogDTO> getAllLogssOrderByCreatedTimeDesc(List<String> serviceNameList) {
     return logQueryRepo.findAllOrderByCreatedTimeDesc(serviceNameList);
