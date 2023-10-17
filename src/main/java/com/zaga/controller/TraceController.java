@@ -209,22 +209,15 @@ public Response findErroredDataForLastTwo(
     return traceQueryHandler.getTraceCountWithinHour();
   }
 
-//   @GET
-//   @Path("/TraceSumaryChartDataCount")
-//   @Produces(MediaType.APPLICATION_JSON)
-//   public List<TraceMetrics> getTraceMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes, 
-//         @QueryParam("serviceNameList") List<String> serviceNameList) {
-//     return traceQueryHandler.getTraceMetricCount(timeAgoMinutes,serviceNameList);
-//   }
-
 
 
   @GET
     @Path("/TraceSumaryChartDataCount")
     public List<TraceMetrics> getTraceMetricCount(
             @QueryParam("serviceNameList") List<String> serviceNames,
-            @QueryParam("timeAgoMinutes") int timeAgoMinutes) {
-        return traceQueryHandler.getAllTraceMetricCount(serviceNames, timeAgoMinutes);
+            @QueryParam("from") LocalDate from,
+            @QueryParam("to") LocalDate to){
+        return traceQueryHandler.getAllTraceMetricCount(serviceNames,from,to);
     }
 
   

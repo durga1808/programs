@@ -622,14 +622,17 @@ public List<TraceDTO> mergeTraces(List<TraceDTO> traces) {
 
 
 
-// public List<TraceMetrics> getTraceMetricCount(List<String> serviceNameList, int minutesAgo) {
-//   Instant cutoffTime = Instant.now().minus(minutesAgo, ChronoUnit.MINUTES);
+// public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, int timeAgoMinutes) {
+//   Instant cutoffTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
+//   System.out.println("Cutoff Time: " + cutoffTime);
 
 //   List<TraceDTO> traceList = getTraceDataSince(cutoffTime);
 //   Map<String, TraceMetrics> metricsMap = new HashMap<>();
 
 //   for (TraceDTO trace : traceList) {
-//       Date traceCreateTime = trace.getCreatedTime();
+//     Date traceCreateTime = trace.getCreatedTime();
+//     System.out.println("Trace Create Time: " + traceCreateTime);
+      
 //       if (traceCreateTime != null && serviceNameList.contains(trace.getServiceName())) {
 //           String serviceName = trace.getServiceName();
 
@@ -650,6 +653,11 @@ public List<TraceDTO> mergeTraces(List<TraceDTO> traces) {
 //   Map<String, Long> errorCounts = calculateErrorCountsByService(cutoffTime);
 //   Map<String, Long> successCounts = calculateSuccessCountsByService(cutoffTime);
 //   Map<String, Long> peakLatency = calculatePeakLatencyCountsByService(cutoffTime);
+
+//   System.out.println("Metrics Map: " + metricsMap);
+//   System.out.println("Error Counts: " + errorCounts);
+//   System.out.println("Success Counts: " + successCounts);
+//   System.out.println("Peak Latency Counts: " + peakLatency);
 
 //   for (Map.Entry<String, Long> entry : errorCounts.entrySet()) {
 //       String serviceName = entry.getKey();
@@ -691,11 +699,126 @@ public List<TraceDTO> mergeTraces(List<TraceDTO> traces) {
 //   return new ArrayList<>(metricsMap.values());
 // }
 
-public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, int timeAgoMinutes) {
-  Instant cutoffTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
-  System.out.println("Cutoff Time: " + cutoffTime);
 
-  List<TraceDTO> traceList = getTraceDataSince(cutoffTime);
+// private List<TraceDTO> getTraceDataSince(Instant since) {
+//   return TraceDTO.find("createdTime >= ?1", since).list();
+// }
+
+// private Map<String, Long> calculateErrorCountsByService(Instant since) {
+//   // Same as before, but add a match stage for the time range
+//   MongoCollection<Document> traceCollection = mongoClient
+//           .getDatabase("OtelTrace")
+//           .getCollection("TraceDTO");
+
+//   List<Bson> aggregationStages = new ArrayList<>();
+//   aggregationStages.add(
+//           Aggregates.match(
+//                   Filters.and(
+//                           Filters.gte("createdTime", Date.from(since)),
+//                           Filters.and(
+//                                   Filters.gte("statusCode", 400L),
+//                                   Filters.lte("statusCode", 599L)
+//                           )
+//                   )
+//           )
+//   );
+//   aggregationStages.add(
+//           Aggregates.group("$serviceName", Accumulators.sum("errorCount", 1L))
+//   );
+
+//   AggregateIterable<Document> results = traceCollection.aggregate(
+//           aggregationStages
+//   );
+
+//   Map<String, Long> errorCounts = new HashMap<>();
+//   for (Document result : results) {
+//       String serviceName = result.getString("_id");
+//       Long count = result.getLong("errorCount");
+//       errorCounts.put(serviceName, count);
+//   }
+
+//   return errorCounts;
+// }
+
+// private Map<String, Long> calculateSuccessCountsByService(Instant since) {
+//   // Same as before, but add a match stage for the time range
+//   MongoCollection<Document> traceCollection = mongoClient
+//           .getDatabase("OtelTrace")
+//           .getCollection("TraceDTO");
+
+//   // Define aggregation stages to group and count successes by serviceName and statusCode
+//   List<Bson> aggregationStages = new ArrayList<>();
+//   aggregationStages.add(
+//           Aggregates.match(
+//                   Filters.and(
+//                           Filters.gte("createdTime", Date.from(since)),
+//                           Filters.and(
+//                                   Filters.gte("statusCode", 200L),
+//                                   Filters.lte("statusCode", 299L)
+//                           )
+//                   )
+//           )
+//   );
+//   aggregationStages.add(
+//           Aggregates.group("$serviceName", Accumulators.sum("successCount", 1L))
+//   );
+
+//   // Executing the aggregation pipeline
+//   AggregateIterable<Document> results = traceCollection.aggregate(
+//           aggregationStages
+//   );
+
+//   // Process the results into a map
+//   Map<String, Long> successCounts = new HashMap<>();
+//   for (Document result : results) {
+//       String serviceName = result.getString("_id");
+//       Long count = result.getLong("successCount");
+//       successCounts.put(serviceName, count);
+//   }
+
+//   return successCounts;
+// }
+
+// private Map<String, Long> calculatePeakLatencyCountsByService(Instant since) {
+//   // Same as before, but add a match stage for the time range
+//   MongoCollection<Document> traceCollection = mongoClient
+//           .getDatabase("OtelTrace")
+//           .getCollection("TraceDTO");
+
+//   List<Bson> aggregationStages = new ArrayList<>();
+//   aggregationStages.add(
+//           Aggregates.match(
+//                   Filters.and(
+//                           Filters.gte("createdTime", Date.from(since)),
+//                           Filters.gt("duration", 500L)
+//                   )
+//           )
+//   );
+//   aggregationStages.add(
+//           Aggregates.group("$serviceName", Accumulators.sum("peakLatency", 1L))
+//   );
+
+//   AggregateIterable<Document> results = traceCollection.aggregate(
+//           aggregationStages
+//   );
+
+//   Map<String, Long> peakLatency = new HashMap<>();
+//   for (Document result : results) {
+//       String serviceName = result.getString("_id");
+//       Long count = result.getLong("peakLatency");
+//       peakLatency.put(serviceName, count);
+//   }
+
+//   return peakLatency;
+// }
+
+public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to) {
+
+Instant fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+Instant toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+List<TraceDTO> traceList = getTraceDataSince(fromInstant, toInstant);
+
   Map<String, TraceMetrics> metricsMap = new HashMap<>();
 
   for (TraceDTO trace : traceList) {
@@ -718,11 +841,12 @@ public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, i
           metricsMap.put(serviceName, metrics);
       }
   }
+ Instant fromDate = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+Instant toDate = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
 
-  Map<String, Long> errorCounts = calculateErrorCountsByService(cutoffTime);
-  Map<String, Long> successCounts = calculateSuccessCountsByService(cutoffTime);
-  Map<String, Long> peakLatency = calculatePeakLatencyCountsByService(cutoffTime);
-
+Map<String, Long> errorCounts = calculateErrorCountsByService(fromDate, toDate);
+Map<String, Long> successCounts = calculateSuccessCountsByService(fromDate, toDate);
+Map<String, Long> peakLatency = calculatePeakLatencyCountsByService(fromDate, toDate);
   System.out.println("Metrics Map: " + metricsMap);
   System.out.println("Error Counts: " + errorCounts);
   System.out.println("Success Counts: " + successCounts);
@@ -769,12 +893,12 @@ public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, i
 }
 
 
-private List<TraceDTO> getTraceDataSince(Instant since) {
-  return TraceDTO.find("createdTime >= ?1", since).list();
+private List<TraceDTO> getTraceDataSince(Instant from, Instant to) {
+  // Update the query to filter by the custom date range
+  return TraceDTO.find("createdTime >= ?1 && createdTime < ?2", from, to).list();
 }
 
-private Map<String, Long> calculateErrorCountsByService(Instant since) {
-  // Same as before, but add a match stage for the time range
+private Map<String, Long> calculateErrorCountsByService(Instant from, Instant to) {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
           .getCollection("TraceDTO");
@@ -783,7 +907,8 @@ private Map<String, Long> calculateErrorCountsByService(Instant since) {
   aggregationStages.add(
           Aggregates.match(
                   Filters.and(
-                          Filters.gte("createdTime", Date.from(since)),
+                          Filters.gte("createdTime", Date.from(from)),
+                          Filters.lt("createdTime", Date.from(to)),
                           Filters.and(
                                   Filters.gte("statusCode", 400L),
                                   Filters.lte("statusCode", 599L)
@@ -809,18 +934,17 @@ private Map<String, Long> calculateErrorCountsByService(Instant since) {
   return errorCounts;
 }
 
-private Map<String, Long> calculateSuccessCountsByService(Instant since) {
-  // Same as before, but add a match stage for the time range
+private Map<String, Long> calculateSuccessCountsByService(Instant from, Instant to) {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
           .getCollection("TraceDTO");
 
-  // Define aggregation stages to group and count successes by serviceName and statusCode
   List<Bson> aggregationStages = new ArrayList<>();
   aggregationStages.add(
           Aggregates.match(
                   Filters.and(
-                          Filters.gte("createdTime", Date.from(since)),
+                          Filters.gte("createdTime", Date.from(from)),
+                          Filters.lt("createdTime", Date.from(to)),
                           Filters.and(
                                   Filters.gte("statusCode", 200L),
                                   Filters.lte("statusCode", 299L)
@@ -832,12 +956,10 @@ private Map<String, Long> calculateSuccessCountsByService(Instant since) {
           Aggregates.group("$serviceName", Accumulators.sum("successCount", 1L))
   );
 
-  // Executing the aggregation pipeline
   AggregateIterable<Document> results = traceCollection.aggregate(
           aggregationStages
   );
 
-  // Process the results into a map
   Map<String, Long> successCounts = new HashMap<>();
   for (Document result : results) {
       String serviceName = result.getString("_id");
@@ -848,8 +970,7 @@ private Map<String, Long> calculateSuccessCountsByService(Instant since) {
   return successCounts;
 }
 
-private Map<String, Long> calculatePeakLatencyCountsByService(Instant since) {
-  // Same as before, but add a match stage for the time range
+private Map<String, Long> calculatePeakLatencyCountsByService(Instant from, Instant to) {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
           .getCollection("TraceDTO");
@@ -858,7 +979,8 @@ private Map<String, Long> calculatePeakLatencyCountsByService(Instant since) {
   aggregationStages.add(
           Aggregates.match(
                   Filters.and(
-                          Filters.gte("createdTime", Date.from(since)),
+                          Filters.gte("createdTime", Date.from(from)),
+                          Filters.lt("createdTime", Date.from(to)),
                           Filters.gt("duration", 500L)
                   )
           )
@@ -880,6 +1002,7 @@ private Map<String, Long> calculatePeakLatencyCountsByService(Instant since) {
 
   return peakLatency;
 }
+
 
 
 }
