@@ -110,11 +110,16 @@ public class LogQueryHandler {
     
         List<LogDTO> logList = logQueryRepo.listAll();
     
-        return logList.stream()
+    List<LogDTO> filteredAndSortedLogs = logList.stream()
                 .filter(logDTO -> (serviceNames == null || serviceNames.isEmpty() || serviceNames.contains(logDTO.getServiceName())) &&
                         (severityTexts == null || severityTexts.isEmpty() || severityTexts.contains(logDTO.getSeverityText())) &&
                         (isWithinDateRange(logDTO.getCreatedTime(), from.atStartOfDay(), to.plusDays(1).atStartOfDay())))
                 .collect(Collectors.toList());
+    
+        // Sort the list in descending order based on createdTime
+        filteredAndSortedLogs.sort(Comparator.comparing(LogDTO::getCreatedTime).reversed());
+    
+        return filteredAndSortedLogs;
     }
     
        private boolean isWithinDateRange(Date logTimestamp, LocalDateTime from, LocalDateTime to) {
@@ -123,7 +128,8 @@ public class LogQueryHandler {
         return (logDateTime.isEqual(from) || logDateTime.isAfter(from)) &&
                 (logDateTime.isEqual(to) || logDateTime.isBefore(to));
     }
-
+   
+    
 
 
        

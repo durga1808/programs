@@ -9,6 +9,7 @@ import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Sorts;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
@@ -128,9 +129,12 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int page, in
     System.out.println("Skip: " + (page - 1) * pageSize);
     System.out.println("Limit: " + pageSize);
 
+    Bson sort = Sorts.descending("createdTime");
+
     return collection
             .find(filter)
             .projection(projection)
+            .sort(sort)
             .skip((page - 1) * pageSize)
             .limit(pageSize);
 
