@@ -27,7 +27,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -131,32 +130,32 @@ public Response queryTraces(
 
 
 
-  @GET
-  @Path("/getAllDataByPagination")
-  public Response findRecentData(
-      @QueryParam("page") @DefaultValue("1") int page,
-      @QueryParam("pageSize") @DefaultValue("10") int pageSize) {
-    try {
-      long totalCount = traceQueryHandler.countData();
-      List<TraceDTO> recentData = traceQueryHandler.findRecentDataPaged(
-          page,
-          pageSize);
+//   @GET
+//   @Path("/getAllDataByPagination")
+//   public Response findRecentData(
+//       @QueryParam("page") @DefaultValue("1") int page,
+//       @QueryParam("pageSize") @DefaultValue("10") int pageSize) {
+//     try {
+//       long totalCount = traceQueryHandler.countData();
+//       List<TraceDTO> recentData = traceQueryHandler.findRecentDataPaged(
+//           page,
+//           pageSize);
 
-      Map<String, Object> jsonResponse = new HashMap<>();
-      jsonResponse.put("totalCount", totalCount);
-      jsonResponse.put("data", recentData);
+//       Map<String, Object> jsonResponse = new HashMap<>();
+//       jsonResponse.put("totalCount", totalCount);
+//       jsonResponse.put("data", recentData);
 
-      ObjectMapper objectMapper = new ObjectMapper();
-      String responseJson = objectMapper.writeValueAsString(jsonResponse);
+//       ObjectMapper objectMapper = new ObjectMapper();
+//       String responseJson = objectMapper.writeValueAsString(jsonResponse);
 
-      return Response.ok(responseJson).build();
-    } catch (Exception e) {
-      return Response
-          .status(Response.Status.INTERNAL_SERVER_ERROR)
-          .entity(e.getMessage())
-          .build();
-    }
-  }
+//       return Response.ok(responseJson).build();
+//     } catch (Exception e) {
+//       return Response
+//           .status(Response.Status.INTERNAL_SERVER_ERROR)
+//           .entity(e.getMessage())
+//           .build();
+//     }
+//   }
 
 
 @GET
