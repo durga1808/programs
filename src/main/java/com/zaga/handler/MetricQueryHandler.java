@@ -1,19 +1,13 @@
 package com.zaga.handler;
 
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
-import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -21,8 +15,6 @@ import com.mongodb.client.model.Filters;
 import com.zaga.entity.queryentity.metric.MetricDTO;
 import com.zaga.repo.MetricQueryRepo;
 
-import io.quarkus.mongodb.panache.PanacheQuery;
-import io.quarkus.panache.common.Parameters;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
