@@ -2,6 +2,7 @@ package com.zaga.handler;
 
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.bson.BsonRegularExpression;
 import org.bson.Document;
@@ -81,47 +83,47 @@ public class LogQueryHandler {
 
 
 
-// search log in a filter query
-    // public List<LogDTO> searchlogPaged(LogQuery logQuery,int page, int pageSize,int minutesAgo) {
-
-
+// search log in a filter query time based
+        // public List<LogDTO> searchlogPaged(LogQuery logQuery, int page, int pageSize, int minutesAgo) {
     //     List<String> serviceNames = logQuery.getServiceName();
     //     List<String> severityTexts = logQuery.getSeverityText();
     
-    //     List<LogDTO> logList = logQueryRepo.listAll(); // Replace with your data source retrieval logic
+    //     List<LogDTO> logList = logQueryRepo.listAll(); 
     
     //     List<LogDTO> filteredLogList = new ArrayList<>();
     
     //     for (LogDTO logDTO : logList) {
-    //         if ((serviceNames == null || serviceNames.contains(logDTO.getServiceName())) &&
-    //             (severityTexts == null || severityTexts.contains(logDTO.getSeverityText()))) {
+    //         if ((serviceNames == null || serviceNames.isEmpty() || serviceNames.contains(logDTO.getServiceName())) &&
+    //             (severityTexts == null || severityTexts.isEmpty() || severityTexts.contains(logDTO.getSeverityText()))) {
     //             filteredLogList.add(logDTO);
     //         }
     //     }
     
     //     return filteredLogList;
     // }
+    
 
 
-
-    public List<LogDTO> searchlogPaged(LogQuery logQuery, int page, int pageSize, int minutesAgo) {
+    //filtering datas date based
+    public List<LogDTO> searchLogByDate(LogQuery logQuery, LocalDate from, LocalDate to) {
         List<String> serviceNames = logQuery.getServiceName();
         List<String> severityTexts = logQuery.getSeverityText();
     
-        List<LogDTO> logList = logQueryRepo.listAll(); 
+        List<LogDTO> logList = logQueryRepo.listAll();
     
-        List<LogDTO> filteredLogList = new ArrayList<>();
-    
-        for (LogDTO logDTO : logList) {
-            if ((serviceNames == null || serviceNames.isEmpty() || serviceNames.contains(logDTO.getServiceName())) &&
-                (severityTexts == null || severityTexts.isEmpty() || severityTexts.contains(logDTO.getSeverityText()))) {
-                filteredLogList.add(logDTO);
-            }
-        }
-    
-        return filteredLogList;
+        return logList.stream()
+                .filter(logDTO -> (serviceNames == null || serviceNames.isEmpty() || serviceNames.contains(logDTO.getServiceName())) &&
+                        (severityTexts == null || severityTexts.isEmpty() || severityTexts.contains(logDTO.getSeverityText())) &&
+                        (isWithinDateRange(logDTO.getCreatedTime(), from.atStartOfDay(), to.plusDays(1).atStartOfDay())))
+                .collect(Collectors.toList());
     }
     
+       private boolean isWithinDateRange(Date logTimestamp, LocalDateTime from, LocalDateTime to) {
+        LocalDateTime logDateTime = logTimestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+    
+        return (logDateTime.isEqual(from) || logDateTime.isAfter(from)) &&
+                (logDateTime.isEqual(to) || logDateTime.isBefore(to));
+    }
 
 
 
