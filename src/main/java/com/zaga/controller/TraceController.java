@@ -21,6 +21,7 @@ import jakarta.ws.rs.core.Response;
 
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -281,6 +282,84 @@ public Response findByTraceId(@QueryParam("traceId") String traceId) {
 
 
 
+// @GET
+// @Path("/getalldata-sortorder")
+// @Produces(MediaType.APPLICATION_JSON)
+// public Response sortOrderTrace(
+//     @QueryParam("sortOrder") String sortOrder,
+//     @QueryParam("page") int page,
+//     @QueryParam("pageSize") int pageSize,
+//     @QueryParam("minutesAgo") int minutesAgo, @QueryParam("serviceNameList") List<String> serviceNameList) {
+
+//       if (page <= 0 || pageSize <= 0 || minutesAgo < 0) {
+//         return Response.status(Response.Status.BAD_REQUEST)
+//                 .entity("Invalid page, pageSize, or minutesAgo parameters.")
+//                 .build();
+//     }
+//     List<TraceDTO> traces;
+//         if ("new".equalsIgnoreCase(sortOrder)) {
+//         traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc(serviceNameList);
+//           } else if ("old".equalsIgnoreCase(sortOrder)) {
+//         traces = traceQueryHandler.getAllTracesAsc(serviceNameList);
+//           } else if ("error".equalsIgnoreCase(sortOrder)) {
+//         traces = traceQueryHandler.findAllOrderByErrorFirst(serviceNameList);
+//     } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
+//         traces = traceQueryHandler.findAllOrderByDuration(serviceNameList);
+//     } else {
+//         return Response.status(Response.Status.BAD_REQUEST)
+//                 .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error','peakLatency'.")
+//                 .build();
+//     }
+
+//     if (minutesAgo > 0) {
+//     Date cutoffDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(minutesAgo));
+//     traces = traces.stream()
+//     .filter(trace -> {
+//         Date createdTime = trace.getCreatedTime();
+//         return createdTime != null && createdTime.after(cutoffDate);
+//     })
+//     .collect(Collectors.toList());
+// }
+
+//     int startIndex = (page - 1) * pageSize;
+//     int endIndex = Math.min(startIndex + pageSize, traces.size());
+
+// if (startIndex >= endIndex || traces.isEmpty()) {
+//         Map<String, Object> emptyResponse = new HashMap<>();
+//         emptyResponse.put("data", Collections.emptyList());
+//         emptyResponse.put("totalCount", 0);
+
+//         try {
+//             ObjectMapper objectMapper = new ObjectMapper();
+//             String responseJson = objectMapper.writeValueAsString(emptyResponse);
+
+//             return Response.ok(responseJson).build();
+//         } catch (Exception e) {
+//             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+//                     .entity("Error converting response to JSON")
+//                     .build();
+//         }
+//     }
+
+//   List<TraceDTO> paginatedTraces = traces.subList(startIndex, endIndex);
+//     int totalCount = traces.size();
+
+//     Map<String, Object> response = new HashMap<>();
+//     response.put("data", paginatedTraces);
+//     response.put("totalCount", totalCount);
+//  try {
+//         ObjectMapper objectMapper = new ObjectMapper();
+//         String responseJson = objectMapper.writeValueAsString(response);
+
+//         return Response.ok(responseJson).build();
+//     } catch (Exception e) {
+//         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+//             .entity("Error converting response to JSON")
+//             .build();
+//     }
+// }
+
+
 @GET
 @Path("/getalldata-sortorder")
 @Produces(MediaType.APPLICATION_JSON)
@@ -288,42 +367,48 @@ public Response sortOrderTrace(
     @QueryParam("sortOrder") String sortOrder,
     @QueryParam("page") int page,
     @QueryParam("pageSize") int pageSize,
-    @QueryParam("minutesAgo") int minutesAgo, @QueryParam("serviceNameList") List<String> serviceNameList) {
+    @QueryParam("from") LocalDate fromDate, // Directly accept 'from' as LocalDate
+    @QueryParam("to") LocalDate toDate, // Directly accept 'to' as LocalDate
+    @QueryParam("serviceNameList") List<String> serviceNameList) {
 
-      if (page <= 0 || pageSize <= 0 || minutesAgo < 0) {
+    if (page <= 0 || pageSize <= 0) {
         return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Invalid page, pageSize, or minutesAgo parameters.")
+                .entity("Invalid page or pageSize parameters.")
                 .build();
     }
+
     List<TraceDTO> traces;
-        if ("new".equalsIgnoreCase(sortOrder)) {
+
+    if ("new".equalsIgnoreCase(sortOrder)) {
         traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc(serviceNameList);
-          } else if ("old".equalsIgnoreCase(sortOrder)) {
+    } else if ("old".equalsIgnoreCase(sortOrder)) {
         traces = traceQueryHandler.getAllTracesAsc(serviceNameList);
-          } else if ("error".equalsIgnoreCase(sortOrder)) {
+    } else if ("error".equalsIgnoreCase(sortOrder)) {
         traces = traceQueryHandler.findAllOrderByErrorFirst(serviceNameList);
     } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
         traces = traceQueryHandler.findAllOrderByDuration(serviceNameList);
     } else {
         return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error','peakLatency'.")
+                .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error', 'peakLatency'.")
                 .build();
     }
 
-    if (minutesAgo > 0) {
-    Date cutoffDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(minutesAgo));
+    // Filter traces based on 'from' and 'to' LocalDate objects
     traces = traces.stream()
-    .filter(trace -> {
-        Date createdTime = trace.getCreatedTime();
-        return createdTime != null && createdTime.after(cutoffDate);
-    })
-    .collect(Collectors.toList());
-}
+            .filter(trace -> {
+                Date createdTime = trace.getCreatedTime();
+                if (createdTime != null) {
+                    LocalDate createdDate = createdTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                    return !createdDate.isBefore(fromDate) && !createdDate.isAfter(toDate);
+                }
+                return false; // Skip traces with null createdTime
+            })
+            .collect(Collectors.toList());
 
     int startIndex = (page - 1) * pageSize;
     int endIndex = Math.min(startIndex + pageSize, traces.size());
 
-if (startIndex >= endIndex || traces.isEmpty()) {
+    if (startIndex >= endIndex || traces.isEmpty()) {
         Map<String, Object> emptyResponse = new HashMap<>();
         emptyResponse.put("data", Collections.emptyList());
         emptyResponse.put("totalCount", 0);
@@ -340,25 +425,24 @@ if (startIndex >= endIndex || traces.isEmpty()) {
         }
     }
 
-  List<TraceDTO> paginatedTraces = traces.subList(startIndex, endIndex);
+    List<TraceDTO> paginatedTraces = traces.subList(startIndex, endIndex);
     int totalCount = traces.size();
 
     Map<String, Object> response = new HashMap<>();
     response.put("data", paginatedTraces);
     response.put("totalCount", totalCount);
- try {
+
+    try {
         ObjectMapper objectMapper = new ObjectMapper();
         String responseJson = objectMapper.writeValueAsString(response);
 
         return Response.ok(responseJson).build();
     } catch (Exception e) {
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-            .entity("Error converting response to JSON")
-            .build();
+                .entity("Error converting response to JSON")
+                .build();
     }
 }
-
-
 
 
 }
