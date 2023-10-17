@@ -46,7 +46,7 @@ public class MetricController {
         @QueryParam("serviceName") String serviceName
     ) {
         List<MetricDTO> metricData = metricQueryHandler.getMetricData(from,to, serviceName);
-        // System.out.println("metricData:--------------------- " + metricData.size());
+        System.out.println("metricData:--------------------- " + metricData.size());
         // return Response.ok(metricData).build();
         try {
             ObjectMapper objectMapper = new ObjectMapper();
