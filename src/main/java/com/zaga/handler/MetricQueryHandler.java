@@ -1,6 +1,7 @@
 package com.zaga.handler;
 
 
+import java.time.LocalDate;
 import java.util.List;
 
 
@@ -24,8 +25,8 @@ public class MetricQueryHandler {
         return metricQueryRepo.listAll();
     }
 
-    public List<MetricDTO> getMetricData(int timeAgoMinutes, String serviceName) {
-       List<MetricDTO> results = metricQueryRepo.getMetricData(timeAgoMinutes, serviceName);
+    public List<MetricDTO> getMetricData(LocalDate from,LocalDate to,String serviceName) {
+       List<MetricDTO> results = metricQueryRepo.getMetricData(from,to, serviceName);
         return results;
     }
 

@@ -1,5 +1,6 @@
 package com.zaga.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,21 +39,22 @@ public class MetricController {
     @GET
     @Path("/getByserviceNameAndMinutesAgo")
     public Response getByserviceName(
-        @QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes,
+        @QueryParam("from") LocalDate from,
+        @QueryParam("to") LocalDate to,
         @QueryParam("serviceName") String serviceName
     ) {
-        List<MetricDTO> metricData = metricQueryRepo.getMetricData(timeAgoMinutes, serviceName);
-        
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            String responseJson = objectMapper.writeValueAsString(metricData);
+        List<MetricDTO> metricData = metricQueryRepo.getMetricData(from,to, serviceName);
+        return Response.ok(metricData).build();
+        // try {
+        //     ObjectMapper objectMapper = new ObjectMapper();
+        //     String responseJson = objectMapper.writeValueAsString(metricData);
     
-            return Response.ok(responseJson, MediaType.APPLICATION_JSON).build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Error converting response to JSON")
-                    .build();
-        }
+        //     return Response.ok(responseJson, MediaType.APPLICATION_JSON).build();
+        // } catch (Exception e) {
+        //     return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+        //             .entity("Error converting response to JSON")
+        //             .build();
+        // }
     }
     
 
