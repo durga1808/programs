@@ -6,12 +6,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -437,11 +435,6 @@ private Response buildResponse(Map<String, Object> responseData) {
 }
 
 
-
-
-
-
-
     @GET
     @Path("/getErroredLogDataForLastTwo")
     @Produces(MediaType.APPLICATION_JSON)
@@ -537,7 +530,7 @@ private Response buildResponse(Map<String, Object> responseData) {
     // }
 
 
-    @GET
+@GET
 @Path("/searchFunction")
 public Response searchLogs(
         @QueryParam("page") @DefaultValue("1") int page,

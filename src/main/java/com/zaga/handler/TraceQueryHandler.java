@@ -23,7 +23,6 @@ import jakarta.inject.Inject;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -543,7 +542,6 @@ public List<TraceDTO> findAllOrderByErrorFirst(List<String> serviceNameList) {
 
 
 
-
 public List<TraceDTO> findAllOrderByDuration(List<String> serviceNameList) {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
@@ -552,7 +550,8 @@ public List<TraceDTO> findAllOrderByDuration(List<String> serviceNameList) {
   List<TraceDTO> allTraces = traceCollection.find(TraceDTO.class).into(new ArrayList<>());
 
   List<TraceDTO> sortedTraces = allTraces.stream()
-          .filter(trace -> serviceNameList.contains(trace.getServiceName())) // Filter by service name list
+          .filter(trace -> serviceNameList.contains(trace.getServiceName()))
+          .filter(trace -> trace.getDuration() != null) // Add a null check for duration
           .sorted(Comparator
                   .comparing(TraceDTO::getDuration, Comparator.reverseOrder()))
           .collect(Collectors.toList());
