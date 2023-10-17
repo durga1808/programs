@@ -136,12 +136,27 @@ public Response getAllDataByServiceName(
 }
 
 
-  @GET
-  @Path("/LogSumaryChartDataCount")
-  @Produces(MediaType.APPLICATION_JSON)
-  public List<LogMetrics> getLogMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes, @QueryParam("serviceNameList") List<String> serviceNameList) {
-    return logQueryHandler.getLogMetricCount(timeAgoMinutes, serviceNameList);
-  }
+//   @GET
+//   @Path("/LogSumaryChartDataCount")
+//   @Produces(MediaType.APPLICATION_JSON)
+//   public List<LogMetrics> getLogMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes, @QueryParam("serviceNameList") List<String> serviceNameList) {
+//     return logQueryHandler.getLogMetricCount(timeAgoMinutes, serviceNameList);
+//   }
+
+
+
+@GET
+@Path("/LogSummaryChartDataCount")
+@Produces(MediaType.APPLICATION_JSON)
+public List<LogMetrics> getLogMetricsCount(
+    @QueryParam("from") LocalDate from,
+    @QueryParam("to") LocalDate to,
+    @QueryParam("serviceNameList") List<String> serviceNameList
+) {
+    return logQueryHandler.getLogMetricCount(serviceNameList, from, to);
+}
+
+
 
 
 // @GET
@@ -470,55 +485,105 @@ private Response buildResponse(Map<String, Object> responseData) {
 
 
    
+    // @GET
+    // @Path("/searchFunction")
+    // public Response searchLogs(
+    //         @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo,
+    //         @QueryParam("page") @DefaultValue("1") int page,
+    //         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+    //         @QueryParam("keyword") String keyword) {
+
+    //     try {
+    //         List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
+
+    //         if (minutesAgo > 0) {
+    //             Date cutoffDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(minutesAgo));
+    //             logList = logList.stream()
+    //                     .filter(log -> {
+    //                         Date createdTime = log.getCreatedTime();
+    //                         return createdTime != null && createdTime.after(cutoffDate);
+    //                     })
+    //                     .collect(Collectors.toList());
+    //         }
+
+    //         int totalCount = logList.size();
+    //         int startIndex = (page - 1) * pageSize;
+    //         int endIndex = Math.min(startIndex + pageSize, totalCount);
+
+    //         if (startIndex >= endIndex || logList.isEmpty()) {
+    //             Map<String, Object> emptyResponse = new HashMap<>();
+    //             emptyResponse.put("data", Collections.emptyList());
+    //             emptyResponse.put("totalCount", 0);
+
+    //             return Response.ok(emptyResponse).build();
+    //         }
+
+    //         List<LogDTO> paginatedLogs = logList.subList(startIndex, endIndex);
+
+    //         Map<String, Object> response = new HashMap<>();
+    //         response.put("data", paginatedLogs);
+    //         response.put("totalCount", totalCount);
+
+    //         ObjectMapper objectMapper = new ObjectMapper();
+    //         String responseJson = objectMapper.writeValueAsString(response);
+
+    //         return Response.ok(responseJson).build();
+    //     } catch (Exception e) {
+    //         return Response
+    //                 .status(Response.Status.INTERNAL_SERVER_ERROR)
+    //                 .entity(e.getMessage())
+    //                 .build();
+    //     }
+    // }
+
+
     @GET
-    @Path("/searchFunction")
-    public Response searchLogs(
-            @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo,
-            @QueryParam("page") @DefaultValue("1") int page,
-            @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-            @QueryParam("keyword") String keyword) {
+@Path("/searchFunction")
+public Response searchLogs(
+        @QueryParam("page") @DefaultValue("1") int page,
+        @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+        @QueryParam("keyword") String keyword,
+        @QueryParam("startDate") LocalDate from,
+        @QueryParam("endDate") LocalDate to) {
 
-        try {
-            List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
+    try {
+        List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
 
-            if (minutesAgo > 0) {
-                Date cutoffDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(minutesAgo));
-                logList = logList.stream()
-                        .filter(log -> {
-                            Date createdTime = log.getCreatedTime();
-                            return createdTime != null && createdTime.after(cutoffDate);
-                        })
-                        .collect(Collectors.toList());
-            }
-
-            int totalCount = logList.size();
-            int startIndex = (page - 1) * pageSize;
-            int endIndex = Math.min(startIndex + pageSize, totalCount);
-
-            if (startIndex >= endIndex || logList.isEmpty()) {
-                Map<String, Object> emptyResponse = new HashMap<>();
-                emptyResponse.put("data", Collections.emptyList());
-                emptyResponse.put("totalCount", 0);
-
-                return Response.ok(emptyResponse).build();
-            }
-
-            List<LogDTO> paginatedLogs = logList.subList(startIndex, endIndex);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("data", paginatedLogs);
-            response.put("totalCount", totalCount);
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            String responseJson = objectMapper.writeValueAsString(response);
-
-            return Response.ok(responseJson).build();
-        } catch (Exception e) {
-            return Response
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(e.getMessage())
-                    .build();
+                // Filter logs within the specified date range
+        if (from != null && to != null) {
+            logList = logList.stream()
+                    .filter(log -> isWithinDateRange(log.getCreatedTime(), from.atStartOfDay(), to.plusDays(1).atStartOfDay()))
+                    .collect(Collectors.toList());
         }
+
+        int totalCount = logList.size();
+        int startIndex = (page - 1) * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, totalCount);
+
+        if (startIndex >= endIndex || logList.isEmpty()) {
+            Map<String, Object> emptyResponse = new HashMap<>();
+            emptyResponse.put("data", Collections.emptyList());
+            emptyResponse.put("totalCount", 0);
+
+            return Response.ok(emptyResponse).build();
+        }
+
+        List<LogDTO> paginatedLogs = logList.subList(startIndex, endIndex);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", paginatedLogs);
+        response.put("totalCount", totalCount);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(response);
+
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        return Response
+                .status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(e.getMessage())
+                .build();
     }
+}
 
 }
