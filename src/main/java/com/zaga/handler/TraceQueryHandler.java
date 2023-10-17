@@ -22,6 +22,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -58,16 +59,29 @@ public List<TraceDTO> getTraceProduct() {
   return traceList;
 }
 
+
+private Bson createCustomDateFilter(LocalDate from, LocalDate to) {
+  return Filters.and(
+          Filters.gte("createdTime", from.atStartOfDay()),
+          Filters.lt("createdTime", to.plusDays(1).atStartOfDay())
+  );
+}
+
 //filter query for the trace section queryy for UI
-private FindIterable<Document> getFilteredResults(TraceQuery query,int page, int pageSize, int minutesAgo) {
+private FindIterable<Document> getFilteredResults(TraceQuery query, int page, int pageSize, LocalDate from, LocalDate to) {
     List<Bson> filters = new ArrayList<>();
 
-    if (minutesAgo > 0) {
-      long currentTimeInMillis = System.currentTimeMillis();
-      long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000); 
-      Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
-      filters.add(timeFilter);
-  }
+  //   if (minutesAgo > 0) {
+  //     long currentTimeInMillis = System.currentTimeMillis();
+  //     long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000); 
+  //     Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
+  //     filters.add(timeFilter);
+  // }
+ 
+  if (from != null && to != null) {
+    Bson timeFilter = createCustomDateFilter(from, to);
+    filters.add(timeFilter);
+}
 
     if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
         Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
@@ -125,9 +139,11 @@ private FindIterable<Document> getFilteredResults(TraceQuery query,int page, int
 
 
   // getTrace by multiple queries like serviceName, method, duration and statuscode from TraceDTO entity
-  public List<TraceDTO> searchTracesPaged(TraceQuery query, int page, int pageSize, int minutesAgo) {
+  public List<TraceDTO> searchTracesPaged(TraceQuery query, int page, int pageSize, LocalDate from, LocalDate to) {
+    System.out.println("from Date --------------"+from);
+    System.out.println("to Date --------------"+to);
   
-    FindIterable<Document> result = getFilteredResults(query,page,pageSize,minutesAgo);
+    FindIterable<Document> result = getFilteredResults(query,page,pageSize,from,to);
    
     List<TraceDTO> traceDTOList = new ArrayList<>();
     try (MongoCursor<Document> cursor = result.iterator()) {
@@ -163,8 +179,8 @@ private FindIterable<Document> getFilteredResults(TraceQuery query,int page, int
     return traceDTOList;
 }
 
-public long countQueryTraces(TraceQuery query, int minutesAgo) {
-  FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, minutesAgo);
+public long countQueryTraces(TraceQuery query, LocalDate from, LocalDate to) {
+  FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, from,to);
   System.out.println("countQueryTraces"+ result.into(new ArrayList<>()).size());
   long totalCount = result.into(new ArrayList<>()).size(); 
 

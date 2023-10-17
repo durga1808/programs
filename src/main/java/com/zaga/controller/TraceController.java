@@ -1,5 +1,6 @@
 package com.zaga.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.trace.TraceDTO;
@@ -18,8 +19,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -101,30 +102,31 @@ public Response queryTraces(
     TraceQuery traceQuery,
     @QueryParam("page") @DefaultValue("1") int page,
     @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-    @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo) {
-    try {
+    @QueryParam("from") LocalDate from,
+    @QueryParam("to") LocalDate to) {
+        System.out.println("from controller: " + from);
+        System.out.println("to controller: " + to);
 
-        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery,page, pageSize, minutesAgo);
+        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery,page, pageSize,from,to);
 
-        long totalCount = traceQueryHandler.countQueryTraces(traceQuery,minutesAgo);
+        long totalCount = traceQueryHandler.countQueryTraces(traceQuery,from,to);
 
         Map<String, Object> jsonResponse = new HashMap<>();
         jsonResponse.put("totalCount", totalCount);
         jsonResponse.put("data", traceList);
 
         ObjectMapper objectMapper = new ObjectMapper();
-        String responseJson = objectMapper.writeValueAsString(jsonResponse);
+        try {
+            String responseJson = objectMapper.writeValueAsString(jsonResponse);
+            return Response.ok(responseJson).build();
+        } catch (JsonProcessingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
-        return Response.ok(responseJson).build();
-    } catch (Exception e) {
-        e.printStackTrace();
-
-        return Response
-            .status(Response.Status.INTERNAL_SERVER_ERROR)
-            .entity("An error occurred: " + e.getMessage())
-            .build();
+        return Response.ok(traceList).build();
     }
-}
+
 
 
 
