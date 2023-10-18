@@ -10,7 +10,6 @@ import com.zaga.repo.MetricQueryRepo;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -36,6 +35,9 @@ public class MetricController {
     public List<MetricDTO> getAllMetricDatas() {
         return metricQueryHandler.getAllMetricData();
     }
+    
+    
+    
     @GET
     @Path("/getByserviceNameAndMinutesAgo")
     public Response getByserviceName(
@@ -43,18 +45,19 @@ public class MetricController {
         @QueryParam("to") LocalDate to,
         @QueryParam("serviceName") String serviceName
     ) {
-        List<MetricDTO> metricData = metricQueryRepo.getMetricData(from,to, serviceName);
-        return Response.ok(metricData).build();
-        // try {
-        //     ObjectMapper objectMapper = new ObjectMapper();
-        //     String responseJson = objectMapper.writeValueAsString(metricData);
+        List<MetricDTO> metricData = metricQueryHandler.getMetricData(from,to, serviceName);
+        System.out.println("metricData:--------------------- " + metricData.size());
+        // return Response.ok(metricData).build();
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseJson = objectMapper.writeValueAsString(metricData);
     
-        //     return Response.ok(responseJson, MediaType.APPLICATION_JSON).build();
-        // } catch (Exception e) {
-        //     return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-        //             .entity("Error converting response to JSON")
-        //             .build();
-        // }
+            return Response.ok(responseJson, MediaType.APPLICATION_JSON).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error converting response to JSON")
+                    .build();
+        }
     }
     
 
