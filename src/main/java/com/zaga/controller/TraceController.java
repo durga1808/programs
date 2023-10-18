@@ -360,6 +360,90 @@ public Response findByTraceId(@QueryParam("traceId") String traceId) {
 // }
 
 
+// @GET
+// @Path("/getalldata-sortorder")
+// @Produces(MediaType.APPLICATION_JSON)
+// public Response sortOrderTrace(
+//     @QueryParam("sortOrder") String sortOrder,
+//     @QueryParam("page") int page,
+//     @QueryParam("pageSize") int pageSize,
+//     @QueryParam("from") LocalDate fromDate, // Directly accept 'from' as LocalDate
+//     @QueryParam("to") LocalDate toDate, // Directly accept 'to' as LocalDate
+//     @QueryParam("serviceNameList") List<String> serviceNameList) {
+
+//     if (page <= 0 || pageSize <= 0) {
+//         return Response.status(Response.Status.BAD_REQUEST)
+//                 .entity("Invalid page or pageSize parameters.")
+//                 .build();
+//     }
+
+//     List<TraceDTO> traces;
+
+//     if ("new".equalsIgnoreCase(sortOrder)) {
+//         traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc(serviceNameList);
+//     } else if ("old".equalsIgnoreCase(sortOrder)) {
+//         traces = traceQueryHandler.getAllTracesAsc(serviceNameList);
+//     } else if ("error".equalsIgnoreCase(sortOrder)) {
+//         traces = traceQueryHandler.findAllOrderByErrorFirst(serviceNameList);
+//     } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
+//         traces = traceQueryHandler.findAllOrderByDuration(serviceNameList);
+//     } else {
+//         return Response.status(Response.Status.BAD_REQUEST)
+//                 .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error', 'peakLatency'.")
+//                 .build();
+//     }
+
+//     // Filter traces based on 'from' and 'to' LocalDate objects
+//     traces = traces.stream()
+//             .filter(trace -> {
+//                 Date createdTime = trace.getCreatedTime();
+//                 if (createdTime != null) {
+//                     LocalDate createdDate = createdTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+//                     return !createdDate.isBefore(fromDate) && !createdDate.isAfter(toDate);
+//                 }
+//                 return false; // Skip traces with null createdTime
+//             })
+//             .collect(Collectors.toList());
+
+//     int startIndex = (page - 1) * pageSize;
+//     int endIndex = Math.min(startIndex + pageSize, traces.size());
+
+//     if (startIndex >= endIndex || traces.isEmpty()) {
+//         Map<String, Object> emptyResponse = new HashMap<>();
+//         emptyResponse.put("data", Collections.emptyList());
+//         emptyResponse.put("totalCount", 0);
+
+//         try {
+//             ObjectMapper objectMapper = new ObjectMapper();
+//             String responseJson = objectMapper.writeValueAsString(emptyResponse);
+
+//             return Response.ok(responseJson).build();
+//         } catch (Exception e) {
+//             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+//                     .entity("Error converting response to JSON")
+//                     .build();
+//         }
+//     }
+
+//     List<TraceDTO> paginatedTraces = traces.subList(startIndex, endIndex);
+//     int totalCount = traces.size();
+
+//     Map<String, Object> response = new HashMap<>();
+//     response.put("data", paginatedTraces);
+//     response.put("totalCount", totalCount);
+
+//     try {
+//         ObjectMapper objectMapper = new ObjectMapper();
+//         String responseJson = objectMapper.writeValueAsString(response);
+
+//         return Response.ok(responseJson).build();
+//     } catch (Exception e) {
+//         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+//                 .entity("Error converting response to JSON")
+//                 .build();
+//     }
+// }
+
 @GET
 @Path("/getalldata-sortorder")
 @Produces(MediaType.APPLICATION_JSON)
@@ -367,8 +451,9 @@ public Response sortOrderTrace(
     @QueryParam("sortOrder") String sortOrder,
     @QueryParam("page") int page,
     @QueryParam("pageSize") int pageSize,
-    @QueryParam("from") LocalDate fromDate, // Directly accept 'from' as LocalDate
-    @QueryParam("to") LocalDate toDate, // Directly accept 'to' as LocalDate
+    @QueryParam("from") LocalDate fromDate,
+    @QueryParam("to") LocalDate toDate,
+    @QueryParam("minutesAgo") Integer minutesAgo,
     @QueryParam("serviceNameList") List<String> serviceNameList) {
 
     if (page <= 0 || pageSize <= 0) {
@@ -393,17 +478,18 @@ public Response sortOrderTrace(
                 .build();
     }
 
-    // Filter traces based on 'from' and 'to' LocalDate objects
-    traces = traces.stream()
-            .filter(trace -> {
-                Date createdTime = trace.getCreatedTime();
-                if (createdTime != null) {
-                    LocalDate createdDate = createdTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-                    return !createdDate.isBefore(fromDate) && !createdDate.isAfter(toDate);
-                }
-                return false; // Skip traces with null createdTime
-            })
-            .collect(Collectors.toList());
+    if (fromDate != null && toDate != null) {
+        // Case 1: Both fromDate and toDate are provided
+        traces = filterTracesByDateRange(traces, fromDate, toDate);
+    } else if (minutesAgo != null && minutesAgo > 0) {
+        // Case 2: Only minutesAgo is provided
+        traces = filterTracesByMinutesAgo(traces, minutesAgo);
+    } else {
+        // Case 3: No valid date range or minutesAgo is provided
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Either fromDate and toDate or minutesAgo must be provided.")
+                .build();
+    }
 
     int startIndex = (page - 1) * pageSize;
     int endIndex = Math.min(startIndex + pageSize, traces.size());
@@ -443,6 +529,29 @@ public Response sortOrderTrace(
                 .build();
     }
 }
+
+private List<TraceDTO> filterTracesByDateRange(List<TraceDTO> traces, LocalDate fromDate, LocalDate toDate) {
+    return traces.stream()
+            .filter(trace -> {
+                Date createdTime = trace.getCreatedTime();
+                if (createdTime != null) {
+                    LocalDate createdDate = createdTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                    return !createdDate.isBefore(fromDate) && !createdDate.isAfter(toDate);
+                }
+                return false; // Skip traces with null createdTime
+            })
+            .collect(Collectors.toList());
+}
+
+private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
+    // Assuming 'minutesAgo' represents the minutes before the current date
+    LocalDate currentDate = LocalDate.now();
+    LocalDate fromDate = currentDate.minusDays(1); // Assuming 1 day buffer for 'minutesAgo'
+    LocalDate toDate = currentDate;
+
+    return filterTracesByDateRange(traces, fromDate, toDate);
+}
+
 
 
 }
