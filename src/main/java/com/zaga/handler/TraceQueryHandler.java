@@ -68,85 +68,164 @@ private Bson createCustomDateFilter(LocalDate from, LocalDate to) {
 }
 
 //filter query for the trace section queryy for UI
-private FindIterable<Document> getFilteredResults(TraceQuery query, int page, int pageSize, LocalDate from, LocalDate to) {
-    List<Bson> filters = new ArrayList<>();
+// private FindIterable<Document> getFilteredResults(TraceQuery query, int page, int pageSize, LocalDate from, LocalDate to,int minutesAgo) {
+//     List<Bson> filters = new ArrayList<>();
 
-  //   if (minutesAgo > 0) {
-  //     long currentTimeInMillis = System.currentTimeMillis();
-  //     long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000); 
-  //     Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
-  //     filters.add(timeFilter);
-  // }
+//   //   if (minutesAgo > 0) {
+//   //     long currentTimeInMillis = System.currentTimeMillis();
+//   //     long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000); 
+//   //     Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
+//   //     filters.add(timeFilter);
+//   // }
  
+//   if (from != null && to != null) {
+//     Bson timeFilter = createCustomDateFilter(from, to);
+//     filters.add(timeFilter);
+// }
+
+//     if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
+//         Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
+//         filters.add(methodNameFilter);
+//     }
+
+//     if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
+//         Bson serviceNameFilter = Filters.in("serviceName", query.getServiceName());
+//         filters.add(serviceNameFilter);
+//     }
+
+//     if (query.getDuration() != null) {
+//         Bson durationFilter = Filters.and(
+//                 Filters.gte("duration", query.getDuration().getMin()),
+//                 Filters.lte("duration", query.getDuration().getMax())
+//         );
+//         filters.add(durationFilter);
+//     }
+
+//     List<Bson> statusCodeFilters = new ArrayList<>();
+//     if (query.getStatusCode() != null && !query.getStatusCode().isEmpty()) {
+//         for (StatusCodeRange statusCodeRange : query.getStatusCode()) {
+//             statusCodeFilters.add(
+//                     Filters.and(
+//                             Filters.gte("statusCode", statusCodeRange.getMin()),
+//                             Filters.lte("statusCode", statusCodeRange.getMax())
+//                     )
+//             );
+//         }
+//     }
+
+//     if (!statusCodeFilters.isEmpty()) {
+//         Bson statusCodeFilter = Filters.or(statusCodeFilters);
+//         filters.add(statusCodeFilter);
+//     }
+
+//     Bson filter = Filters.and(filters);
+
+//     MongoCollection<Document> collection = mongoClient
+//             .getDatabase("OtelTrace")
+//             .getCollection("TraceDTO");
+
+//     Bson projection = Projections.excludeId();
+
+//     System.out.println("Skip: " + (page - 1) * pageSize);
+//     System.out.println("Limit: " + pageSize);
+
+//     Bson sort = Sorts.descending("createdTime");
+
+//     return collection
+//             .find(filter)
+//             .projection(projection)
+//             .sort(sort)
+//             .skip((page - 1) * pageSize)
+//             .limit(pageSize);
+
+// }
+
+private FindIterable<Document> getFilteredResults(TraceQuery query, int page, int pageSize, LocalDate from, LocalDate to, int minutesAgo) {
+  List<Bson> filters = new ArrayList<>();
+
   if (from != null && to != null) {
-    Bson timeFilter = createCustomDateFilter(from, to);
-    filters.add(timeFilter);
+      Bson timeFilter = createCustomDateFilter(from, to);
+      filters.add(timeFilter);
+  } else if (minutesAgo > 0) {
+      LocalDate currentDate = LocalDate.now();
+
+      if (from != null && from.isEqual(currentDate)) {
+          // If the date is the current date, apply time filter based on minutes ago
+          long currentTimeInMillis = System.currentTimeMillis();
+          long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000);
+          Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
+          filters.add(timeFilter);
+      } else if (from != null) {
+          // If a specific date is provided, use it for filtering
+          Bson timeFilter = createCustomDateFilter(from, from);
+          filters.add(timeFilter);
+      }
+  }
+
+  if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
+      Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
+      filters.add(methodNameFilter);
+  }
+
+  if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
+      Bson serviceNameFilter = Filters.in("serviceName", query.getServiceName());
+      filters.add(serviceNameFilter);
+  }
+
+  if (query.getDuration() != null) {
+      Bson durationFilter = Filters.and(
+              Filters.gte("duration", query.getDuration().getMin()),
+              Filters.lte("duration", query.getDuration().getMax())
+      );
+      filters.add(durationFilter);
+  }
+
+  List<Bson> statusCodeFilters = new ArrayList<>();
+  if (query.getStatusCode() != null && !query.getStatusCode().isEmpty()) {
+      for (StatusCodeRange statusCodeRange : query.getStatusCode()) {
+          statusCodeFilters.add(
+                  Filters.and(
+                          Filters.gte("statusCode", statusCodeRange.getMin()),
+                          Filters.lte("statusCode", statusCodeRange.getMax())
+                  )
+          );
+      }
+  }
+
+  if (!statusCodeFilters.isEmpty()) {
+      Bson statusCodeFilter = Filters.or(statusCodeFilters);
+      filters.add(statusCodeFilter);
+  }
+
+  Bson filter = Filters.and(filters);
+
+  MongoCollection<Document> collection = mongoClient
+          .getDatabase("OtelTrace")
+          .getCollection("TraceDTO");
+
+  Bson projection = Projections.excludeId();
+
+  System.out.println("Skip: " + (page - 1) * pageSize);
+  System.out.println("Limit: " + pageSize);
+
+  Bson sort = Sorts.descending("createdTime");
+
+  return collection
+          .find(filter)
+          .projection(projection)
+          .sort(sort)
+          .skip((page - 1) * pageSize)
+          .limit(pageSize);
 }
 
-    if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
-        Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
-        filters.add(methodNameFilter);
-    }
-
-    if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
-        Bson serviceNameFilter = Filters.in("serviceName", query.getServiceName());
-        filters.add(serviceNameFilter);
-    }
-
-    if (query.getDuration() != null) {
-        Bson durationFilter = Filters.and(
-                Filters.gte("duration", query.getDuration().getMin()),
-                Filters.lte("duration", query.getDuration().getMax())
-        );
-        filters.add(durationFilter);
-    }
-
-    List<Bson> statusCodeFilters = new ArrayList<>();
-    if (query.getStatusCode() != null && !query.getStatusCode().isEmpty()) {
-        for (StatusCodeRange statusCodeRange : query.getStatusCode()) {
-            statusCodeFilters.add(
-                    Filters.and(
-                            Filters.gte("statusCode", statusCodeRange.getMin()),
-                            Filters.lte("statusCode", statusCodeRange.getMax())
-                    )
-            );
-        }
-    }
-
-    if (!statusCodeFilters.isEmpty()) {
-        Bson statusCodeFilter = Filters.or(statusCodeFilters);
-        filters.add(statusCodeFilter);
-    }
-
-    Bson filter = Filters.and(filters);
-
-    MongoCollection<Document> collection = mongoClient
-            .getDatabase("OtelTrace")
-            .getCollection("TraceDTO");
-
-    Bson projection = Projections.excludeId();
-
-    System.out.println("Skip: " + (page - 1) * pageSize);
-    System.out.println("Limit: " + pageSize);
-
-    Bson sort = Sorts.descending("createdTime");
-
-    return collection
-            .find(filter)
-            .projection(projection)
-            .sort(sort)
-            .skip((page - 1) * pageSize)
-            .limit(pageSize);
-
-}
 
 
   // getTrace by multiple queries like serviceName, method, duration and statuscode from TraceDTO entity
-  public List<TraceDTO> searchTracesPaged(TraceQuery query, int page, int pageSize, LocalDate from, LocalDate to) {
+  public List<TraceDTO> searchTracesPaged(TraceQuery query, int page, int pageSize, LocalDate from, LocalDate to, int minutesAgo) {
     System.out.println("from Date --------------"+from);
     System.out.println("to Date --------------"+to);
   
-    FindIterable<Document> result = getFilteredResults(query,page,pageSize,from,to);
+    FindIterable<Document> result = getFilteredResults(query,page,pageSize,from,to,minutesAgo);
    
     List<TraceDTO> traceDTOList = new ArrayList<>();
     try (MongoCursor<Document> cursor = result.iterator()) {
@@ -182,11 +261,10 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int page, in
     return traceDTOList;
 }
 
-public long countQueryTraces(TraceQuery query, LocalDate from, LocalDate to) {
-  FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, from,to);
-  System.out.println("countQueryTraces"+ result.into(new ArrayList<>()).size());
-  long totalCount = result.into(new ArrayList<>()).size(); 
-
+public long countQueryTraces(TraceQuery query, LocalDate from, LocalDate to, int minutesAgo) {
+  FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, from, to, minutesAgo);
+  System.out.println("countQueryTraces: " + result.into(new ArrayList<>()).size());
+  long totalCount = result.into(new ArrayList<>()).size();   
   return totalCount;
 }
 

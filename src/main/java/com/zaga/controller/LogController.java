@@ -386,7 +386,8 @@ public Response filterLogs(
         @QueryParam("page") @DefaultValue("1") int page,
         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
         @QueryParam("startDate") LocalDate from,
-        @QueryParam("endDate") LocalDate to) {
+        @QueryParam("endDate") LocalDate to,
+        @QueryParam("minutesAgo") int minutesAgo) {
 
     if (page <= 0 || pageSize <= 0) {
         return Response.status(Response.Status.BAD_REQUEST)
@@ -395,7 +396,7 @@ public Response filterLogs(
     }
 
     try {
-        List<LogDTO> logs = logQueryHandler.searchLogByDate(logQuery, from, to);
+        List<LogDTO> logs = logQueryHandler.searchLogByDate(logQuery, from, to, minutesAgo);
 
         int startIndex = (page - 1) * pageSize;
         int endIndex = Math.min(startIndex + pageSize, logs.size());

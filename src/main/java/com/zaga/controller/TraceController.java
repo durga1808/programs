@@ -103,13 +103,14 @@ public Response queryTraces(
     @QueryParam("page") @DefaultValue("1") int page,
     @QueryParam("pageSize") @DefaultValue("10") int pageSize,
     @QueryParam("from") LocalDate from,
-    @QueryParam("to") LocalDate to) {
+    @QueryParam("to") LocalDate to,
+    @QueryParam("minutesAgo") int minutesAgo) {
         System.out.println("from controller: " + from);
         System.out.println("to controller: " + to);
 
-        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery,page, pageSize,from,to);
+        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery,page, pageSize,from,to,minutesAgo);
 
-        long totalCount = traceQueryHandler.countQueryTraces(traceQuery,from,to);
+        long totalCount = traceQueryHandler.countQueryTraces(traceQuery,from,to,minutesAgo);
 
         Map<String, Object> jsonResponse = new HashMap<>();
         jsonResponse.put("totalCount", totalCount);
