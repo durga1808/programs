@@ -302,13 +302,76 @@ public List<LogDTO> getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(
 // }
 
 
+// public List<LogMetrics> getLogMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
+//     System.out.println("from: " + from);
+//     System.out.println("to: " + to);
+//     System.out.println("minutesAgo: " + minutesAgo);
+    
+//     List<LogDTO> logList = logQueryRepo.listAll(); 
+//     Map<String, Map<LocalDate, LogMetrics>> metricsMap = new HashMap<>();
+
+//     Instant fromInstant = null;
+//     Instant toInstant = null;
+
+//     if (from != null && to != null) {
+//         // If both from and to are provided, consider the date range
+//         fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+//         toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+//     } else if (minutesAgo > 0) {
+//         // If minutesAgo is provided, calculate the time range based on minutesAgo
+//         toInstant = Instant.now();
+//         fromInstant = toInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+//     } else {
+//         // Handle the case when neither date range nor minutesAgo is provided
+//         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+//     }
+
+//     for (LogDTO logDTO : logList) {
+//         Date logCreateTime = logDTO.getCreatedTime();
+//         if (logCreateTime != null) {
+//             Instant logInstant = logCreateTime.toInstant();
+
+//             if (logInstant.isAfter(fromInstant) && logInstant.isBefore(toInstant)
+//                     && serviceNameList.contains(logDTO.getServiceName())) {
+//                 String serviceName = logDTO.getServiceName();
+//                 LocalDate logDate = logInstant.atZone(ZoneId.systemDefault()).toLocalDate();
+
+//                 Map<LocalDate, LogMetrics> dateMetricsMap = metricsMap.getOrDefault(serviceName, new HashMap<>());
+//                 LogMetrics metrics = dateMetricsMap.get(logDate);
+
+//                 if (metrics == null) {
+//                     metrics = new LogMetrics();
+//                     metrics.setServiceName(serviceName);
+//                     metrics.setErrorCallCount(0L); 
+//                     metrics.setWarnCallCount(0L);
+//                     metrics.setDebugCallCount(0L);
+//                 }
+
+//                 calculateCallCounts(logDTO, metrics);
+
+//                 dateMetricsMap.put(logDate, metrics);
+//                 metricsMap.put(serviceName, dateMetricsMap);
+//             }
+//         }
+//     }
+
+//     List<LogMetrics> result = new ArrayList<>();
+//     metricsMap.forEach((serviceName, dateMetricsMap) ->
+//             result.addAll(dateMetricsMap.values())
+//     );
+
+//     return result;
+// }
+
+
+
 public List<LogMetrics> getLogMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
     System.out.println("from: " + from);
     System.out.println("to: " + to);
     System.out.println("minutesAgo: " + minutesAgo);
-    
-    List<LogDTO> logList = logQueryRepo.listAll(); 
-    Map<String, Map<LocalDate, LogMetrics>> metricsMap = new HashMap<>();
+
+    List<LogDTO> logList = logQueryRepo.listAll();
+    Map<String, LogMetrics> metricsMap = new HashMap<>();
 
     Instant fromInstant = null;
     Instant toInstant = null;
@@ -334,33 +397,23 @@ public List<LogMetrics> getLogMetricCount(List<String> serviceNameList, LocalDat
             if (logInstant.isAfter(fromInstant) && logInstant.isBefore(toInstant)
                     && serviceNameList.contains(logDTO.getServiceName())) {
                 String serviceName = logDTO.getServiceName();
-                LocalDate logDate = logInstant.atZone(ZoneId.systemDefault()).toLocalDate();
-
-                Map<LocalDate, LogMetrics> dateMetricsMap = metricsMap.getOrDefault(serviceName, new HashMap<>());
-                LogMetrics metrics = dateMetricsMap.get(logDate);
+                LogMetrics metrics = metricsMap.get(serviceName);
 
                 if (metrics == null) {
                     metrics = new LogMetrics();
                     metrics.setServiceName(serviceName);
-                    metrics.setErrorCallCount(0L); 
+                    metrics.setErrorCallCount(0L);
                     metrics.setWarnCallCount(0L);
                     metrics.setDebugCallCount(0L);
+                    metricsMap.put(serviceName, metrics);
                 }
 
                 calculateCallCounts(logDTO, metrics);
-
-                dateMetricsMap.put(logDate, metrics);
-                metricsMap.put(serviceName, dateMetricsMap);
             }
         }
     }
 
-    List<LogMetrics> result = new ArrayList<>();
-    metricsMap.forEach((serviceName, dateMetricsMap) ->
-            result.addAll(dateMetricsMap.values())
-    );
-
-    return result;
+    return new ArrayList<>(metricsMap.values());
 }
 
 
