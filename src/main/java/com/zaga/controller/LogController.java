@@ -149,9 +149,10 @@ public Response getAllDataByServiceName(
 public List<LogMetrics> getLogMetricsCount(
     @QueryParam("from") LocalDate from,
     @QueryParam("to") LocalDate to,
-    @QueryParam("serviceNameList") List<String> serviceNameList
+    @QueryParam("serviceNameList") List<String> serviceNameList,
+    @QueryParam("minutesAgo") int minutesAgo
 ) {
-    return logQueryHandler.getLogMetricCount(serviceNameList, from, to);
+    return logQueryHandler.getLogMetricCount(serviceNameList, from, to, minutesAgo);
 }
 
 
@@ -236,6 +237,81 @@ public List<LogMetrics> getLogMetricsCount(
 
 
 
+// @GET
+// @Path("/getallLogdata-sortorder")
+// @Produces(MediaType.APPLICATION_JSON)
+// public Response sortOrderTrace(
+//         @QueryParam("sortOrder") String sortOrder,
+//         @QueryParam("page") int page,
+//         @QueryParam("pageSize") int pageSize,
+//         @QueryParam("startDate") LocalDate from,
+//         @QueryParam("endDate") LocalDate to,
+//         @QueryParam("serviceNameList") List<String> serviceNameList) {
+
+//     if (page <= 0 || pageSize <= 0) {
+//         return Response.status(Response.Status.BAD_REQUEST)
+//                 .entity("Invalid page or pageSize parameters.")
+//                 .build();
+//     }
+
+//     try {
+//         List<LogDTO> logs;
+
+//         if ("new".equalsIgnoreCase(sortOrder)) {
+//             logs = logQueryHandler.getAllLogssOrderByCreatedTimeDesc(serviceNameList);
+//         } else if ("old".equalsIgnoreCase(sortOrder)) {
+//             logs = logQueryHandler.getAllLogssAsc(serviceNameList);
+//         } else if ("error".equalsIgnoreCase(sortOrder)) {
+//             logs = logQueryHandler.getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(serviceNameList);
+//         } else {
+//             return Response.status(Response.Status.BAD_REQUEST)
+//                     .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.")
+//                     .build();
+//         }
+
+//         // Filter logs within the specified date range
+//         logs = logs.stream()
+//                 .filter(log -> isWithinDateRange(log.getCreatedTime(), from.atStartOfDay(), to.plusDays(1).atStartOfDay()))
+//                 .collect(Collectors.toList());
+
+//         int startIndex = (page - 1) * pageSize;
+//         int endIndex = Math.min(startIndex + pageSize, logs.size());
+
+//         if (startIndex >= endIndex || logs.isEmpty()) {
+//             Map<String, Object> emptyResponse = new HashMap<>();
+//             emptyResponse.put("data", Collections.emptyList());
+//             emptyResponse.put("totalCount", 0);
+
+//             return buildResponse(emptyResponse);
+//         }
+
+//         List<LogDTO> paginatedTraces = logs.subList(startIndex, endIndex);
+//         int totalCount = logs.size();
+
+//         Map<String, Object> response = new HashMap<>();
+//         response.put("data", paginatedTraces);
+//         response.put("totalCount", totalCount);
+
+//         return buildResponse(response);
+//     } catch (DateTimeParseException e) {
+//         return Response.status(Response.Status.BAD_REQUEST)
+//                 .entity("Invalid date format. Please use ISO_LOCAL_DATE format.")
+//                 .build();
+//     }
+// }
+
+// // Add the isWithinDateRange method to the LogController class
+// private boolean isWithinDateRange(Date logTimestamp, LocalDateTime from, LocalDateTime to) {
+//     LocalDateTime logDateTime = logTimestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+
+//     return (logDateTime.isEqual(from) || logDateTime.isAfter(from)) &&
+//             (logDateTime.isEqual(to) || logDateTime.isBefore(to));
+// }
+
+
+
+
+
 @GET
 @Path("/getallLogdata-sortorder")
 @Produces(MediaType.APPLICATION_JSON)
@@ -245,6 +321,7 @@ public Response sortOrderTrace(
         @QueryParam("pageSize") int pageSize,
         @QueryParam("startDate") LocalDate from,
         @QueryParam("endDate") LocalDate to,
+        @QueryParam("minutesAgo") int minutesAgo,
         @QueryParam("serviceNameList") List<String> serviceNameList) {
 
     if (page <= 0 || pageSize <= 0) {
@@ -268,9 +345,9 @@ public Response sortOrderTrace(
                     .build();
         }
 
-        // Filter logs within the specified date range
+        // Filter logs within the specified date range or based on minutes ago
         logs = logs.stream()
-                .filter(log -> isWithinDateRange(log.getCreatedTime(), from.atStartOfDay(), to.plusDays(1).atStartOfDay()))
+                .filter(log -> isWithinDateRange(log.getCreatedTime(), from, to, minutesAgo))
                 .collect(Collectors.toList());
 
         int startIndex = (page - 1) * pageSize;
@@ -299,7 +376,25 @@ public Response sortOrderTrace(
     }
 }
 
-// Add the isWithinDateRange method to the LogController class
+// Add the updated isWithinDateRange method to the LogController class
+private boolean isWithinDateRange(Date logTimestamp, LocalDate from, LocalDate to, int minutesAgo) {
+    if (from != null && to != null) {
+        // Use the provided date range
+        LocalDateTime fromDateTime = from.atStartOfDay();
+        LocalDateTime toDateTime = to.plusDays(1).atStartOfDay();
+        return isWithinDateRange(logTimestamp, fromDateTime, toDateTime);
+    } else if (minutesAgo > 0) {
+        // Use current date and minutes ago
+        LocalDateTime currentDateTime = LocalDateTime.now();
+        LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
+        return isWithinDateRange(logTimestamp, fromDateTime, currentDateTime);
+    }
+
+    // If neither from/to nor minutesAgo is provided, consider it within the range
+    return true;
+}
+
+// Keep the original isWithinDateRange method for compatibility
 private boolean isWithinDateRange(Date logTimestamp, LocalDateTime from, LocalDateTime to) {
     LocalDateTime logDateTime = logTimestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 
@@ -531,6 +626,55 @@ private Response buildResponse(Map<String, Object> responseData) {
     // }
 
 
+// @GET
+// @Path("/searchFunction")
+// public Response searchLogs(
+//         @QueryParam("page") @DefaultValue("1") int page,
+//         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+//         @QueryParam("keyword") String keyword,
+//         @QueryParam("startDate") LocalDate from,
+//         @QueryParam("endDate") LocalDate to) {
+
+//     try {
+//         List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
+
+//                 // Filter logs within the specified date range
+//         if (from != null && to != null) {
+//             logList = logList.stream()
+//                     .filter(log -> isWithinDateRange(log.getCreatedTime(), from.atStartOfDay(), to.plusDays(1).atStartOfDay()))
+//                     .collect(Collectors.toList());
+//         }
+
+//         int totalCount = logList.size();
+//         int startIndex = (page - 1) * pageSize;
+//         int endIndex = Math.min(startIndex + pageSize, totalCount);
+
+//         if (startIndex >= endIndex || logList.isEmpty()) {
+//             Map<String, Object> emptyResponse = new HashMap<>();
+//             emptyResponse.put("data", Collections.emptyList());
+//             emptyResponse.put("totalCount", 0);
+
+//             return Response.ok(emptyResponse).build();
+//         }
+
+//         List<LogDTO> paginatedLogs = logList.subList(startIndex, endIndex);
+
+//         Map<String, Object> response = new HashMap<>();
+//         response.put("data", paginatedLogs);
+//         response.put("totalCount", totalCount);
+
+//         ObjectMapper objectMapper = new ObjectMapper();
+//         String responseJson = objectMapper.writeValueAsString(response);
+
+//         return Response.ok(responseJson).build();
+//     } catch (Exception e) {
+//         return Response
+//                 .status(Response.Status.INTERNAL_SERVER_ERROR)
+//                 .entity(e.getMessage())
+//                 .build();
+//     }
+// }
+
 @GET
 @Path("/searchFunction")
 public Response searchLogs(
@@ -538,16 +682,18 @@ public Response searchLogs(
         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
         @QueryParam("keyword") String keyword,
         @QueryParam("startDate") LocalDate from,
-        @QueryParam("endDate") LocalDate to) {
+        @QueryParam("endDate") LocalDate to,
+        @QueryParam("minutesAgo") int minutesAgo) {
 
     try {
         List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
 
-                // Filter logs within the specified date range
+        // If both startDate and endDate are provided, filter logs within the specified date range
         if (from != null && to != null) {
-            logList = logList.stream()
-                    .filter(log -> isWithinDateRange(log.getCreatedTime(), from.atStartOfDay(), to.plusDays(1).atStartOfDay()))
-                    .collect(Collectors.toList());
+            logList = filterLogsByDateRange(logList, from, to);
+        } else if (minutesAgo > 0) {
+            // If only minutesAgo is provided, filter logs based on the specified minutes
+            logList = filterLogsByMinutesAgo(logList, minutesAgo);
         }
 
         int totalCount = logList.size();
@@ -579,5 +725,23 @@ public Response searchLogs(
                 .build();
     }
 }
+
+// Helper method to filter logs based on the specified date range
+private List<LogDTO> filterLogsByDateRange(List<LogDTO> logs, LocalDate from, LocalDate to) {
+    return logs.stream()
+            .filter(log -> isWithinDateRange(log.getCreatedTime(), from.atStartOfDay(), to.plusDays(1).atStartOfDay()))
+            .collect(Collectors.toList());
+}
+
+// Helper method to filter logs based on the specified minutesAgo
+private List<LogDTO> filterLogsByMinutesAgo(List<LogDTO> logs, int minutesAgo) {
+    LocalDateTime currentDateTime = LocalDateTime.now();
+    LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
+
+    return logs.stream()
+            .filter(log -> isWithinDateRange(log.getCreatedTime(), fromDateTime, currentDateTime))
+            .collect(Collectors.toList());
+}
+
 
 }

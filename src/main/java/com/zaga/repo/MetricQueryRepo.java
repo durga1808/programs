@@ -1,29 +1,17 @@
 package com.zaga.repo;
 
-import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.Aggregates;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Sorts;
 import com.zaga.entity.queryentity.metric.MetricDTO;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
-import io.quarkus.panache.common.Parameters;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.bson.Document;
-import org.bson.conversions.Bson;
 
 @ApplicationScoped
 public class MetricQueryRepo implements PanacheMongoRepository<MetricDTO> {

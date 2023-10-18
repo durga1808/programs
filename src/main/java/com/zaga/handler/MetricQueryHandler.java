@@ -2,6 +2,7 @@ package com.zaga.handler;
 
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,8 +37,48 @@ public class MetricQueryHandler {
     //     return results;
     // }
    
-public List<MetricDTO> getMetricData(LocalDate from, LocalDate to, String serviceName) {
-    Bson timeFilter = createCustomDateFilter(from, to);
+// public List<MetricDTO> getMetricData(LocalDate from, LocalDate to, String serviceName) {
+//     Bson timeFilter = createCustomDateFilter(from, to);
+//     Bson serviceNameFilter = Filters.eq("serviceName", serviceName);
+
+//     Bson finalFilter = Filters.and(timeFilter, serviceNameFilter);
+
+//     MongoCollection<Document> collection = mongoClient
+//             .getDatabase("OtelMetric")
+//             .getCollection("MetricDTO");
+
+//     List<MetricDTO> filteredResults = new ArrayList<>();
+    
+//     try (MongoCursor<Document> cursor = collection.find(finalFilter).iterator()) {
+//         while (cursor.hasNext()) {
+//             Document document = cursor.next();
+//             MetricDTO metricDTO = convertDocumentToMetricDTO(document);
+//             filteredResults.add(metricDTO);
+//         }
+//     }
+    
+//     return filteredResults;
+// }
+
+
+public List<MetricDTO> getMetricData(LocalDate from, LocalDate to, String serviceName, int minutesAgo) {
+    Bson timeFilter;
+
+    if (from != null && to != null) {
+        timeFilter = createCustomDateFilter(from, to);
+    } else if (minutesAgo > 0) {
+        LocalDate currentDate = LocalDate.now();
+        LocalDateTime fromDateTime = currentDate.atStartOfDay().minusMinutes(minutesAgo);
+        LocalDateTime toDateTime = currentDate.atStartOfDay();
+        timeFilter = Filters.and(
+                Filters.gte("date", fromDateTime),
+                Filters.lt("date", toDateTime)
+        );
+    } else {
+        // Handle the case when neither date range nor minutesAgo is provided
+        throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+    }
+
     Bson serviceNameFilter = Filters.eq("serviceName", serviceName);
 
     Bson finalFilter = Filters.and(timeFilter, serviceNameFilter);
@@ -47,7 +88,7 @@ public List<MetricDTO> getMetricData(LocalDate from, LocalDate to, String servic
             .getCollection("MetricDTO");
 
     List<MetricDTO> filteredResults = new ArrayList<>();
-    
+
     try (MongoCursor<Document> cursor = collection.find(finalFilter).iterator()) {
         while (cursor.hasNext()) {
             Document document = cursor.next();
@@ -55,9 +96,10 @@ public List<MetricDTO> getMetricData(LocalDate from, LocalDate to, String servic
             filteredResults.add(metricDTO);
         }
     }
-    
+
     return filteredResults;
 }
+
 private MetricDTO convertDocumentToMetricDTO(Document document) {
 
     MetricDTO metricDTO = new MetricDTO();

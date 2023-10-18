@@ -43,9 +43,10 @@ public class MetricController {
     public Response getByserviceName(
         @QueryParam("from") LocalDate from,
         @QueryParam("to") LocalDate to,
-        @QueryParam("serviceName") String serviceName
+        @QueryParam("serviceName") String serviceName,
+        @QueryParam("minutesAgo") int minutesAgo
     ) {
-        List<MetricDTO> metricData = metricQueryHandler.getMetricData(from,to, serviceName);
+        List<MetricDTO> metricData = metricQueryHandler.getMetricData(from,to, serviceName, minutesAgo);
         System.out.println("metricData:--------------------- " + metricData.size());
         // return Response.ok(metricData).build();
         try {
