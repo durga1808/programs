@@ -32,6 +32,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
@@ -399,16 +400,18 @@ public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, L
   Instant fromInstant;
   Instant toInstant;
 
+  // Date range handling
   if (from != null && to != null) {
       fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
       toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
   } else if (minutesAgo > 0) {
+      // Time ago handling
       Instant currentInstant = Instant.now();
       Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
       fromInstant = minutesAgoInstant;
       toInstant = currentInstant;
   } else {
-      // Use the current date for both from and to
+      // Default to the current date for both from and to
       fromInstant = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
       toInstant = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
   }
@@ -440,7 +443,6 @@ public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, L
 
   Instant fromDate = fromInstant.atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay(ZoneId.systemDefault()).toInstant();
   Instant toDate = toInstant.atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-
   Map<String, Long> errorCounts = calculateErrorCountsByService(fromDate, toDate);
   Map<String, Long> successCounts = calculateSuccessCountsByService(fromDate, toDate);
   Map<String, Long> peakLatency = calculatePeakLatencyCountsByService(fromDate, toDate);
@@ -450,44 +452,32 @@ public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, L
   System.out.println("Success Counts: " + successCounts);
   System.out.println("Peak Latency Counts: " + peakLatency);
 
-  for (Map.Entry<String, Long> entry : errorCounts.entrySet()) {
-      String serviceName = entry.getKey();
-      Long errorCount = entry.getValue();
-
-      // Update the TraceMetrics object in metricsMap
-      TraceMetrics metrics = metricsMap.get(serviceName);
-      if (metrics != null) {
-          metrics.setTotalErrorCalls(errorCount);
-      }
-  }
-
-  for (Map.Entry<String, Long> entry : successCounts.entrySet()) {
-      String serviceName = entry.getKey();
-      Long successCount = entry.getValue();
-
-      // Update the TraceMetrics object in metricsMap
-      TraceMetrics metrics = metricsMap.get(serviceName);
-      if (metrics != null) {
-          metrics.setTotalSuccessCalls(successCount);
-      }
-  }
-
-  for (TraceMetrics metrics : metricsMap.values()) {
-      metrics.setApiCallCount(metrics.getTotalErrorCalls() + metrics.getTotalSuccessCalls());
-  }
-
-  for (Map.Entry<String, Long> entry : peakLatency.entrySet()) {
-      String serviceName = entry.getKey();
-      Long peakLatencyCount = entry.getValue();
-
-      // Update the TraceMetrics object in metricsMap with peak latency count
-      TraceMetrics metrics = metricsMap.get(serviceName);
-      if (metrics != null) {
-          metrics.setPeakLatency(peakLatencyCount);
-      }
-  }
+  updateMetrics(metricsMap, errorCounts, successCounts, peakLatency);
 
   return new ArrayList<>(metricsMap.values());
+}
+
+
+private void updateMetrics(Map<String, TraceMetrics> metricsMap, Map<String, Long> errorCounts, Map<String, Long> successCounts, Map<String, Long> peakLatency) {
+    updateMetricsField(metricsMap, errorCounts, TraceMetrics::setTotalErrorCalls);
+    updateMetricsField(metricsMap, successCounts, TraceMetrics::setTotalSuccessCalls);
+
+    for (TraceMetrics metrics : metricsMap.values()) {
+        metrics.setApiCallCount(metrics.getTotalErrorCalls() + metrics.getTotalSuccessCalls());
+    }
+
+    updateMetricsField(metricsMap, peakLatency, TraceMetrics::setPeakLatency);
+}
+
+private void updateMetricsField(Map<String, TraceMetrics> metricsMap, Map<String, Long> values, BiConsumer<TraceMetrics, Long> fieldUpdater) {
+    for (Map.Entry<String, Long> entry : values.entrySet()) {
+        String serviceName = entry.getKey();
+        Long value = entry.getValue();
+        TraceMetrics metrics = metricsMap.get(serviceName);
+        if (metrics != null) {
+            fieldUpdater.accept(metrics, value);
+        }
+    }
 }
 
 
