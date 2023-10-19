@@ -19,9 +19,10 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -354,11 +355,15 @@ private List<TraceDTO> filterTracesByDateRange(List<TraceDTO> traces, LocalDate 
 }
 
 private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
-    LocalDate currentDate = LocalDate.now();
-    LocalDate fromDate = currentDate.minusDays(1); 
-    LocalDate toDate = currentDate;
+    Instant currentInstant = Instant.now();
+    Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+    
+    LocalDate fromDate = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDate();
+    LocalDate toDate = LocalDate.now().plusDays(1);
+
     return filterTracesByDateRange(traces, fromDate, toDate);
 }
+
 
 
 
