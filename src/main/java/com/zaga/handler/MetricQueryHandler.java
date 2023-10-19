@@ -32,35 +32,6 @@ public class MetricQueryHandler {
         return metricQueryRepo.listAll();
     }
 
-    // public List<MetricDTO> getMetricData(LocalDate from,LocalDate to,String serviceName) {
-    //    List<MetricDTO> results = metricQueryRepo.getMetricData(from,to, serviceName);
-    //     return results;
-    // }
-   
-// public List<MetricDTO> getMetricData(LocalDate from, LocalDate to, String serviceName) {
-//     Bson timeFilter = createCustomDateFilter(from, to);
-//     Bson serviceNameFilter = Filters.eq("serviceName", serviceName);
-
-//     Bson finalFilter = Filters.and(timeFilter, serviceNameFilter);
-
-//     MongoCollection<Document> collection = mongoClient
-//             .getDatabase("OtelMetric")
-//             .getCollection("MetricDTO");
-
-//     List<MetricDTO> filteredResults = new ArrayList<>();
-    
-//     try (MongoCursor<Document> cursor = collection.find(finalFilter).iterator()) {
-//         while (cursor.hasNext()) {
-//             Document document = cursor.next();
-//             MetricDTO metricDTO = convertDocumentToMetricDTO(document);
-//             filteredResults.add(metricDTO);
-//         }
-//     }
-    
-//     return filteredResults;
-// }
-
-
 public List<MetricDTO> getMetricData(LocalDate from, LocalDate to, String serviceName, int minutesAgo) {
     Bson timeFilter;
 

@@ -48,7 +48,6 @@ public class MetricController {
     ) {
         List<MetricDTO> metricData = metricQueryHandler.getMetricData(from,to, serviceName, minutesAgo);
         System.out.println("metricData:--------------------- " + metricData.size());
-        // return Response.ok(metricData).build();
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             String responseJson = objectMapper.writeValueAsString(metricData);

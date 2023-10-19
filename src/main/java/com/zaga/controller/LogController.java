@@ -134,13 +134,6 @@ public Response getAllDataByServiceName(
 }
 
 
-//   @GET
-//   @Path("/LogSumaryChartDataCount")
-//   @Produces(MediaType.APPLICATION_JSON)
-//   public List<LogMetrics> getLogMetricsCount(@QueryParam("timeAgoMinutes") @DefaultValue("60") int timeAgoMinutes, @QueryParam("serviceNameList") List<String> serviceNameList) {
-//     return logQueryHandler.getLogMetricCount(timeAgoMinutes, serviceNameList);
-//   }
-
 
 
 @GET
@@ -154,160 +147,6 @@ public List<LogMetrics> getLogMetricsCount(
 ) {
     return logQueryHandler.getLogMetricCount(serviceNameList, from, to, minutesAgo);
 }
-
-
-
-
-// @GET
-// @Path("/getallLogdata-sortorder")
-// @Produces(MediaType.APPLICATION_JSON)
-// public Response sortOrderTrace(
-//     @QueryParam("sortOrder") String sortOrder,
-//     @QueryParam("page") int page,
-//     @QueryParam("pageSize") int pageSize,
-//     @QueryParam("minutesAgo") int minutesAgo, @QueryParam("serviceNameList") List<String> serviceNameList) {
-
-//       if (page <= 0 || pageSize <= 0 || minutesAgo < 0) {
-//         return Response.status(Response.Status.BAD_REQUEST)
-//                 .entity("Invalid page, pageSize, or minutesAgo parameters.")
-//                 .build();
-//     }
-//     List<LogDTO> logs;
-//         if ("new".equalsIgnoreCase(sortOrder)) {
-//         logs = logQueryHandler.getAllLogssOrderByCreatedTimeDesc(serviceNameList);
-//           } else if ("old".equalsIgnoreCase(sortOrder)) {
-//         logs = logQueryHandler.getAllLogssAsc(serviceNameList);
-//           }  
-//           else if ("error".equalsIgnoreCase(sortOrder)) {
-//         logs = logQueryHandler.getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(serviceNameList);
-//           }
-//           else {
-//         return Response.status(Response.Status.BAD_REQUEST)
-//                 .entity("Invalid sortOrder parameter. Use 'new', 'old'.")
-//                 .build();
-//     }
-
-//     if (minutesAgo > 0) {
-//     Date cutoffDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(minutesAgo));
-//     logs = logs.stream()
-//     .filter(log -> {
-//         Date createdTime = log.getCreatedTime();
-//         return createdTime != null && createdTime.after(cutoffDate);
-//     })
-//     .collect(Collectors.toList());
-// }
-
-//     int startIndex = (page - 1) * pageSize;
-//     int endIndex = Math.min(startIndex + pageSize, logs.size());
-
-// if (startIndex >= endIndex || logs.isEmpty()) {
-//         Map<String, Object> emptyResponse = new HashMap<>();
-//         emptyResponse.put("data", Collections.emptyList());
-//         emptyResponse.put("totalCount", 0);
-
-//         try {
-//             ObjectMapper objectMapper = new ObjectMapper();
-//             String responseJson = objectMapper.writeValueAsString(emptyResponse);
-
-//             return Response.ok(responseJson).build();
-//         } catch (Exception e) {
-//             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-//                     .entity("Error converting response to JSON")
-//                     .build();
-//         }
-//     }
-
-//   List<LogDTO> paginatedTraces = logs.subList(startIndex, endIndex);
-//     int totalCount = logs.size();
-
-//     Map<String, Object> response = new HashMap<>();
-//     response.put("data", paginatedTraces);
-//     response.put("totalCount", totalCount);
-//  try {
-//         ObjectMapper objectMapper = new ObjectMapper();
-//         String responseJson = objectMapper.writeValueAsString(response);
-
-//         return Response.ok(responseJson).build();
-//     } catch (Exception e) {
-//         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-//             .entity("Error converting response to JSON")
-//             .build();
-//     }
-// }
-
-
-
-// @GET
-// @Path("/getallLogdata-sortorder")
-// @Produces(MediaType.APPLICATION_JSON)
-// public Response sortOrderTrace(
-//         @QueryParam("sortOrder") String sortOrder,
-//         @QueryParam("page") int page,
-//         @QueryParam("pageSize") int pageSize,
-//         @QueryParam("startDate") LocalDate from,
-//         @QueryParam("endDate") LocalDate to,
-//         @QueryParam("serviceNameList") List<String> serviceNameList) {
-
-//     if (page <= 0 || pageSize <= 0) {
-//         return Response.status(Response.Status.BAD_REQUEST)
-//                 .entity("Invalid page or pageSize parameters.")
-//                 .build();
-//     }
-
-//     try {
-//         List<LogDTO> logs;
-
-//         if ("new".equalsIgnoreCase(sortOrder)) {
-//             logs = logQueryHandler.getAllLogssOrderByCreatedTimeDesc(serviceNameList);
-//         } else if ("old".equalsIgnoreCase(sortOrder)) {
-//             logs = logQueryHandler.getAllLogssAsc(serviceNameList);
-//         } else if ("error".equalsIgnoreCase(sortOrder)) {
-//             logs = logQueryHandler.getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(serviceNameList);
-//         } else {
-//             return Response.status(Response.Status.BAD_REQUEST)
-//                     .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.")
-//                     .build();
-//         }
-
-//         // Filter logs within the specified date range
-//         logs = logs.stream()
-//                 .filter(log -> isWithinDateRange(log.getCreatedTime(), from.atStartOfDay(), to.plusDays(1).atStartOfDay()))
-//                 .collect(Collectors.toList());
-
-//         int startIndex = (page - 1) * pageSize;
-//         int endIndex = Math.min(startIndex + pageSize, logs.size());
-
-//         if (startIndex >= endIndex || logs.isEmpty()) {
-//             Map<String, Object> emptyResponse = new HashMap<>();
-//             emptyResponse.put("data", Collections.emptyList());
-//             emptyResponse.put("totalCount", 0);
-
-//             return buildResponse(emptyResponse);
-//         }
-
-//         List<LogDTO> paginatedTraces = logs.subList(startIndex, endIndex);
-//         int totalCount = logs.size();
-
-//         Map<String, Object> response = new HashMap<>();
-//         response.put("data", paginatedTraces);
-//         response.put("totalCount", totalCount);
-
-//         return buildResponse(response);
-//     } catch (DateTimeParseException e) {
-//         return Response.status(Response.Status.BAD_REQUEST)
-//                 .entity("Invalid date format. Please use ISO_LOCAL_DATE format.")
-//                 .build();
-//     }
-// }
-
-// // Add the isWithinDateRange method to the LogController class
-// private boolean isWithinDateRange(Date logTimestamp, LocalDateTime from, LocalDateTime to) {
-//     LocalDateTime logDateTime = logTimestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-
-//     return (logDateTime.isEqual(from) || logDateTime.isAfter(from)) &&
-//             (logDateTime.isEqual(to) || logDateTime.isBefore(to));
-// }
-
 
 
 
@@ -376,25 +215,21 @@ public Response sortOrderTrace(
     }
 }
 
-// Add the updated isWithinDateRange method to the LogController class
+
 private boolean isWithinDateRange(Date logTimestamp, LocalDate from, LocalDate to, int minutesAgo) {
     if (from != null && to != null) {
-        // Use the provided date range
         LocalDateTime fromDateTime = from.atStartOfDay();
         LocalDateTime toDateTime = to.plusDays(1).atStartOfDay();
         return isWithinDateRange(logTimestamp, fromDateTime, toDateTime);
     } else if (minutesAgo > 0) {
-        // Use current date and minutes ago
         LocalDateTime currentDateTime = LocalDateTime.now();
         LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
         return isWithinDateRange(logTimestamp, fromDateTime, currentDateTime);
     }
-
-    // If neither from/to nor minutesAgo is provided, consider it within the range
     return true;
 }
 
-// Keep the original isWithinDateRange method for compatibility
+
 private boolean isWithinDateRange(Date logTimestamp, LocalDateTime from, LocalDateTime to) {
     LocalDateTime logDateTime = logTimestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 
@@ -402,71 +237,6 @@ private boolean isWithinDateRange(Date logTimestamp, LocalDateTime from, LocalDa
             (logDateTime.isEqual(to) || logDateTime.isBefore(to));
 }
 
-
-
-
-
-// @POST
-// @Path("/LogFilterQuery")
-// public Response filterLogs(
-//         LogQuery logQuery,
-//         @QueryParam("page") @DefaultValue("1") int page,
-//         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-//         @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo) {
-
-//     if (page <= 0 || pageSize <= 0 || minutesAgo < 0) {
-//         return Response.status(Response.Status.BAD_REQUEST)
-//                 .entity("Invalid page, pageSize, or minutesAgo parameters.")
-//                 .build();
-//     }
-
-//     List<LogDTO> logs = logQueryHandler.searchlogPaged(logQuery, page, pageSize, minutesAgo);
-
-//     if (minutesAgo > 0) {
-//         Date cutoffDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(minutesAgo));
-//         logs = logs.stream()
-//                 .filter(log -> {
-//                     Date createdTime = log.getCreatedTime();
-//                     return createdTime != null && createdTime.after(cutoffDate);
-//                 })
-//                 .collect(Collectors.toList());
-//     }
-
-//     int startIndex = (page - 1) * pageSize;
-//     int endIndex = Math.min(startIndex + pageSize, logs.size());
-
-//     if (startIndex >= endIndex || logs.isEmpty()) {
-//         Map<String, Object> emptyResponse = new HashMap<>();
-//         emptyResponse.put("data", Collections.emptyList());
-//         emptyResponse.put("totalCount", 0);
-
-//         try {
-//             ObjectMapper objectMapper = new ObjectMapper();
-//             String responseJson = objectMapper.writeValueAsString(emptyResponse);
-
-//             return Response.ok(responseJson).build();
-//         } catch (Exception e) {
-//             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-//                     .entity("Error converting response to JSON")
-//                     .build();
-//         }
-//     }
-
-//     Map<String, Object> response = new HashMap<>();
-//     response.put("data", logs.subList(startIndex, endIndex));
-//     response.put("totalCount", logs.size());
-
-//     try {
-//         ObjectMapper objectMapper = new ObjectMapper();
-//         String responseJson = objectMapper.writeValueAsString(response);
-
-//         return Response.ok(responseJson).build();
-//     } catch (Exception e) {
-//         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-//                 .entity("Error converting response to JSON")
-//                 .build();
-//     }
-// }
 
 
 
@@ -501,14 +271,14 @@ public Response filterLogs(
             emptyResponse.put("data", Collections.emptyList());
             emptyResponse.put("totalCount", 0);
 
-            return buildResponse(emptyResponse); // Reference to buildResponse method
+            return buildResponse(emptyResponse);
         }
 
         Map<String, Object> response = new HashMap<>();
         response.put("data", logs.subList(startIndex, endIndex));
         response.put("totalCount", logs.size());
 
-        return buildResponse(response); // Reference to buildResponse method
+        return buildResponse(response); 
     } catch (DateTimeParseException e) {
         return Response.status(Response.Status.BAD_REQUEST)
                 .entity("Invalid date format. Please use ISO_LOCAL_DATE format.")
@@ -516,7 +286,7 @@ public Response filterLogs(
     }
 }
 
-// Add the buildResponse method to the LogController class
+
 private Response buildResponse(Map<String, Object> responseData) {
     try {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -573,107 +343,6 @@ private Response buildResponse(Map<String, Object> responseData) {
     }
 
 
-   
-    // @GET
-    // @Path("/searchFunction")
-    // public Response searchLogs(
-    //         @QueryParam("minutesAgo") @DefaultValue("60") int minutesAgo,
-    //         @QueryParam("page") @DefaultValue("1") int page,
-    //         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-    //         @QueryParam("keyword") String keyword) {
-
-    //     try {
-    //         List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
-
-    //         if (minutesAgo > 0) {
-    //             Date cutoffDate = new Date(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(minutesAgo));
-    //             logList = logList.stream()
-    //                     .filter(log -> {
-    //                         Date createdTime = log.getCreatedTime();
-    //                         return createdTime != null && createdTime.after(cutoffDate);
-    //                     })
-    //                     .collect(Collectors.toList());
-    //         }
-
-    //         int totalCount = logList.size();
-    //         int startIndex = (page - 1) * pageSize;
-    //         int endIndex = Math.min(startIndex + pageSize, totalCount);
-
-    //         if (startIndex >= endIndex || logList.isEmpty()) {
-    //             Map<String, Object> emptyResponse = new HashMap<>();
-    //             emptyResponse.put("data", Collections.emptyList());
-    //             emptyResponse.put("totalCount", 0);
-
-    //             return Response.ok(emptyResponse).build();
-    //         }
-
-    //         List<LogDTO> paginatedLogs = logList.subList(startIndex, endIndex);
-
-    //         Map<String, Object> response = new HashMap<>();
-    //         response.put("data", paginatedLogs);
-    //         response.put("totalCount", totalCount);
-
-    //         ObjectMapper objectMapper = new ObjectMapper();
-    //         String responseJson = objectMapper.writeValueAsString(response);
-
-    //         return Response.ok(responseJson).build();
-    //     } catch (Exception e) {
-    //         return Response
-    //                 .status(Response.Status.INTERNAL_SERVER_ERROR)
-    //                 .entity(e.getMessage())
-    //                 .build();
-    //     }
-    // }
-
-
-// @GET
-// @Path("/searchFunction")
-// public Response searchLogs(
-//         @QueryParam("page") @DefaultValue("1") int page,
-//         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-//         @QueryParam("keyword") String keyword,
-//         @QueryParam("startDate") LocalDate from,
-//         @QueryParam("endDate") LocalDate to) {
-
-//     try {
-//         List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
-
-//                 // Filter logs within the specified date range
-//         if (from != null && to != null) {
-//             logList = logList.stream()
-//                     .filter(log -> isWithinDateRange(log.getCreatedTime(), from.atStartOfDay(), to.plusDays(1).atStartOfDay()))
-//                     .collect(Collectors.toList());
-//         }
-
-//         int totalCount = logList.size();
-//         int startIndex = (page - 1) * pageSize;
-//         int endIndex = Math.min(startIndex + pageSize, totalCount);
-
-//         if (startIndex >= endIndex || logList.isEmpty()) {
-//             Map<String, Object> emptyResponse = new HashMap<>();
-//             emptyResponse.put("data", Collections.emptyList());
-//             emptyResponse.put("totalCount", 0);
-
-//             return Response.ok(emptyResponse).build();
-//         }
-
-//         List<LogDTO> paginatedLogs = logList.subList(startIndex, endIndex);
-
-//         Map<String, Object> response = new HashMap<>();
-//         response.put("data", paginatedLogs);
-//         response.put("totalCount", totalCount);
-
-//         ObjectMapper objectMapper = new ObjectMapper();
-//         String responseJson = objectMapper.writeValueAsString(response);
-
-//         return Response.ok(responseJson).build();
-//     } catch (Exception e) {
-//         return Response
-//                 .status(Response.Status.INTERNAL_SERVER_ERROR)
-//                 .entity(e.getMessage())
-//                 .build();
-//     }
-// }
 
 @GET
 @Path("/searchFunction")
@@ -688,11 +357,9 @@ public Response searchLogs(
     try {
         List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
 
-        // If both startDate and endDate are provided, filter logs within the specified date range
         if (from != null && to != null) {
             logList = filterLogsByDateRange(logList, from, to);
         } else if (minutesAgo > 0) {
-            // If only minutesAgo is provided, filter logs based on the specified minutes
             logList = filterLogsByMinutesAgo(logList, minutesAgo);
         }
 
@@ -726,14 +393,14 @@ public Response searchLogs(
     }
 }
 
-// Helper method to filter logs based on the specified date range
+
 private List<LogDTO> filterLogsByDateRange(List<LogDTO> logs, LocalDate from, LocalDate to) {
     return logs.stream()
             .filter(log -> isWithinDateRange(log.getCreatedTime(), from.atStartOfDay(), to.plusDays(1).atStartOfDay()))
             .collect(Collectors.toList());
 }
 
-// Helper method to filter logs based on the specified minutesAgo
+
 private List<LogDTO> filterLogsByMinutesAgo(List<LogDTO> logs, int minutesAgo) {
     LocalDateTime currentDateTime = LocalDateTime.now();
     LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
