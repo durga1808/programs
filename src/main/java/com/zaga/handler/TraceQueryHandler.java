@@ -893,19 +893,119 @@ public List<TraceDTO> mergeTraces(List<TraceDTO> traces) {
 //   return peakLatency;
 // }
 
-public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to) {
+// public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to) {
 
-Instant fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
-Instant toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+// Instant fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+// Instant toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
 
-List<TraceDTO> traceList = getTraceDataSince(fromInstant, toInstant);
+// List<TraceDTO> traceList = getTraceDataSince(fromInstant, toInstant);
+
+//   Map<String, TraceMetrics> metricsMap = new HashMap<>();
+
+//   for (TraceDTO trace : traceList) {
+//     Date traceCreateTime = trace.getCreatedTime();
+//     System.out.println("Trace Create Time: " + traceCreateTime);
+      
+//       if (traceCreateTime != null && serviceNameList.contains(trace.getServiceName())) {
+//           String serviceName = trace.getServiceName();
+
+//           TraceMetrics metrics = metricsMap.get(serviceName);
+//           if (metrics == null) {
+//               metrics = new TraceMetrics();
+//               metrics.setServiceName(serviceName);
+//               metrics.setApiCallCount(0L);
+//               metrics.setTotalErrorCalls(0L);
+//               metrics.setTotalSuccessCalls(0L);
+//               metrics.setPeakLatency(0L);
+//           }
+//           metrics.setApiCallCount(metrics.getApiCallCount() + 1);
+//           metricsMap.put(serviceName, metrics);
+//       }
+//   }
+//  Instant fromDate = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+// Instant toDate = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+// Map<String, Long> errorCounts = calculateErrorCountsByService(fromDate, toDate);
+// Map<String, Long> successCounts = calculateSuccessCountsByService(fromDate, toDate);
+// Map<String, Long> peakLatency = calculatePeakLatencyCountsByService(fromDate, toDate);
+//   System.out.println("Metrics Map: " + metricsMap);
+//   System.out.println("Error Counts: " + errorCounts);
+//   System.out.println("Success Counts: " + successCounts);
+//   System.out.println("Peak Latency Counts: " + peakLatency);
+
+//   for (Map.Entry<String, Long> entry : errorCounts.entrySet()) {
+//       String serviceName = entry.getKey();
+//       Long errorCount = entry.getValue();
+
+//       // Update the TraceMetrics object in metricsMap
+//       TraceMetrics metrics = metricsMap.get(serviceName);
+//       if (metrics != null) {
+//           metrics.setTotalErrorCalls(errorCount);
+//       }
+//   }
+
+//   for (Map.Entry<String, Long> entry : successCounts.entrySet()) {
+//       String serviceName = entry.getKey();
+//       Long successCount = entry.getValue();
+
+//       // Update the TraceMetrics object in metricsMap
+//       TraceMetrics metrics = metricsMap.get(serviceName);
+//       if (metrics != null) {
+//           metrics.setTotalSuccessCalls(successCount);
+//       }
+//   }
+
+//   for (TraceMetrics metrics : metricsMap.values()) {
+//       metrics.setApiCallCount(metrics.getTotalErrorCalls() + metrics.getTotalSuccessCalls());
+//   }
+
+//   for (Map.Entry<String, Long> entry : peakLatency.entrySet()) {
+//       String serviceName = entry.getKey();
+//       Long peakLatencyCount = entry.getValue();
+
+//       // Update the TraceMetrics object in metricsMap with peak latency count
+//       TraceMetrics metrics = metricsMap.get(serviceName);
+//       if (metrics != null) {
+//           metrics.setPeakLatency(peakLatencyCount);
+//       }
+//   }
+
+//   return new ArrayList<>(metricsMap.values());
+// }
+
+
+// private List<TraceDTO> getTraceDataSince(Instant from, Instant to) {
+//   // Update the query to filter by the custom date range
+//   return TraceDTO.find("createdTime >= ?1 && createdTime < ?2", from, to).list();
+// }
+
+
+public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
+  Instant fromInstant;
+  Instant toInstant;
+
+  if (from != null && to != null) {
+      fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+      toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  } else if (minutesAgo > 0) {
+      Instant currentInstant = Instant.now();
+      Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+      fromInstant = minutesAgoInstant;
+      toInstant = currentInstant;
+  } else {
+      // Use the current date for both from and to
+      fromInstant = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+      toInstant = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  }
+
+  List<TraceDTO> traceList = getTraceDataSince(from, to, minutesAgo);
 
   Map<String, TraceMetrics> metricsMap = new HashMap<>();
 
   for (TraceDTO trace : traceList) {
-    Date traceCreateTime = trace.getCreatedTime();
-    System.out.println("Trace Create Time: " + traceCreateTime);
-      
+      Date traceCreateTime = trace.getCreatedTime();
+      System.out.println("Trace Create Time: " + traceCreateTime);
+
       if (traceCreateTime != null && serviceNameList.contains(trace.getServiceName())) {
           String serviceName = trace.getServiceName();
 
@@ -922,12 +1022,14 @@ List<TraceDTO> traceList = getTraceDataSince(fromInstant, toInstant);
           metricsMap.put(serviceName, metrics);
       }
   }
- Instant fromDate = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
-Instant toDate = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
 
-Map<String, Long> errorCounts = calculateErrorCountsByService(fromDate, toDate);
-Map<String, Long> successCounts = calculateSuccessCountsByService(fromDate, toDate);
-Map<String, Long> peakLatency = calculatePeakLatencyCountsByService(fromDate, toDate);
+  Instant fromDate = fromInstant.atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay(ZoneId.systemDefault()).toInstant();
+  Instant toDate = toInstant.atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+  Map<String, Long> errorCounts = calculateErrorCountsByService(fromDate, toDate);
+  Map<String, Long> successCounts = calculateSuccessCountsByService(fromDate, toDate);
+  Map<String, Long> peakLatency = calculatePeakLatencyCountsByService(fromDate, toDate);
+
   System.out.println("Metrics Map: " + metricsMap);
   System.out.println("Error Counts: " + errorCounts);
   System.out.println("Success Counts: " + successCounts);
@@ -974,10 +1076,30 @@ Map<String, Long> peakLatency = calculatePeakLatencyCountsByService(fromDate, to
 }
 
 
-private List<TraceDTO> getTraceDataSince(Instant from, Instant to) {
-  // Update the query to filter by the custom date range
-  return TraceDTO.find("createdTime >= ?1 && createdTime < ?2", from, to).list();
+
+
+private List<TraceDTO> getTraceDataSince(LocalDate from, LocalDate to, int minutesAgo) {
+  Instant fromInstant;
+  Instant toInstant;
+
+  if (from != null && to != null) {
+      fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+      toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  } else if (minutesAgo > 0) {
+      Instant currentInstant = Instant.now();
+      Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+      fromInstant = minutesAgoInstant;
+      toInstant = currentInstant;
+  } else {
+      // Use the current date for both from and to
+      fromInstant = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+      toInstant = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  }
+
+  return TraceDTO.find("createdTime >= ?1 && createdTime < ?2", fromInstant, toInstant).list();
 }
+
+
 
 private Map<String, Long> calculateErrorCountsByService(Instant from, Instant to) {
   MongoCollection<Document> traceCollection = mongoClient

@@ -217,8 +217,9 @@ public Response findErroredDataForLastTwo(
     public List<TraceMetrics> getTraceMetricCount(
             @QueryParam("serviceNameList") List<String> serviceNames,
             @QueryParam("from") LocalDate from,
-            @QueryParam("to") LocalDate to){
-        return traceQueryHandler.getAllTraceMetricCount(serviceNames,from,to);
+            @QueryParam("to") LocalDate to,
+            @QueryParam("minutesAgo") int minutesAgo){
+        return traceQueryHandler.getAllTraceMetricCount(serviceNames,from,to,minutesAgo);
     }
 
   
