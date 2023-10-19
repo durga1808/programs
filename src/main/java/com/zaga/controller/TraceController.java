@@ -21,6 +21,8 @@ import jakarta.ws.rs.core.Response;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -290,13 +292,16 @@ public Response sortOrderTrace(
     }
 
     if (fromDate != null && toDate != null) {
-        // Case 1: Both fromDate and toDate are provided
+        // Case 1: Both fromDate and toDate are provided, creating a custom date filter.
         traces = filterTracesByDateRange(traces, fromDate, toDate);
     } else if (minutesAgo != null && minutesAgo > 0) {
-        // Case 2: Only minutesAgo is provided
+        // Case 2: Only minutesAgo is provided, calculating a time filter based on the current date and time ago.
         traces = filterTracesByMinutesAgo(traces, minutesAgo);
+    } else if (fromDate != null) {
+        // Case 3: Only from is provided, creating a custom date filter or using the current date for time filtering.
+        // Add your logic here based on your requirements.
     } else {
-        // Case 3: No valid date range or minutesAgo is provided
+        // Case 4: No valid date range or minutesAgo is provided.
         return Response.status(Response.Status.BAD_REQUEST)
                 .entity("Either fromDate and toDate or minutesAgo must be provided.")
                 .build();
@@ -340,29 +345,37 @@ public Response sortOrderTrace(
                 .build();
     }
 }
+private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
+    Instant currentInstant = Instant.now();
+    Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+    LocalDateTime fromDateTime = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
+    LocalDateTime toDateTime = LocalDateTime.now();
+
+    return filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
+}
 
 private List<TraceDTO> filterTracesByDateRange(List<TraceDTO> traces, LocalDate fromDate, LocalDate toDate) {
+    LocalDateTime fromDateTime = fromDate.atStartOfDay();
+    LocalDateTime toDateTime = toDate.atTime(LocalTime.MAX);
+
+    return filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
+}
+
+private List<TraceDTO> filterTracesByDateTimeRange(List<TraceDTO> traces, LocalDateTime fromDateTime, LocalDateTime toDateTime) {
     return traces.stream()
             .filter(trace -> {
                 Date createdTime = trace.getCreatedTime();
                 if (createdTime != null) {
-                    LocalDate createdDate = createdTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-                    return !createdDate.isBefore(fromDate) && !createdDate.isAfter(toDate);
+                    LocalDateTime traceDateTime = createdTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+                    return !traceDateTime.isBefore(fromDateTime) && !traceDateTime.isAfter(toDateTime);
                 }
                 return false; 
             })
             .collect(Collectors.toList());
 }
 
-private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
-    Instant currentInstant = Instant.now();
-    Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-    
-    LocalDate fromDate = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDate();
-    LocalDate toDate = LocalDate.now().plusDays(1);
 
-    return filterTracesByDateRange(traces, fromDate, toDate);
-}
 
 
 
