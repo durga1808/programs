@@ -140,12 +140,12 @@ public Response getAllDataByServiceName(
 @Path("/LogSummaryChartDataCount")
 @Produces(MediaType.APPLICATION_JSON)
 public List<LogMetrics> getLogMetricsCount(
-    @QueryParam("from") LocalDate from,
-    @QueryParam("to") LocalDate to,
+    @QueryParam("startDate") LocalDate endDate,
+    @QueryParam("endDate") LocalDate startDate,
     @QueryParam("serviceNameList") List<String> serviceNameList,
     @QueryParam("minutesAgo") int minutesAgo
 ) {
-    return logQueryHandler.getLogMetricCount(serviceNameList, from, to, minutesAgo);
+    return logQueryHandler.getLogMetricCount(serviceNameList, endDate, startDate, minutesAgo);
 }
 
 
