@@ -285,9 +285,7 @@ public long countQueryTraces(TraceQuery query, LocalDate from, LocalDate to, int
 
   //Count calculation for pagination
   public long countData() {
-    System.out.println(
-      "TraceQueryHandler.countData()" + traceQueryRepo.count()
-    );
+    System.out.println("TraceQueryHandler.countData()" + traceQueryRepo.count());
     return traceQueryRepo.count();
   }
 
@@ -499,7 +497,7 @@ public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, L
 
   for (TraceDTO trace : traceList) {
       Date traceCreateTime = trace.getCreatedTime();
-      System.out.println("Trace Create Time: " + traceCreateTime);
+      //System.out.println("Trace Create Time: " + traceCreateTime);
 
       if (traceCreateTime != null && serviceNameList.contains(trace.getServiceName())) {
           String serviceName = trace.getServiceName();
