@@ -225,12 +225,19 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int page, in
 
   // getTrace by multiple queries like serviceName, method, duration and statuscode from TraceDTO entity
   public List<TraceDTO> searchTracesPaged(TraceQuery query, int page, int pageSize, LocalDate from, LocalDate to, int minutesAgo) {
-    System.out.println("from Date --------------"+from);
-    System.out.println("to Date --------------"+to);
-  
-    FindIterable<Document> result = getFilteredResults(query,page,pageSize,from,to,minutesAgo);
-   
-    List<TraceDTO> traceDTOList = new ArrayList<>();
+    System.out.println("from Date --------------" + from);
+    System.out.println("to Date --------------" + to);
+
+    // Swap 'from' and 'to' if 'to' is earlier than 'from'
+    if (from != null && to != null && to.isBefore(from)) {
+        LocalDate temp = from;
+        from = to;
+        to = temp;
+    }
+
+    FindIterable<Document> result = getFilteredResults(query, page, pageSize, from, to, minutesAgo);
+
+    List<TraceDTO> traceDTOList = new ArrayList();
     try (MongoCursor<Document> cursor = result.iterator()) {
         while (cursor.hasNext()) {
             Document document = cursor.next();
@@ -265,14 +272,18 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int page, in
 }
 
 public long countQueryTraces(TraceQuery query, LocalDate from, LocalDate to, int minutesAgo) {
-  FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, from, to, minutesAgo);
-  System.out.println("countQueryTraces: " + result.into(new ArrayList<>()).size());
-  long totalCount = result.into(new ArrayList<>()).size();   
-  return totalCount;
+    // Swap 'from' and 'to' if 'to' is earlier than 'from'
+    if (from != null && to != null && to.isBefore(from)) {
+        LocalDate temp = from;
+        from = to;
+        to = temp;
+    }
+
+    FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, from, to, minutesAgo);
+    System.out.println("countQueryTraces: " + result.into(new ArrayList()).size());
+    long totalCount = result.into(new ArrayList()).size();
+    return totalCount;
 }
-
-
-
 
 
   // pagination data with merge and sorting implementations

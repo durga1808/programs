@@ -288,21 +288,22 @@ public Response sortOrderTrace(
         traces = traceQueryHandler.findAllOrderByDuration(serviceNameList);
     } else {
         return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error', 'peakLatency'.")
+                .entity("Invalid sortOrder parameter. Use 'new', 'old', 'error', 'peakLatency'.")
                 .build();
     }
 
     if (fromDate != null && toDate != null) {
-        // Case 1: Both fromDate and toDate are provided, creating a custom date filter.
+        // Swap 'fromDate' and 'toDate' if 'toDate' is earlier than 'fromDate'
+        if (toDate.isBefore(fromDate)) {
+            LocalDate temp = fromDate;
+            fromDate = toDate;
+            toDate = temp;
+        }
+
         traces = filterTracesByDateRange(traces, fromDate, toDate);
     } else if (minutesAgo != null && minutesAgo > 0) {
-        // Case 2: Only minutesAgo is provided, calculating a time filter based on the current date and time ago.
         traces = filterTracesByMinutesAgo(traces, minutesAgo);
-    } else if (fromDate != null) {
-        // Case 3: Only from is provided, creating a custom date filter or using the current date for time filtering.
-        // Add your logic here based on your requirements.
     } else {
-        // Case 4: No valid date range or minutesAgo is provided.
         return Response.status(Response.Status.BAD_REQUEST)
                 .entity("Either fromDate and toDate or minutesAgo must be provided.")
                 .build();
@@ -346,6 +347,7 @@ public Response sortOrderTrace(
                 .build();
     }
 }
+
 private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
     Instant currentInstant = Instant.now();
     Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
@@ -375,8 +377,6 @@ private List<TraceDTO> filterTracesByDateTimeRange(List<TraceDTO> traces, LocalD
             })
             .collect(Collectors.toList());
 }
-
-
 
 
 
