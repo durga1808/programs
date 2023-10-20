@@ -184,9 +184,19 @@ public Response sortOrderTrace(
                     .build();
         }
 
+        // Rearrange 'from' and 'to' if necessary
+        if (from != null && to != null && to.isBefore(from)) {
+            LocalDate temp = from;
+            from = to;
+            to = temp;
+        }
+
+        final LocalDate fromCopy = from; // Create a final copy of 'from'
+        final LocalDate toCopy = to;     // Create a final copy of 'to'
+
         // Filter logs within the specified date range or based on minutes ago
         logs = logs.stream()
-                .filter(log -> isWithinDateRange(log.getCreatedTime(), from, to, minutesAgo))
+                .filter(log -> isWithinDateRange(log.getCreatedTime(), fromCopy, toCopy, minutesAgo))
                 .collect(Collectors.toList());
 
         int startIndex = (page - 1) * pageSize;
@@ -215,7 +225,6 @@ public Response sortOrderTrace(
     }
 }
 
-
 private boolean isWithinDateRange(Date logTimestamp, LocalDate from, LocalDate to, int minutesAgo) {
     if (from != null && to != null) {
         LocalDateTime fromDateTime = from.atStartOfDay();
@@ -228,7 +237,6 @@ private boolean isWithinDateRange(Date logTimestamp, LocalDate from, LocalDate t
     }
     return true;
 }
-
 
 private boolean isWithinDateRange(Date logTimestamp, LocalDateTime from, LocalDateTime to) {
     LocalDateTime logDateTime = logTimestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
@@ -344,79 +352,79 @@ private Response buildResponse(Map<String, Object> responseData) {
 
 
 
-    @GET
-    @Path("/searchFunction")
-    public Response searchLogs(
-            @QueryParam("page") @DefaultValue("1") int page,
-            @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-            @QueryParam("keyword") String keyword,
-            @QueryParam("startDate") LocalDate from,
-            @QueryParam("endDate") LocalDate to,
-            @QueryParam("minutesAgo") int minutesAgo) {
-    
-        try {
-            List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
-    
-            if (from != null && to != null) {
-                // Swap 'from' and 'to' if 'to' is earlier than 'from'
-                if (to.isBefore(from)) {
-                    LocalDate temp = from;
-                    from = to;
-                    to = temp;
-                }
-    
-                logList = filterLogsByDateRange(logList, from, to);
-            } else if (minutesAgo > 0) {
-                logList = filterLogsByMinutesAgo(logList, minutesAgo);
+@GET
+@Path("/searchFunction")
+public Response searchLogs(
+        @QueryParam("page") @DefaultValue("1") int page,
+        @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+        @QueryParam("keyword") String keyword,
+        @QueryParam("startDate") LocalDate from,
+        @QueryParam("endDate") LocalDate to,
+        @QueryParam("minutesAgo") int minutesAgo) {
+
+    try {
+        List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
+
+        if (from != null && to != null) {
+            // Swap 'from' and 'to' if 'to' is earlier than 'from'
+            if (to.isBefore(from)) {
+                LocalDate temp = from;
+                from = to;
+                to = temp;
             }
-    
-            int totalCount = logList.size();
-            int startIndex = (page - 1) * pageSize;
-            int endIndex = Math.min(startIndex + pageSize, totalCount);
-    
-            if (startIndex >= endIndex || logList.isEmpty()) {
-                Map<String, Object> emptyResponse = new HashMap<>();
-                emptyResponse.put("data", Collections.emptyList());
-                emptyResponse.put("totalCount", 0);
-    
-                return Response.ok(emptyResponse).build();
-            }
-    
-            List<LogDTO> paginatedLogs = logList.subList(startIndex, endIndex);
-    
-            Map<String, Object> response = new HashMap<>();
-            response.put("data", paginatedLogs);
-            response.put("totalCount", totalCount);
-    
-            ObjectMapper objectMapper = new ObjectMapper();
-            String responseJson = objectMapper.writeValueAsString(response);
-    
-            return Response.ok(responseJson).build();
-        } catch (Exception e) {
-            return Response
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(e.getMessage())
-                    .build();
+
+            logList = filterLogsByDateRange(logList, from, to);
+        } else if (minutesAgo > 0) {
+            logList = filterLogsByMinutesAgo(logList, minutesAgo);
         }
+
+        int totalCount = logList.size();
+        int startIndex = (page - 1) * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, totalCount);
+
+        if (startIndex >= endIndex || logList.isEmpty()) {
+            Map<String, Object> emptyResponse = new HashMap<>();
+            emptyResponse.put("data", Collections.emptyList());
+            emptyResponse.put("totalCount", 0);
+
+            return Response.ok(emptyResponse).build();
+        }
+
+        List<LogDTO> paginatedLogs = logList.subList(startIndex, endIndex);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", paginatedLogs);
+        response.put("totalCount", totalCount);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(response);
+
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        return Response
+                .status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(e.getMessage())
+                .build();
     }
-    
-    private List<LogDTO> filterLogsByDateRange(List<LogDTO> logs, LocalDate from, LocalDate to) {
-        LocalDateTime fromDateTime = from.atStartOfDay();
-        LocalDateTime toDateTime = to.plusDays(1).atStartOfDay();
-    
-        return logs.stream()
-                .filter(log -> isWithinDateRange(log.getCreatedTime(), fromDateTime, toDateTime))
-                .collect(Collectors.toList());
-    }
-    
-    private List<LogDTO> filterLogsByMinutesAgo(List<LogDTO> logs, int minutesAgo) {
-        LocalDateTime currentDateTime = LocalDateTime.now();
-        LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
-    
-        return logs.stream()
-                .filter(log -> isWithinDateRange(log.getCreatedTime(), fromDateTime, currentDateTime))
-                .collect(Collectors.toList());
-    }
-    
+}
+
+private List<LogDTO> filterLogsByDateRange(List<LogDTO> logs, LocalDate from, LocalDate to) {
+    LocalDateTime fromDateTime = from.atStartOfDay();
+    LocalDateTime toDateTime = to.plusDays(1).atStartOfDay();
+
+    return logs.stream()
+            .filter(log -> isWithinDateRange(log.getCreatedTime(), fromDateTime, toDateTime))
+            .collect(Collectors.toList());
+}
+
+private List<LogDTO> filterLogsByMinutesAgo(List<LogDTO> logs, int minutesAgo) {
+    LocalDateTime currentDateTime = LocalDateTime.now();
+    LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
+
+    return logs.stream()
+            .filter(log -> isWithinDateRange(log.getCreatedTime(), fromDateTime, currentDateTime))
+            .collect(Collectors.toList());
+}
+
 
 }
