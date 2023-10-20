@@ -186,8 +186,15 @@ public List<LogMetrics> getLogMetricCount(List<String> serviceNameList, LocalDat
 
     if (from != null && to != null) {
         // If both from and to are provided, consider the date range
-        fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant startOfFrom = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant startOfTo = to.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+        // Ensure that fromInstant is earlier than toInstant
+        fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+        toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+
+        // Adjust toInstant to include the entire 'to' day
+        toInstant = toInstant.plus(1, ChronoUnit.DAYS);
     } else if (minutesAgo > 0) {
         // If minutesAgo is provided, calculate the time range based on minutesAgo
         toInstant = Instant.now();
@@ -223,7 +230,6 @@ public List<LogMetrics> getLogMetricCount(List<String> serviceNameList, LocalDat
 
     return new ArrayList<>(metricsMap.values());
 }
-
 
 
 
