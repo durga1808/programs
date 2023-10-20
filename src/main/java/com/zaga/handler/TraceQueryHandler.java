@@ -476,40 +476,37 @@ public List<TraceDTO> mergeTraces(List<TraceDTO> traces) {
 
 
 public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
-  Instant fromInstant;
-  Instant toInstant;
+  Instant fromInstant = null;
+  Instant toInstant = null;
 
-  if (from != null) {
-      fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
-      if (to != null) {
-          toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-      } else if (minutesAgo > 0) {
-          toInstant = Instant.now();
-          fromInstant = toInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-      } else {
-          throw new IllegalArgumentException("Either 'to' date or 'minutesAgo' must be provided when 'from' is provided");
-      }
-  } else if (to != null) {
-      toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-      if (minutesAgo > 0) {
-          fromInstant = toInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-      } else {
-          throw new IllegalArgumentException("Either 'from' date or 'minutesAgo' must be provided");
-      }
-  } else if (minutesAgo > 0) {
+  if (minutesAgo > 0) {
+      // Calculate the 'from' and 'to' based on 'minutesAgo'
       toInstant = Instant.now();
       fromInstant = toInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+  } else if (from != null && to != null) {
+      if (to.isBefore(from)) {
+          // Rearrange 'from' and 'to' if 'to' is earlier than 'from'
+          LocalDate temp = from;
+          from = to;
+          to = temp;
+      }
+      fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+      toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  } else if (from != null) {
+      // Handle the case when 'from' is provided, but 'to' is not
+      throw new IllegalArgumentException("Either 'to' date or 'minutesAgo' must be provided when 'from' is provided");
+  } else if (to != null) {
+      // Handle the case when 'to' is provided, but 'from' is not
+      throw new IllegalArgumentException("Either 'from' date or 'minutesAgo' must be provided");
   } else {
+      // Handle the case when neither date range nor minutesAgo is provided
       throw new IllegalArgumentException("Either 'from' date or 'to' date or 'minutesAgo' must be provided");
   }
-
   List<TraceDTO> traceList = getTraceDataSince(fromInstant, toInstant);
   Map<String, TraceMetrics> metricsMap = new HashMap<>();
 
   for (TraceDTO trace : traceList) {
       Date traceCreateTime = trace.getCreatedTime();
-      //System.out.println("Trace Create Time: " + traceCreateTime);
-
       if (traceCreateTime != null && serviceNameList.contains(trace.getServiceName())) {
           String serviceName = trace.getServiceName();
           TraceMetrics metrics = metricsMap.get(serviceName);
@@ -570,7 +567,6 @@ public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, L
 
   return new ArrayList<>(metricsMap.values());
 }
-
 
 private List<TraceDTO> getTraceDataSince(Instant from, Instant to) {
   // Update the query to filter by the custom date range

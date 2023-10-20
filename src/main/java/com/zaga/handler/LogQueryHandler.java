@@ -232,8 +232,6 @@ public List<LogMetrics> getLogMetricCount(List<String> serviceNameList, LocalDat
 
 
 
-
-
 private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
     for (ScopeLogs scopeLogs : logDTO.getScopeLogs()) {
         for (LogRecord logRecord : scopeLogs.getLogRecords()) {

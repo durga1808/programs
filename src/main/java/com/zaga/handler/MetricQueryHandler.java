@@ -32,45 +32,51 @@ public class MetricQueryHandler {
         return metricQueryRepo.listAll();
     }
 
-public List<MetricDTO> getMetricData(LocalDate from, LocalDate to, String serviceName, int minutesAgo) {
-    Bson timeFilter;
-
-    if (from != null && to != null) {
-        timeFilter = createCustomDateFilter(from, to);
-    } else if (minutesAgo > 0) {
-        LocalDate currentDate = LocalDate.now();
-        LocalDateTime fromDateTime = currentDate.atStartOfDay().minusMinutes(minutesAgo);
-        LocalDateTime toDateTime = currentDate.atStartOfDay();
-        timeFilter = Filters.and(
+    public List<MetricDTO> getMetricData(LocalDate from, LocalDate to, String serviceName, int minutesAgo) {
+        Bson timeFilter;
+    
+        // Rearrange 'from' and 'to' if 'to' is earlier than 'from'
+        if (from != null && to != null && to.isBefore(from)) {
+            LocalDate temp = from;
+            from = to;
+            to = temp;
+        }
+    
+        if (from != null && to != null) {
+            timeFilter = createCustomDateFilter(from, to);
+        } else if (minutesAgo > 0) {
+            LocalDate currentDate = LocalDate.now();
+            LocalDateTime fromDateTime = currentDate.atStartOfDay().minusMinutes(minutesAgo);
+            LocalDateTime toDateTime = currentDate.atStartOfDay();
+            timeFilter = Filters.and(
                 Filters.gte("date", fromDateTime),
                 Filters.lt("date", toDateTime)
-        );
-    } else {
-        // Handle the case when neither date range nor minutesAgo is provided
-        throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-    }
-
-    Bson serviceNameFilter = Filters.eq("serviceName", serviceName);
-
-    Bson finalFilter = Filters.and(timeFilter, serviceNameFilter);
-
-    MongoCollection<Document> collection = mongoClient
+            );
+        } else {
+            // Handle the case when neither date range nor minutesAgo is provided
+            throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+        }
+    
+        Bson serviceNameFilter = Filters.eq("serviceName", serviceName);
+        Bson finalFilter = Filters.and(timeFilter, serviceNameFilter);
+    
+        MongoCollection<Document> collection = mongoClient
             .getDatabase("OtelMetric")
             .getCollection("MetricDTO");
-
-    List<MetricDTO> filteredResults = new ArrayList<>();
-
-    try (MongoCursor<Document> cursor = collection.find(finalFilter).iterator()) {
-        while (cursor.hasNext()) {
-            Document document = cursor.next();
-            MetricDTO metricDTO = convertDocumentToMetricDTO(document);
-            filteredResults.add(metricDTO);
+    
+        List<MetricDTO> filteredResults = new ArrayList<>();
+    
+        try (MongoCursor<Document> cursor = collection.find(finalFilter).iterator()) {
+            while (cursor.hasNext()) {
+                Document document = cursor.next();
+                MetricDTO metricDTO = convertDocumentToMetricDTO(document);
+                filteredResults.add(metricDTO);
+            }
         }
+    
+        return filteredResults;
     }
-
-    return filteredResults;
-}
-
+    
 private MetricDTO convertDocumentToMetricDTO(Document document) {
 
     MetricDTO metricDTO = new MetricDTO();
