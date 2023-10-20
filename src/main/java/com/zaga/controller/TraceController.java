@@ -193,6 +193,7 @@ public Response findErroredDataForLastTwo(
             @QueryParam("from") LocalDate from,
             @QueryParam("to") LocalDate to,
             @QueryParam("minutesAgo") int minutesAgo){
+                System.out.println("----------minutesAgo--------------------"+minutesAgo);
         return traceQueryHandler.getAllTraceMetricCount(serviceNames,from,to,minutesAgo);
     }
 
