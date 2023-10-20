@@ -88,12 +88,16 @@ public class LogQueryHandler {
     
         List<LogDTO> logList = logQueryRepo.listAll();
     
-        // Check if from and to are provided
         if (from != null && to != null) {
-            // Use the provided date range
+            // Swap 'from' and 'to' if 'to' is earlier than 'from'
+            if (to.isBefore(from)) {
+                LocalDate temp = from;
+                from = to;
+                to = temp;
+            }
+    
             logList = filterLogsByDateRange(logList, from.atStartOfDay(), to.plusDays(1).atStartOfDay());
         } else if (minutesAgo > 0) {
-            // Use current date and minutes ago
             LocalDateTime currentDateTime = LocalDateTime.now();
             LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
             logList = filterLogsByDateRange(logList, fromDateTime, currentDateTime);
@@ -104,7 +108,6 @@ public class LogQueryHandler {
                         (severityTexts == null || severityTexts.isEmpty() || severityTexts.contains(logDTO.getSeverityText())))
                 .collect(Collectors.toList());
     
-        // Sort the list in descending order based on createdTime
         filteredAndSortedLogs.sort(Comparator.comparing(LogDTO::getCreatedTime).reversed());
     
         return filteredAndSortedLogs;
@@ -123,10 +126,6 @@ public class LogQueryHandler {
                 (logDateTime.isEqual(to) || logDateTime.isBefore(to));
     }
     
-    
-    
-    
-   
     
 
 
