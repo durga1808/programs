@@ -199,17 +199,6 @@ public Response findErroredDataForLastTwo(
 
   
   
-//   @GET
-//     @Path("/tracesummery")
-//      public List<TraceMetrics> getTraceCount(   @QueryParam("serviceNameList") List<String> serviceNames, 
-//          @QueryParam("from") LocalDate from,
-//          @QueryParam("to") LocalDate to,
-//          @QueryParam("minutesAgo") int minutesAgo
-//         )  {
-//                 return traceQueryHandler.getTraceCount(serviceNames,from,to,minutesAgo);
-//             }
-
-
 //get data by traceId and also have same traceId then merge it as a one
 @GET
 @Path("/findByTraceId")
