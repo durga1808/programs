@@ -23,12 +23,9 @@ import io.quarkus.panache.common.Page;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,6 +33,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
@@ -769,36 +767,165 @@ public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, L
   return new ArrayList<>(metricsMap.values());
 }
 
-private void calculateTraces(TraceDTO traceDTO, TraceMetrics metrics) {
-  if (traceDTO == null) {
-     //System.out.println("traceDTO is null in calculateTraces method");
-    return;
-  }
 
-  if (traceDTO.getStatusCode() != null) {
-    if (traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599) {
-      metrics.setTotalErrorCalls(metrics.getTotalErrorCalls() + 1);
-    } else if (traceDTO.getStatusCode() >= 200 && traceDTO.getStatusCode() <= 299) {
-      metrics.setTotalSuccessCalls(metrics.getTotalSuccessCalls() + 1);
+private void updateMetrics(Map<String, TraceMetrics> metricsMap, Map<String, Long> errorCounts, Map<String, Long> successCounts, Map<String, Long> peakLatency) {
+    updateMetricsField(metricsMap, errorCounts, TraceMetrics::setTotalErrorCalls);
+    updateMetricsField(metricsMap, successCounts, TraceMetrics::setTotalSuccessCalls);
+
+    for (TraceMetrics metrics : metricsMap.values()) {
+        metrics.setApiCallCount(metrics.getTotalErrorCalls() + metrics.getTotalSuccessCalls());
     }
-  }
 
-  //System.out.println("Before: metrics=" + metrics + ", apiCallCount=" + metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
-
-  if (metrics.getApiCallCount() == null) {
-     //System.out.println("apiCallCount is unexpectedly null in calculateTraces method");
-    return;
-  }
-
-  metrics.setApiCallCount(metrics.getTotalErrorCalls() + metrics.getTotalSuccessCalls());
-
-  //System.out.println("After: metrics=" + metrics + ", apiCallCount=" + metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
-
-  if (traceDTO.getDuration() != null && traceDTO.getDuration() > 500) {
-    metrics.setPeakLatency(metrics.getPeakLatency() + 1);
-  } else {
-    //System.out.println("statusCode is unexpectedly null in calculateTraces method");
-  }
+    updateMetricsField(metricsMap, peakLatency, TraceMetrics::setPeakLatency);
 }
 
+private void updateMetricsField(Map<String, TraceMetrics> metricsMap, Map<String, Long> values, BiConsumer<TraceMetrics, Long> fieldUpdater) {
+    for (Map.Entry<String, Long> entry : values.entrySet()) {
+        String serviceName = entry.getKey();
+        Long value = entry.getValue();
+        TraceMetrics metrics = metricsMap.get(serviceName);
+        if (metrics != null) {
+            fieldUpdater.accept(metrics, value);
+        }
+    }
+}
+
+
+
+
+private List<TraceDTO> getTraceDataSince(LocalDate from, LocalDate to, int minutesAgo) {
+  System.out.println("-------------minutesAgo----------------"+minutesAgo);
+  Instant fromInstant;
+  Instant toInstant;
+
+  if (from != null && to != null) {
+      fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+      toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  }  else if (minutesAgo > 0) {
+    Instant currentInstant = Instant.now();
+    Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+    fromInstant = minutesAgoInstant;
+    toInstant = currentInstant;
+    System.out.println("minutesAgo block executed.--------------");
+    System.out.println("fromInstant:--------------- " + fromInstant);
+    System.out.println("toInstant:--------------- " + toInstant);
+}
+
+ else {
+      // Use the current date for both from and to
+      fromInstant = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+      toInstant = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  }
+
+  return TraceDTO.find("createdTime >= ?1 && createdTime < ?2", fromInstant, toInstant).list();
+}
+
+
+
+private Map<String, Long> calculateErrorCountsByService(Instant from, Instant to) {
+  MongoCollection<Document> traceCollection = mongoClient
+          .getDatabase("OtelTrace")
+          .getCollection("TraceDTO");
+
+  List<Bson> aggregationStages = new ArrayList<>();
+  aggregationStages.add(
+          Aggregates.match(
+                  Filters.and(
+                          Filters.gte("createdTime", Date.from(from)),
+                          Filters.lt("createdTime", Date.from(to)),
+                          Filters.and(
+                                  Filters.gte("statusCode", 400L),
+                                  Filters.lte("statusCode", 599L)
+                          )
+                  )
+          )
+  );
+  aggregationStages.add(
+          Aggregates.group("$serviceName", Accumulators.sum("errorCount", 1L))
+  );
+
+  AggregateIterable<Document> results = traceCollection.aggregate(
+          aggregationStages
+  );
+
+  Map<String, Long> errorCounts = new HashMap<>();
+  for (Document result : results) {
+      String serviceName = result.getString("_id");
+      Long count = result.getLong("errorCount");
+      errorCounts.put(serviceName, count);
+  }
+
+  return errorCounts;
+}
+
+private Map<String, Long> calculateSuccessCountsByService(Instant from, Instant to) {
+  MongoCollection<Document> traceCollection = mongoClient
+          .getDatabase("OtelTrace")
+          .getCollection("TraceDTO");
+
+  List<Bson> aggregationStages = new ArrayList<>();
+  aggregationStages.add(
+          Aggregates.match(
+                  Filters.and(
+                          Filters.gte("createdTime", Date.from(from)),
+                          Filters.lt("createdTime", Date.from(to)),
+                          Filters.and(
+                                  Filters.gte("statusCode", 200L),
+                                  Filters.lte("statusCode", 299L)
+                          )
+                  )
+          )
+  );
+  aggregationStages.add(
+          Aggregates.group("$serviceName", Accumulators.sum("successCount", 1L))
+  );
+
+  AggregateIterable<Document> results = traceCollection.aggregate(
+          aggregationStages
+  );
+
+  Map<String, Long> successCounts = new HashMap<>();
+  for (Document result : results) {
+      String serviceName = result.getString("_id");
+      Long count = result.getLong("successCount");
+      successCounts.put(serviceName, count);
+  }
+
+  return successCounts;
+}
+
+private Map<String, Long> calculatePeakLatencyCountsByService(Instant from, Instant to) {
+  MongoCollection<Document> traceCollection = mongoClient
+          .getDatabase("OtelTrace")
+          .getCollection("TraceDTO");
+
+  List<Bson> aggregationStages = new ArrayList<>();
+  aggregationStages.add(
+          Aggregates.match(
+                  Filters.and(
+                          Filters.gte("createdTime", Date.from(from)),
+                          Filters.lt("createdTime", Date.from(to)),
+                          Filters.gt("duration", 500L)
+                  )
+          )
+  );
+  aggregationStages.add(
+          Aggregates.group("$serviceName", Accumulators.sum("peakLatency", 1L))
+  );
+
+  AggregateIterable<Document> results = traceCollection.aggregate(
+          aggregationStages
+  );
+
+  Map<String, Long> peakLatency = new HashMap<>();
+  for (Document result : results) {
+      String serviceName = result.getString("_id");
+      Long count = result.getLong("peakLatency");
+      peakLatency.put(serviceName, count);
+  }
+
+  return peakLatency;
+}
+
+l 
 }
