@@ -789,4 +789,39 @@ private void calculateTraces(TraceDTO traceDTO, TraceMetrics metrics) {
   }
 }
 
+// private void calculateTraces(TraceDTO traceDTO, TraceMetrics metrics) {
+//   if (traceDTO == null) {
+//     // Log or print an error message, including details about the null value
+//     System.out.println("traceDTO is null in calculateTraces method");
+//     return;
+//   }
+
+//     if (traceDTO.getStatusCode() != null) {
+//     if (traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599) {
+//       metrics.setTotalErrorCalls(metrics.getTotalErrorCalls() + 1);
+//     } else if (traceDTO.getStatusCode() >= 200 && traceDTO.getStatusCode() <= 299) {
+//       metrics.setTotalSuccessCalls(metrics.getTotalSuccessCalls() + 1);
+//     }
+//   } 
+//   System.out.println("Before: metrics=" + metrics + ", apiCallCount=" + metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
+
+//   if (metrics.getApiCallCount() == null) {
+//     // Log or print an error message if apiCallCount is unexpectedly null
+//     System.out.println("apiCallCount is unexpectedly null in calculateTraces method");
+//     return;
+//   }
+
+//   metrics.setApiCallCount(metrics.getApiCallCount() + 1);
+
+//   System.out.println("After: metrics=" + metrics + ", apiCallCount=" + metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
+
+//   if (traceDTO.getDuration() != null && traceDTO.getDuration() > 500) {
+//     metrics.setPeakLatency(metrics.getPeakLatency() + 1);
+//   }else {
+//     // Log or print a message if statusCode is unexpectedly null
+//     System.out.println("statusCode is unexpectedly null in calculateTraces method");
+//   }
+// }
+
+
 }
