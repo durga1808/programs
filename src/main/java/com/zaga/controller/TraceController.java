@@ -99,6 +99,37 @@ public Response findById(@QueryParam("traceId") String traceId) {
 }
 
   
+// @POST
+// @Path("/TraceQueryFilter")
+// public Response queryTraces(
+//     TraceQuery traceQuery,
+//     @QueryParam("page") @DefaultValue("1") int page,
+//     @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+//     @QueryParam("from") LocalDate from,
+//     @QueryParam("to") LocalDate to,
+//     @QueryParam("minutesAgo") int minutesAgo) {
+//         System.out.println("from controller: " + from);
+//         System.out.println("to controller: " + to);
+
+//         List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery,page, pageSize,from,to,minutesAgo);
+
+//         long totalCount = traceQueryHandler.countQueryTraces(traceQuery,from,to,minutesAgo);
+
+//         Map<String, Object> jsonResponse = new HashMap<>();
+//         jsonResponse.put("totalCount", totalCount);
+//         jsonResponse.put("data", traceList);
+
+//         ObjectMapper objectMapper = new ObjectMapper();
+//         try {
+//             String responseJson = objectMapper.writeValueAsString(jsonResponse);
+//             return Response.ok(responseJson).build();
+//         } catch (JsonProcessingException e) {
+//              e.printStackTrace();
+//         }
+
+//         return Response.ok(traceList).build();
+//     }
+
 @POST
 @Path("/TraceQueryFilter")
 public Response queryTraces(
@@ -107,13 +138,30 @@ public Response queryTraces(
     @QueryParam("pageSize") @DefaultValue("10") int pageSize,
     @QueryParam("from") LocalDate from,
     @QueryParam("to") LocalDate to,
-    @QueryParam("minutesAgo") int minutesAgo) {
+    @QueryParam("minutesAgo") int minutesAgo,
+    @QueryParam("sortOrder") String sortOrder) {
         System.out.println("from controller: " + from);
         System.out.println("to controller: " + to);
 
-        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery,page, pageSize,from,to,minutesAgo);
+        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery, page, pageSize, from, to, minutesAgo);
 
-        long totalCount = traceQueryHandler.countQueryTraces(traceQuery,from,to,minutesAgo);
+        if (sortOrder != null) {
+            if ("new".equalsIgnoreCase(sortOrder)) {
+                traceList = traceQueryHandler.getTraceFilterOrderByCreatedTimeDesc(traceList);
+            } else if ("old".equalsIgnoreCase(sortOrder)) {
+                traceList = traceQueryHandler.getTraceFilterAsc(traceList);
+            } else if ("error".equalsIgnoreCase(sortOrder)) {
+                traceList = traceQueryHandler.getTraceFilterOrderByErrorFirst(traceList);
+            } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
+                traceList = traceQueryHandler.getTraceFilterOrderByDuration(traceList);
+            } else {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Invalid sortOrder parameter. Use 'new', 'old', 'error', 'peakLatency'.")
+                    .build();
+            }
+        }
+
+        long totalCount = traceQueryHandler.countQueryTraces(traceQuery, from, to, minutesAgo);
 
         Map<String, Object> jsonResponse = new HashMap<>();
         jsonResponse.put("totalCount", totalCount);
@@ -129,7 +177,6 @@ public Response queryTraces(
 
         return Response.ok(traceList).build();
     }
-
 
 
 

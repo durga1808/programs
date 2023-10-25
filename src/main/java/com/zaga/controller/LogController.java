@@ -260,7 +260,8 @@ public Response filterLogs(
         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
         @QueryParam("startDate") LocalDate from,
         @QueryParam("endDate") LocalDate to,
-        @QueryParam("minutesAgo") int minutesAgo) {
+        @QueryParam("minutesAgo") int minutesAgo,
+        @QueryParam("sortOrder") String sortOrder) {
 
     if (page <= 0 || pageSize <= 0) {
         return Response.status(Response.Status.BAD_REQUEST)
@@ -271,8 +272,24 @@ public Response filterLogs(
     try {
         List<LogDTO> logs = logQueryHandler.searchLogByDate(logQuery, from, to, minutesAgo);
 
+        System.out.println("------------------logs:------------------- " + logs.size());
+         if ("new".equalsIgnoreCase(sortOrder)) {
+            logs = logQueryHandler.getFilterLogsByCreatedTimeDesc(logs);
+        } else if ("old".equalsIgnoreCase(sortOrder)) {
+            logs = logQueryHandler.getFilterLogssAsc(logs);
+        } else if ("error".equalsIgnoreCase(sortOrder)) {
+            logs = logQueryHandler.getFilterErrorLogs(logs);
+        } else {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.")
+                    .build();
+        }
+
+
         int startIndex = (page - 1) * pageSize;
         int endIndex = Math.min(startIndex + pageSize, logs.size());
+
+
 
         if (startIndex >= endIndex || logs.isEmpty()) {
             Map<String, Object> emptyResponse = new HashMap<>();

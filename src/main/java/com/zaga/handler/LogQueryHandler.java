@@ -42,6 +42,8 @@ import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.log.LogQuery;
 import com.zaga.repo.LogQueryRepo;
+
+import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -374,6 +376,31 @@ private LogDTO mapDocumentToLogDTO(Document document) {
 }
 
 
+public List<LogDTO> getFilterLogsByCreatedTimeDesc(List<LogDTO> logs) {
+    System.out.println("------getFilterLogsByCreatedTimeDesc---------"+logs.size());
+    return logs.stream()
+.sorted(Comparator.comparing(LogDTO::getCreatedTime, Comparator.reverseOrder()))
+.collect(Collectors.toList());
+
+}
+
+
+public List<LogDTO> getFilterLogssAsc(List<LogDTO> logs) {
+   return logs.stream().sorted(Comparator.comparing(LogDTO::getCreatedTime)).collect(Collectors.toList());
+}
+
+public List<LogDTO> getFilterErrorLogs(List<LogDTO> logs) {
+        return logs.stream()
+            .sorted(Comparator
+                .comparing((LogDTO log) -> {
+                    String severityText = log.getSeverityText();
+                    return ("ERROR".equals(severityText) || "SEVERE".equals(severityText)) ? 0 : 1;
+                })
+                .thenComparing(LogDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder()))
+            )
+            .collect(Collectors.toList());
+    }
+   
 
 }
 

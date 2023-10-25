@@ -1,17 +1,13 @@
 package com.zaga.handler;
 
-import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.Accumulators;
-import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
-import com.zaga.entity.queryentity.log.LogMetrics;
 import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceMetrics;
@@ -33,7 +29,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
@@ -69,78 +64,6 @@ private Bson createCustomDateFilter(LocalDate from, LocalDate to) {
   );
 }
 
-//filter query for the trace section queryy for UI
-// private FindIterable<Document> getFilteredResults(TraceQuery query, int page, int pageSize, LocalDate from, LocalDate to,int minutesAgo) {
-//     List<Bson> filters = new ArrayList<>();
-
-//   //   if (minutesAgo > 0) {
-//   //     long currentTimeInMillis = System.currentTimeMillis();
-//   //     long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000); 
-//   //     Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
-//   //     filters.add(timeFilter);
-//   // }
- 
-//   if (from != null && to != null) {
-//     Bson timeFilter = createCustomDateFilter(from, to);
-//     filters.add(timeFilter);
-// }
-
-//     if (query.getMethodName() != null && !query.getMethodName().isEmpty()) {
-//         Bson methodNameFilter = Filters.in("methodName", query.getMethodName());
-//         filters.add(methodNameFilter);
-//     }
-
-//     if (query.getServiceName() != null && !query.getServiceName().isEmpty()) {
-//         Bson serviceNameFilter = Filters.in("serviceName", query.getServiceName());
-//         filters.add(serviceNameFilter);
-//     }
-
-//     if (query.getDuration() != null) {
-//         Bson durationFilter = Filters.and(
-//                 Filters.gte("duration", query.getDuration().getMin()),
-//                 Filters.lte("duration", query.getDuration().getMax())
-//         );
-//         filters.add(durationFilter);
-//     }
-
-//     List<Bson> statusCodeFilters = new ArrayList<>();
-//     if (query.getStatusCode() != null && !query.getStatusCode().isEmpty()) {
-//         for (StatusCodeRange statusCodeRange : query.getStatusCode()) {
-//             statusCodeFilters.add(
-//                     Filters.and(
-//                             Filters.gte("statusCode", statusCodeRange.getMin()),
-//                             Filters.lte("statusCode", statusCodeRange.getMax())
-//                     )
-//             );
-//         }
-//     }
-
-//     if (!statusCodeFilters.isEmpty()) {
-//         Bson statusCodeFilter = Filters.or(statusCodeFilters);
-//         filters.add(statusCodeFilter);
-//     }
-
-//     Bson filter = Filters.and(filters);
-
-//     MongoCollection<Document> collection = mongoClient
-//             .getDatabase("OtelTrace")
-//             .getCollection("TraceDTO");
-
-//     Bson projection = Projections.excludeId();
-
-//     System.out.println("Skip: " + (page - 1) * pageSize);
-//     System.out.println("Limit: " + pageSize);
-
-//     Bson sort = Sorts.descending("createdTime");
-
-//     return collection
-//             .find(filter)
-//             .projection(projection)
-//             .sort(sort)
-//             .skip((page - 1) * pageSize)
-//             .limit(pageSize);
-
-// }
 
 private FindIterable<Document> getFilteredResults(TraceQuery query, int page, int pageSize, LocalDate from, LocalDate to, int minutesAgo) {
   List<Bson> filters = new ArrayList<>();
@@ -236,7 +159,7 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int page, in
 
     FindIterable<Document> result = getFilteredResults(query, page, pageSize, from, to, minutesAgo);
 
-    List<TraceDTO> traceDTOList = new ArrayList();
+    List<TraceDTO> traceDTOList = new ArrayList<>();
     try (MongoCursor<Document> cursor = result.iterator()) {
         while (cursor.hasNext()) {
             Document document = cursor.next();
@@ -261,7 +184,8 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int page, in
             traceDTO.setOperationName(document.getString("operationName"));
             traceDTO.setSpanCount(document.getString("spanCount"));
             traceDTO.setCreatedTime(document.getDate("createdTime"));
-            traceDTO.setSpans((List<Spans>) document.get("spans"));
+            List<Spans> spansList = (List<Spans>) document.get("spans");
+            traceDTO.setSpans(spansList);
 
             traceDTOList.add(traceDTO);
         }
@@ -279,8 +203,8 @@ public long countQueryTraces(TraceQuery query, LocalDate from, LocalDate to, int
     }
 
     FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, from, to, minutesAgo);
-    System.out.println("countQueryTraces: " + result.into(new ArrayList()).size());
-    long totalCount = result.into(new ArrayList()).size();
+    System.out.println("countQueryTraces: " + result.into(new ArrayList<>()).size());
+    long totalCount = result.into(new ArrayList<>()).size();
     return totalCount;
 }
 
@@ -415,6 +339,47 @@ public List<TraceDTO> findAllOrderByDuration(List<String> serviceNameList) {
 
 
 
+// filter api sort
+// Sort by created time in descending order
+public List<TraceDTO> getTraceFilterOrderByCreatedTimeDesc(List<TraceDTO> traceList) {
+  return traceList.stream()
+      .sorted(Comparator.comparing(TraceDTO::getCreatedTime, Comparator.reverseOrder()))
+      .collect(Collectors.toList());
+}
+
+// Sort by created time in ascending order
+public List<TraceDTO> getTraceFilterAsc(List<TraceDTO> traceList) {
+  return traceList.stream()
+      .sorted(Comparator.comparing(TraceDTO::getCreatedTime))
+      .collect(Collectors.toList());
+}
+
+// Sort by error first
+public List<TraceDTO> getTraceFilterOrderByErrorFirst(List<TraceDTO> traceList) {
+  return traceList.stream()
+      .sorted(Comparator
+          .comparing((TraceDTO trace) -> {
+              Long statusCode = trace.getStatusCode();
+              return (statusCode != null && statusCode >= 400 && statusCode <= 599) ? 0 : 1;
+          })
+          .thenComparing(TraceDTO::getStatusCode, Comparator.nullsLast(Comparator.reverseOrder()))
+          .thenComparing(TraceDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder()))
+      )
+      .collect(Collectors.toList());
+}
+
+// Sort by duration in descending order
+public List<TraceDTO> getTraceFilterOrderByDuration(List<TraceDTO> traceList) {
+  return traceList.stream()
+      .filter(trace -> trace.getDuration() != null)
+      .sorted(Comparator.comparing(TraceDTO::getDuration, Comparator.reverseOrder()))
+      .collect(Collectors.toList());
+}
+
+
+
+
+
 
 
 // getByTraceId sort the spans and if some traceId Has same value it will merge the value
@@ -473,221 +438,6 @@ public List<TraceDTO> mergeTraces(List<TraceDTO> traces) {
 
 
 
-// public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
-//   List<TraceDTO> traceList = traceQueryRepo.listAll();
-//   Map<String, TraceMetrics> metricsMap = new HashMap<>();
-
-//   Instant fromInstant = null;
-//   Instant toInstant = null;
-
-//   if (from != null && to != null) {
-//     Instant startOfFrom = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
-//     Instant startOfTo = to.atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-//    fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
-//     toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
-
-//     toInstant = toInstant.plus(1, ChronoUnit.DAYS);
-//   } else if (minutesAgo > 0) {
-//     toInstant = Instant.now();
-//     fromInstant = toInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-//   } else {
-//       throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-//   }
-
-//   for (TraceDTO traceDTO : traceList) {
-//     Date traceCreateTime = traceDTO.getCreatedTime();
-//     if (traceCreateTime == null) {
-//      // System.out.println("traceCreateTime is null in getTraceCount method");
-//       continue;
-//     }
-
-//     Instant traceInstant = traceCreateTime.toInstant();
-
-//     if (!serviceNameList.contains(traceDTO.getServiceName()) ||
-//         !traceInstant.isAfter(fromInstant) ||
-//         !traceInstant.isBefore(toInstant)) {
-//         continue;
-//     }
-
-//     String serviceName = traceDTO.getServiceName();
-//     TraceMetrics metrics = metricsMap.get(serviceName);
-
-//     if (metrics == null) {
-//       metrics = new TraceMetrics();
-//       metrics.setServiceName(serviceName);
-//       metrics.setApiCallCount(0L);
-//       metrics.setPeakLatency(0L);
-//       metrics.setTotalErrorCalls(0L);
-//       metrics.setTotalSuccessCalls(0L);
-//       metricsMap.put(serviceName, metrics);
-//     }
-
-//     calculateTraces(traceDTO, metrics);
-//   }
-
-//   return new ArrayList<>(metricsMap.values());
-// }
-
-
-// private void updateMetrics(Map<String, TraceMetrics> metricsMap, Map<String, Long> errorCounts, Map<String, Long> successCounts, Map<String, Long> peakLatency) {
-//     updateMetricsField(metricsMap, errorCounts, TraceMetrics::setTotalErrorCalls);
-//     updateMetricsField(metricsMap, successCounts, TraceMetrics::setTotalSuccessCalls);
-
-//     for (TraceMetrics metrics : metricsMap.values()) {
-//         metrics.setApiCallCount(metrics.getTotalErrorCalls() + metrics.getTotalSuccessCalls());
-//     }
-
-//     updateMetricsField(metricsMap, peakLatency, TraceMetrics::setPeakLatency);
-// }
-
-// private void updateMetricsField(Map<String, TraceMetrics> metricsMap, Map<String, Long> values, BiConsumer<TraceMetrics, Long> fieldUpdater) {
-//     for (Map.Entry<String, Long> entry : values.entrySet()) {
-//         String serviceName = entry.getKey();
-//         Long value = entry.getValue();
-//         TraceMetrics metrics = metricsMap.get(serviceName);
-//         if (metrics != null) {
-//             fieldUpdater.accept(metrics, value);
-//         }
-//     }
-// }
-
-
-
-
-// private List<TraceDTO> getTraceDataSince(LocalDate from, LocalDate to, int minutesAgo) {
-//   System.out.println("-------------minutesAgo----------------"+minutesAgo);
-//   Instant fromInstant;
-//   Instant toInstant;
-
-//   if (from != null && to != null) {
-//       fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
-//       toInstant = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-//   }  else if (minutesAgo > 0) {
-//     Instant currentInstant = Instant.now();
-//     Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-//     fromInstant = minutesAgoInstant;
-//     toInstant = currentInstant;
-//     System.out.println("minutesAgo block executed.--------------");
-//     System.out.println("fromInstant:--------------- " + fromInstant);
-//     System.out.println("toInstant:--------------- " + toInstant);
-// }
-
-//  else {
-//       // Use the current date for both from and to
-//       fromInstant = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
-//       toInstant = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-//   }
-
-//   return TraceDTO.find("createdTime >= ?1 && createdTime < ?2", fromInstant, toInstant).list();
-// }
-
-
-
-// private Map<String, Long> calculateErrorCountsByService(Instant from, Instant to) {
-//   MongoCollection<Document> traceCollection = mongoClient
-//           .getDatabase("OtelTrace")
-//           .getCollection("TraceDTO");
-
-//   List<Bson> aggregationStages = new ArrayList<>();
-//   aggregationStages.add(
-//           Aggregates.match(
-//                   Filters.and(
-//                           Filters.gte("createdTime", Date.from(from)),
-//                           Filters.lt("createdTime", Date.from(to)),
-//                           Filters.and(
-//                                   Filters.gte("statusCode", 400L),
-//                                   Filters.lte("statusCode", 599L)
-//                           )
-//                   )
-//           )
-//   );
-//   aggregationStages.add(
-//           Aggregates.group("$serviceName", Accumulators.sum("errorCount", 1L))
-//   );
-
-//   AggregateIterable<Document> results = traceCollection.aggregate(
-//           aggregationStages
-//   );
-
-//   Map<String, Long> errorCounts = new HashMap<>();
-//   for (Document result : results) {
-//       String serviceName = result.getString("_id");
-//       Long count = result.getLong("errorCount");
-//       errorCounts.put(serviceName, count);
-//   }
-
-//   return errorCounts;
-// }
-
-// private Map<String, Long> calculateSuccessCountsByService(Instant from, Instant to) {
-//   MongoCollection<Document> traceCollection = mongoClient
-//           .getDatabase("OtelTrace")
-//           .getCollection("TraceDTO");
-
-//   List<Bson> aggregationStages = new ArrayList<>();
-//   aggregationStages.add(
-//           Aggregates.match(
-//                   Filters.and(
-//                           Filters.gte("createdTime", Date.from(from)),
-//                           Filters.lt("createdTime", Date.from(to)),
-//                           Filters.and(
-//                                   Filters.gte("statusCode", 200L),
-//                                   Filters.lte("statusCode", 299L)
-//                           )
-//                   )
-//           )
-//   );
-//   aggregationStages.add(
-//           Aggregates.group("$serviceName", Accumulators.sum("successCount", 1L))
-//   );
-
-//   AggregateIterable<Document> results = traceCollection.aggregate(
-//           aggregationStages
-//   );
-
-//   Map<String, Long> successCounts = new HashMap<>();
-//   for (Document result : results) {
-//       String serviceName = result.getString("_id");
-//       Long count = result.getLong("successCount");
-//       successCounts.put(serviceName, count);
-//   }
-
-//   return successCounts;
-// }
-
-// private Map<String, Long> calculatePeakLatencyCountsByService(Instant from, Instant to) {
-//   MongoCollection<Document> traceCollection = mongoClient
-//           .getDatabase("OtelTrace")
-//           .getCollection("TraceDTO");
-
-//   List<Bson> aggregationStages = new ArrayList<>();
-//   aggregationStages.add(
-//           Aggregates.match(
-//                   Filters.and(
-//                           Filters.gte("createdTime", Date.from(from)),
-//                           Filters.lt("createdTime", Date.from(to)),
-//                           Filters.gt("duration", 500L)
-//                   )
-//           )
-//   );
-//   aggregationStages.add(
-//           Aggregates.group("$serviceName", Accumulators.sum("peakLatency", 1L))
-//   );
-
-//   AggregateIterable<Document> results = traceCollection.aggregate(
-//           aggregationStages
-//   );
-
-//   Map<String, Long> peakLatency = new HashMap<>();
-//   for (Document result : results) {
-//       String serviceName = result.getString("_id");
-//       Long count = result.getLong("peakLatency");
-//       peakLatency.put(serviceName, count);
-//   }
-
-//   return peakLatency;
-// }
 
 
 public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
@@ -788,40 +538,5 @@ private void calculateTraces(TraceDTO traceDTO, TraceMetrics metrics) {
     System.out.println("statusCode is unexpectedly null in calculateTraces method");
   }
 }
-
-// private void calculateTraces(TraceDTO traceDTO, TraceMetrics metrics) {
-//   if (traceDTO == null) {
-//     // Log or print an error message, including details about the null value
-//     System.out.println("traceDTO is null in calculateTraces method");
-//     return;
-//   }
-
-//     if (traceDTO.getStatusCode() != null) {
-//     if (traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599) {
-//       metrics.setTotalErrorCalls(metrics.getTotalErrorCalls() + 1);
-//     } else if (traceDTO.getStatusCode() >= 200 && traceDTO.getStatusCode() <= 299) {
-//       metrics.setTotalSuccessCalls(metrics.getTotalSuccessCalls() + 1);
-//     }
-//   } 
-//   System.out.println("Before: metrics=" + metrics + ", apiCallCount=" + metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
-
-//   if (metrics.getApiCallCount() == null) {
-//     // Log or print an error message if apiCallCount is unexpectedly null
-//     System.out.println("apiCallCount is unexpectedly null in calculateTraces method");
-//     return;
-//   }
-
-//   metrics.setApiCallCount(metrics.getApiCallCount() + 1);
-
-//   System.out.println("After: metrics=" + metrics + ", apiCallCount=" + metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
-
-//   if (traceDTO.getDuration() != null && traceDTO.getDuration() > 500) {
-//     metrics.setPeakLatency(metrics.getPeakLatency() + 1);
-//   }else {
-//     // Log or print a message if statusCode is unexpectedly null
-//     System.out.println("statusCode is unexpectedly null in calculateTraces method");
-//   }
-// }
-
 
 }

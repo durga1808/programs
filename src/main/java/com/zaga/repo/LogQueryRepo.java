@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
+import java.util.stream.Collectors;
 
 import com.zaga.entity.queryentity.log.LogDTO;
 
@@ -33,7 +33,7 @@ public class LogQueryRepo implements PanacheMongoRepository<LogDTO> {
     public List<LogDTO> findAllOrderByCreatedTimeAsc(List<String> serviceNameList) {
         return find("serviceName in ?1",Sort.ascending("createdTime"),serviceNameList).list();
     }
-
+    
 
     public List<LogDTO> findByServiceNameAndCreatedTime(String serviceName, Date startDate, Date endDate) {
         Instant startInstant = startDate.toInstant();
