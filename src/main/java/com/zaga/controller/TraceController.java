@@ -393,12 +393,18 @@ public Response sortOrderTrace(
     }
 }
 
+
 private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
+    LocalDate today = LocalDate.now(); // Get the current date
+    LocalDateTime fromDateTime = today.atStartOfDay(); // Start of the current day
+    LocalDateTime toDateTime = LocalDateTime.now();
+
     Instant currentInstant = Instant.now();
     Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
 
-    LocalDateTime fromDateTime = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
-    LocalDateTime toDateTime = LocalDateTime.now();
+    if (minutesAgoInstant.isBefore(fromDateTime.atZone(ZoneId.systemDefault()).toInstant())) {
+        minutesAgoInstant = fromDateTime.atZone(ZoneId.systemDefault()).toInstant();
+    }
 
     return filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
 }

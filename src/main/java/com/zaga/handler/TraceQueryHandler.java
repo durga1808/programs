@@ -72,15 +72,23 @@ private FindIterable<Document> getFilteredResults(TraceQuery query, int page, in
       Bson timeFilter = createCustomDateFilter(from, to);
       filters.add(timeFilter);
   } else if (minutesAgo > 0) {
-      LocalDate currentDate = LocalDate.now();
+    LocalDate currentDate = LocalDate.now();
 
-      if (from != null && from.isEqual(currentDate)) {
-          // If the date is the current date, apply time filter based on minutes ago
-          long currentTimeInMillis = System.currentTimeMillis();
-          long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000);
-          Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
-          filters.add(timeFilter);
-      } else if (from != null) {
+    if (from != null && from.isEqual(currentDate)) {
+        // If the date is the current date, apply time filter based on minutes ago
+        long currentTimeInMillis = System.currentTimeMillis();
+        long timeAgoInMillis = currentTimeInMillis - (minutesAgo * 60 * 1000);
+
+        // Ensure that the time filter doesn't go beyond the current day
+        long startOfDayMillis = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        if (timeAgoInMillis < startOfDayMillis) {
+            timeAgoInMillis = startOfDayMillis;
+        }
+
+        Bson timeFilter = Filters.gte("createdTime", new Date(timeAgoInMillis));
+        filters.add(timeFilter);
+    }
+else if (from != null) {
           // If a specific date is provided, use it for filtering
           Bson timeFilter = createCustomDateFilter(from, from);
           filters.add(timeFilter);
@@ -456,13 +464,24 @@ public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, L
     fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
     toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
 
-    // Adjust toInstant to include the entire 'to' day
     toInstant = toInstant.plus(1, ChronoUnit.DAYS);
   } else if (minutesAgo > 0) {
     // If minutesAgo is provided, calculate the time range based on minutesAgo
-    toInstant = Instant.now();
-    fromInstant = toInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-  } else {
+    Instant currentInstant = Instant.now();
+    Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+    // Calculate the start of the current day
+    Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+    // Ensure that fromInstant is later than the start of the current day
+    if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
+        fromInstant = startOfCurrentDay;
+    } else {
+        fromInstant = minutesAgoInstant;
+    }
+
+    toInstant = currentInstant;
+} else {
     // Handle the case when neither date range nor minutesAgo is provided
     throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
   }
