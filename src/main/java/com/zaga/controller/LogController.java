@@ -1,9 +1,11 @@
 package com.zaga.controller;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -151,6 +153,100 @@ public List<LogMetrics> getLogMetricsCount(
 
 
 
+// @GET
+// @Path("/getallLogdata-sortorder")
+// @Produces(MediaType.APPLICATION_JSON)
+// public Response sortOrderTrace(
+//         @QueryParam("sortOrder") String sortOrder,
+//         @QueryParam("page") int page,
+//         @QueryParam("pageSize") int pageSize,
+//         @QueryParam("startDate") LocalDate from,
+//         @QueryParam("endDate") LocalDate to,
+//         @QueryParam("minutesAgo") int minutesAgo,
+//         @QueryParam("serviceNameList") List<String> serviceNameList) {
+
+//     if (page <= 0 || pageSize <= 0) {
+//         return Response.status(Response.Status.BAD_REQUEST)
+//                 .entity("Invalid page or pageSize parameters.")
+//                 .build();
+//     }
+
+//     try {
+//         List<LogDTO> logs;
+
+//         if ("new".equalsIgnoreCase(sortOrder)) {
+//             logs = logQueryHandler.getAllLogssOrderByCreatedTimeDesc(serviceNameList);
+//         } else if ("old".equalsIgnoreCase(sortOrder)) {
+//             logs = logQueryHandler.getAllLogssAsc(serviceNameList);
+//         } else if ("error".equalsIgnoreCase(sortOrder)) {
+//             logs = logQueryHandler.getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(serviceNameList);
+//         } else {
+//             return Response.status(Response.Status.BAD_REQUEST)
+//                     .entity("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.")
+//                     .build();
+//         }
+
+//         // Rearrange 'from' and 'to' if necessary
+//         if (from != null && to != null && to.isBefore(from)) {
+//             LocalDate temp = from;
+//             from = to;
+//             to = temp;
+//         }
+
+//         final LocalDate fromCopy = from; // Create a final copy of 'from'
+//         final LocalDate toCopy = to;     // Create a final copy of 'to'
+
+//         // Filter logs within the specified date range or based on minutes ago
+//         logs = logs.stream()
+//                 .filter(log -> isWithinDateRange(log.getCreatedTime(), fromCopy, toCopy, minutesAgo))
+//                 .collect(Collectors.toList());
+
+//         int startIndex = (page - 1) * pageSize;
+//         int endIndex = Math.min(startIndex + pageSize, logs.size());
+
+//         if (startIndex >= endIndex || logs.isEmpty()) {
+//             Map<String, Object> emptyResponse = new HashMap<>();
+//             emptyResponse.put("data", Collections.emptyList());
+//             emptyResponse.put("totalCount", 0);
+
+//             return buildResponse(emptyResponse);
+//         }
+
+//         List<LogDTO> paginatedTraces = logs.subList(startIndex, endIndex);
+//         int totalCount = logs.size();
+
+//         Map<String, Object> response = new HashMap<>();
+//         response.put("data", paginatedTraces);
+//         response.put("totalCount", totalCount);
+
+//         return buildResponse(response);
+//     } catch (DateTimeParseException e) {
+//         return Response.status(Response.Status.BAD_REQUEST)
+//                 .entity("Invalid date format. Please use ISO_LOCAL_DATE format.")
+//                 .build();
+//     }
+// }
+
+// private boolean isWithinDateRange(Date logTimestamp, LocalDate from, LocalDate to, int minutesAgo) {
+//     if (from != null && to != null) {
+//         LocalDateTime fromDateTime = from.atStartOfDay();
+//         LocalDateTime toDateTime = to.plusDays(1).atStartOfDay();
+//         return isWithinDateRange(logTimestamp, fromDateTime, toDateTime);
+//     } else if (minutesAgo > 0) {
+//         LocalDateTime currentDateTime = LocalDateTime.now();
+//         LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
+//         return isWithinDateRange(logTimestamp, fromDateTime, currentDateTime);
+//     }
+//     return true;
+// }
+
+// private boolean isWithinDateRange(Date logTimestamp, LocalDateTime from, LocalDateTime to) {
+//     LocalDateTime logDateTime = logTimestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+
+//     return (logDateTime.isEqual(from) || logDateTime.isAfter(from)) &&
+//             (logDateTime.isEqual(to) || logDateTime.isBefore(to));
+// }
+
 @GET
 @Path("/getallLogdata-sortorder")
 @Produces(MediaType.APPLICATION_JSON)
@@ -191,13 +287,49 @@ public Response sortOrderTrace(
             to = temp;
         }
 
-        final LocalDate fromCopy = from; // Create a final copy of 'from'
-        final LocalDate toCopy = to;     // Create a final copy of 'to'
+        // Convert LocalDate to Instant
+        Instant fromInstant = null;
+        Instant toInstant = null;
+
+        if (from != null && to != null) {
+            // If both from and to are provided, consider the date range
+            Instant startOfFrom = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+            Instant startOfTo = to.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+            // Ensure that fromInstant is earlier than toInstant
+            fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+            toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+
+            toInstant = toInstant.plus(1, ChronoUnit.DAYS);
+        } else if (minutesAgo > 0) {
+            // If minutesAgo is provided, calculate the time range based on minutesAgo
+            Instant currentInstant = Instant.now();
+            Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+            // Calculate the start of the current day
+            Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+            // Ensure that fromInstant is later than the start of the current day
+            if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
+                fromInstant = startOfCurrentDay;
+            } else {
+                fromInstant = minutesAgoInstant;
+            }
+
+            toInstant = currentInstant;
+        } else {
+            // Handle the case when neither date range nor minutesAgo is provided
+            throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+        }
 
         // Filter logs within the specified date range or based on minutes ago
-        logs = logs.stream()
-                .filter(log -> isWithinDateRange(log.getCreatedTime(), fromCopy, toCopy, minutesAgo))
-                .collect(Collectors.toList());
+        // Filter logs within the specified date range or based on minutes ago
+Instant finalFromInstant = fromInstant;
+Instant finalToInstant = toInstant;
+logs = logs.stream()
+        .filter(log -> isWithinDateRange(log.getCreatedTime(), finalFromInstant, finalToInstant))
+        .collect(Collectors.toList());
+
 
         int startIndex = (page - 1) * pageSize;
         int endIndex = Math.min(startIndex + pageSize, logs.size());
@@ -225,24 +357,12 @@ public Response sortOrderTrace(
     }
 }
 
-private boolean isWithinDateRange(Date logTimestamp, LocalDate from, LocalDate to, int minutesAgo) {
-    if (from != null && to != null) {
-        LocalDateTime fromDateTime = from.atStartOfDay();
-        LocalDateTime toDateTime = to.plusDays(1).atStartOfDay();
-        return isWithinDateRange(logTimestamp, fromDateTime, toDateTime);
-    } else if (minutesAgo > 0) {
-        LocalDateTime currentDateTime = LocalDateTime.now();
-        LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
-        return isWithinDateRange(logTimestamp, fromDateTime, currentDateTime);
-    }
-    return true;
-}
 
-private boolean isWithinDateRange(Date logTimestamp, LocalDateTime from, LocalDateTime to) {
-    LocalDateTime logDateTime = logTimestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+private boolean isWithinDateRange(Date logTimestamp, Instant from, Instant to) {
+    Instant logInstant = logTimestamp.toInstant();
 
-    return (logDateTime.isEqual(from) || logDateTime.isAfter(from)) &&
-            (logDateTime.isEqual(to) || logDateTime.isBefore(to));
+    return (logInstant.equals(from) || logInstant.isAfter(from)) &&
+            (logInstant.equals(to) || logInstant.isBefore(to));
 }
 
 
@@ -369,6 +489,80 @@ private Response buildResponse(Map<String, Object> responseData) {
 
 
 
+// @GET
+// @Path("/searchFunction")
+// public Response searchLogs(
+//         @QueryParam("page") @DefaultValue("1") int page,
+//         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+//         @QueryParam("keyword") String keyword,
+//         @QueryParam("startDate") LocalDate from,
+//         @QueryParam("endDate") LocalDate to,
+//         @QueryParam("minutesAgo") int minutesAgo) {
+
+//     try {
+//         List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
+
+//         if (from != null && to != null) {
+//             // Swap 'from' and 'to' if 'to' is earlier than 'from'
+//             if (to.isBefore(from)) {
+//                 LocalDate temp = from;
+//                 from = to;
+//                 to = temp;
+//             }
+
+//             logList = filterLogsByDateRange(logList, from, to);
+//         } else if (minutesAgo > 0) {
+//             logList = filterLogsByMinutesAgo(logList, minutesAgo);
+//         }
+
+//         int totalCount = logList.size();
+//         int startIndex = (page - 1) * pageSize;
+//         int endIndex = Math.min(startIndex + pageSize, totalCount);
+
+//         if (startIndex >= endIndex || logList.isEmpty()) {
+//             Map<String, Object> emptyResponse = new HashMap<>();
+//             emptyResponse.put("data", Collections.emptyList());
+//             emptyResponse.put("totalCount", 0);
+
+//             return Response.ok(emptyResponse).build();
+//         }
+
+//         List<LogDTO> paginatedLogs = logList.subList(startIndex, endIndex);
+
+//         Map<String, Object> response = new HashMap<>();
+//         response.put("data", paginatedLogs);
+//         response.put("totalCount", totalCount);
+
+//         ObjectMapper objectMapper = new ObjectMapper();
+//         String responseJson = objectMapper.writeValueAsString(response);
+
+//         return Response.ok(responseJson).build();
+//     } catch (Exception e) {
+//         return Response
+//                 .status(Response.Status.INTERNAL_SERVER_ERROR)
+//                 .entity(e.getMessage())
+//                 .build();
+//     }
+// }
+
+// private List<LogDTO> filterLogsByDateRange(List<LogDTO> logs, LocalDate from, LocalDate to) {
+//     LocalDateTime fromDateTime = from.atStartOfDay();
+//     LocalDateTime toDateTime = to.plusDays(1).atStartOfDay();
+
+//     return logs.stream()
+//             .filter(log -> isWithinDateRange(log.getCreatedTime(), fromDateTime, toDateTime))
+//             .collect(Collectors.toList());
+// }
+
+// private List<LogDTO> filterLogsByMinutesAgo(List<LogDTO> logs, int minutesAgo) {
+//     LocalDateTime currentDateTime = LocalDateTime.now();
+//     LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
+
+//     return logs.stream()
+//             .filter(log -> isWithinDateRange(log.getCreatedTime(), fromDateTime, currentDateTime))
+//             .collect(Collectors.toList());
+// }
+
 @GET
 @Path("/searchFunction")
 public Response searchLogs(
@@ -383,16 +577,23 @@ public Response searchLogs(
         List<LogDTO> logList = logQueryHandler.searchLogs(keyword);
 
         if (from != null && to != null) {
-            // Swap 'from' and 'to' if 'to' is earlier than 'from'
-            if (to.isBefore(from)) {
+            // Ensure that fromInstant is earlier than toInstant
+            if (from.isAfter(to)) {
                 LocalDate temp = from;
                 from = to;
                 to = temp;
             }
 
-            logList = filterLogsByDateRange(logList, from, to);
+            // Convert LocalDate to Instant
+            Instant fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+            Instant toInstant = to.atStartOfDay(ZoneId.systemDefault()).toInstant().plus(1, ChronoUnit.DAYS);
+
+            logList = filterLogsByDateRange(logList, fromInstant, toInstant);
         } else if (minutesAgo > 0) {
-            logList = filterLogsByMinutesAgo(logList, minutesAgo);
+            Instant currentInstant = Instant.now();
+            Instant fromInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+            logList = filterLogsByMinutesAgo(logList, fromInstant, currentInstant);
         }
 
         int totalCount = logList.size();
@@ -425,23 +626,26 @@ public Response searchLogs(
     }
 }
 
-private List<LogDTO> filterLogsByDateRange(List<LogDTO> logs, LocalDate from, LocalDate to) {
-    LocalDateTime fromDateTime = from.atStartOfDay();
-    LocalDateTime toDateTime = to.plusDays(1).atStartOfDay();
-
+private List<LogDTO> filterLogsByDateRange(List<LogDTO> logs, Instant from, Instant to) {
     return logs.stream()
-            .filter(log -> isWithinDateRange(log.getCreatedTime(), fromDateTime, toDateTime))
+            .filter(log -> isWithinDateRange(log.getCreatedTime(), from, to))
             .collect(Collectors.toList());
 }
 
-private List<LogDTO> filterLogsByMinutesAgo(List<LogDTO> logs, int minutesAgo) {
-    LocalDateTime currentDateTime = LocalDateTime.now();
-    LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
-
+private List<LogDTO> filterLogsByMinutesAgo(List<LogDTO> logs, Instant fromInstant, Instant toInstant) {
     return logs.stream()
-            .filter(log -> isWithinDateRange(log.getCreatedTime(), fromDateTime, currentDateTime))
+            .filter(log -> isWithinDateRange(log.getCreatedTime(), fromInstant, toInstant))
             .collect(Collectors.toList());
 }
+
+// private boolean isWithinDateRange(Date logTimestamp, Instant from, Instant to) {
+//     Instant logInstant = logTimestamp.toInstant();
+
+//     return (logInstant.equals(from) || logInstant.isAfter(from)) &&
+//             (logInstant.equals(to) || logInstant.isBefore(to));
+// }
+
+
 
 
 }
