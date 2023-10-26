@@ -45,14 +45,24 @@ public class MetricQueryHandler {
         if (from != null && to != null) {
             timeFilter = createCustomDateFilter(from, to);
         } else if (minutesAgo > 0) {
-            LocalDate currentDate = LocalDate.now();
-            LocalDateTime fromDateTime = currentDate.atStartOfDay().minusMinutes(minutesAgo);
-            LocalDateTime toDateTime = currentDate.atStartOfDay();
+            LocalDateTime currentDateTime = LocalDateTime.now();
+            LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+        
+            // Calculate 'fromDateTime' based on 'minutesAgo' but ensure it doesn't go beyond the start of today
+            LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
+            if (fromDateTime.isBefore(startOfToday)) {
+                fromDateTime = startOfToday;
+            }
+        
+            // Set 'toDateTime' to the current time
+            LocalDateTime toDateTime = currentDateTime;
+        
             timeFilter = Filters.and(
                 Filters.gte("date", fromDateTime),
                 Filters.lt("date", toDateTime)
             );
-        } else {
+        }
+         else {
             // Handle the case when neither date range nor minutesAgo is provided
             throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
         }
