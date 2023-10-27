@@ -537,6 +537,7 @@ public List<TraceSpanDTO> getModifiedTraceSpanDTO(List<TraceDTO> mergedTraces) {
 }
 
 
+
 // Function to fetch LogDTO objects based on spanId (adjust this based on your data source)
 public List<LogDTO> fetchLogDTOsForSpanId(String spanId) {
   PanacheQuery<LogDTO> query = logQueryRepo.find("spanId", spanId);
@@ -569,33 +570,33 @@ private List<LogAttribute> extractLogAttributes(LogDTO logDTO) {
 
 
 
-// public TraceDTO getLogDTOByTraceID(List<TraceDTO> mergedTraces) {
+public List<LogDTO> getErroredLogDTO(List<TraceDTO> mergedTraces) {
 
-//   List<LogDTO> matchingLogDTOList = new ArrayList<>();
-//   for (TraceDTO trace : mergedTraces) {
-//     String traceID = trace.getTraceId();
-//     List<Spans> spans = trace.getSpans();
-//     List<LogDTO> logDTOList = logQueryRepo.find("traceId", traceID).list();
-//     System.out.println("--traceID-"+traceID + "SPANS--------"+spans +"-----------logs"+logDTOList);
-//     System.out.println("logsDTO-------------------------"+logDTOList);
-//     for (LogDTO logDTO : logDTOList) {
-//       for (Spans span : spans) {
-//           if (logDTO.getSpanId().equals(span.getSpanId())) {
-//               // Add the matching LogDTO to the list
-//               matchingLogDTOList.add(logDTO);
-//               System.out.println("-----------matchingLogDTOList-----*********---"+matchingLogDTOList);
-//           }
-//         }
+  List<LogDTO> matchingLogDTOList = new ArrayList<>();
+  for (TraceDTO trace : mergedTraces) {
+    String traceID = trace.getTraceId();
+    List<Spans> spans = trace.getSpans();
+    List<LogDTO> logDTOList = logQueryRepo.find("traceId", traceID).list();
+    // System.out.println("--traceID-"+traceID + "SPANS--------"+spans +"-----------logs"+logDTOList);
+    // System.out.println("logsDTO-------------------------"+logDTOList);
+    for (LogDTO logDTO : logDTOList) {
+      for (Spans span : spans) {
+          if (logDTO.getSpanId().equals(span.getSpanId())) {
+              // Add the matching LogDTO to the list
+              matchingLogDTOList.add(logDTO);
+              // System.out.println("-----------matchingLogDTOList-----*********---"+matchingLogDTOList);
+          }
+        }
 
-//       }
-//     }
-//     List<LogDTO> filteredLogDTOList = matchingLogDTOList.stream()
-//             .filter(logDTO -> "ERROR".equals(logDTO.getSeverityText()) || "SEVERE".equals(logDTO.getSeverityText()))
-//             .collect(Collectors.toList());
+      }
+    }
+    List<LogDTO> filteredLogDTOList = matchingLogDTOList.stream()
+            .filter(logDTO -> "ERROR".equals(logDTO.getSeverityText()) || "SEVERE".equals(logDTO.getSeverityText()))
+            .collect(Collectors.toList());
 
-//             System.out.println("----**------filteredLogDTOList--**---"+filteredLogDTOList.size());
-//   return null;
-// }
+            System.out.println("----**------filteredLogDTOList--**---"+filteredLogDTOList.size());
+  return filteredLogDTOList;
+}
 
 
 

@@ -304,7 +304,50 @@ public Response findByTraceId(@QueryParam("traceId") String traceId) {
 }
   
   
+//get data by traceId and also have same traceId then merge it as a one
+@GET
+@Path("/getByErrorTraceId")
+public Response findByErrorTraceId(@QueryParam("traceId") String traceId) {
+    if (traceId == null || traceId.isEmpty()) {
+        return Response.status(Response.Status.BAD_REQUEST)
+            .entity("traceId query parameter is required")
+            .build();
+    }
 
+    List<TraceDTO> data = traceQueryRepo.find("traceId = ?1", traceId).list();
+
+    if (data.isEmpty()) {
+        return Response.status(Response.Status.NOT_FOUND)
+            .entity("No TraceDTO found for traceId: " + traceId)
+            .build();
+    }
+
+    for (TraceDTO trace : data) {
+        for (Spans span : trace.getSpans()) {
+            System.out.println(
+                "Span ID: " + span.getSpanId() + ", Parent Span ID: " + span.getParentSpanId() + ", Name: "
+                    + span.getName());
+        }
+    }
+
+ 
+    List<LogDTO> logDTOs = traceQueryHandler.getErroredLogDTO(data);      
+
+    Map<String, Object> response = new HashMap<>();
+    response.put("data", logDTOs); 
+
+    try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String responseJson = objectMapper.writeValueAsString(response);
+
+        return Response.ok(responseJson).build();
+    } catch (Exception e) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+            .entity("Error converting response to JSON")
+            .build();
+    }
+}
+  
 
 
 

@@ -3,7 +3,6 @@ package com.zaga.entity.queryentity.trace;
 import java.util.Date;
 import java.util.List;
 
-import com.zaga.entity.oteltrace.scopeSpans.Spans;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import lombok.AllArgsConstructor;
