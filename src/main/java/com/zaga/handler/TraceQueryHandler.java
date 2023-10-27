@@ -326,6 +326,7 @@ public List<TraceDTO> findAllOrderByErrorFirst(List<String> serviceNameList) {
 
 
 
+
 public List<TraceDTO> findAllOrderByDuration(List<String> serviceNameList) {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
@@ -400,7 +401,6 @@ public List<Spans> sortingParentChildOrder(List<Spans> spanData) {
     // String spanId = span.getSpanId();
     String parentId = span.getParentSpanId();
     if (parentId == null || parentId.isEmpty()) {
-      // Span with empty parentSpanId is a root span
       rootSpans.add(span);
     } else {
       spanTree.computeIfAbsent(parentId, k -> new ArrayList<>()).add(span);
@@ -427,22 +427,72 @@ private void sortSpans(Spans span, Map<String, List<Spans>> spanTree, List<Spans
 }
 
 // Method to merge spans with the same traceId
+
 public List<TraceDTO> mergeTraces(List<TraceDTO> traces) {
-  Map<String, TraceDTO> traceMap = new HashMap<>();
+  Map<String, TraceDTO> parentTraces = new HashMap<>();
+  Map<String, TraceDTO> childTraces = new HashMap<>();
 
   for (TraceDTO trace : traces) {
-    String traceId = trace.getTraceId();
+      String traceId = trace.getTraceId();
+      boolean hasNullParentSpan = false;
 
-    if (traceMap.containsKey(traceId)) {
-      System.out.println("CONTAINES SAME------------------------------------------------ " + traceId);
-      TraceDTO existingTrace = traceMap.get(traceId);
-      existingTrace.getSpans().addAll(trace.getSpans());
-    } else {
-      traceMap.put(traceId, trace);
-    }
+      for (Spans span : trace.getSpans()) {
+          if (span.getParentSpanId() == null || span.getParentSpanId().isEmpty()) {
+              hasNullParentSpan = true;
+              break;
+          }
+      }
+
+      if (hasNullParentSpan) {
+          parentTraces.put(traceId, trace);
+      } else {
+          childTraces.put(traceId, trace);
+      }
   }
-  return new ArrayList<>(traceMap.values());
+
+  for (TraceDTO parentTrace : parentTraces.values()) {
+      String traceId = parentTrace.getTraceId();
+      TraceDTO childTrace = childTraces.get(traceId);
+
+      if (childTrace != null) {
+          // Merge the spans of the child trace into the parent trace
+          parentTrace.getSpans().addAll(childTrace.getSpans());
+      }
+  }
+
+  // Sort the spans within each merged trace
+  for (TraceDTO mergedTrace : parentTraces.values()) {
+      mergedTrace.setSpans(sortingParentChildOrder(mergedTrace.getSpans()));
+  }
+
+  return new ArrayList<>(parentTraces.values());
 }
+
+
+// public List<TraceDTO> mergeTraces(List<TraceDTO> traces) {
+//   Map<String, TraceDTO> traceMap = new HashMap<>();
+
+//   for (TraceDTO trace : traces) {
+//       String traceId = trace.getTraceId();
+
+//       if (traceMap.containsKey(traceId)) {
+//           TraceDTO existingTrace = traceMap.get(traceId);
+//           existingTrace.getSpans().addAll(trace.getSpans());
+//       } else {
+//           traceMap.put(traceId, trace);
+//       }
+//   }
+
+//   List<TraceDTO> mergedTraces = new ArrayList<>(traceMap.values());
+
+//   // Sort the spans within each merged trace
+//   for (TraceDTO mergedTrace : mergedTraces) {
+//       mergedTrace.setSpans(sortingParentChildOrder(mergedTrace.getSpans()));
+//   }
+
+//   return mergedTraces;
+// }
+
 
 
 
