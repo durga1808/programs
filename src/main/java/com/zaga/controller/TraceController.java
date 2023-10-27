@@ -3,9 +3,11 @@ package com.zaga.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
+import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.entity.queryentity.trace.TraceQuery;
+import com.zaga.entity.queryentity.trace.TraceSpanDTO;
 import com.zaga.handler.TraceQueryHandler;
 import com.zaga.repo.TraceQueryRepo;
 import jakarta.inject.Inject;
@@ -283,8 +285,11 @@ public Response findByTraceId(@QueryParam("traceId") String traceId) {
         }
     }
 
+ 
+    List<TraceSpanDTO> traceDTO = traceQueryHandler.getModifiedTraceSpanDTO(dto);      
+
     Map<String, Object> response = new HashMap<>();
-    response.put("data", dto); 
+    response.put("data", traceDTO); 
 
     try {
         ObjectMapper objectMapper = new ObjectMapper();

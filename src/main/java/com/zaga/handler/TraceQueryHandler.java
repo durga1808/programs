@@ -7,11 +7,18 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
+import com.zaga.entity.otellog.ScopeLogs;
+import com.zaga.entity.otellog.scopeLogs.LogRecord;
+import com.zaga.entity.otellog.scopeLogs.logRecord.LogAttribute;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
+import com.zaga.entity.queryentity.log.LogDTO;
+import com.zaga.entity.queryentity.trace.SpanDTO;
 import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.entity.queryentity.trace.TraceQuery;
+import com.zaga.entity.queryentity.trace.TraceSpanDTO;
+import com.zaga.repo.LogQueryRepo;
 import com.zaga.repo.TraceQueryRepo;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
@@ -39,6 +46,9 @@ public class TraceQueryHandler {
 
   @Inject
   TraceQueryRepo traceQueryRepo;
+
+  @Inject
+  LogQueryRepo logQueryRepo;
 
   @Inject
   MongoClient mongoClient;
@@ -469,28 +479,122 @@ public List<TraceDTO> mergeTraces(List<TraceDTO> traces) {
 }
 
 
-// public List<TraceDTO> mergeTraces(List<TraceDTO> traces) {
-//   Map<String, TraceDTO> traceMap = new HashMap<>();
 
-//   for (TraceDTO trace : traces) {
-//       String traceId = trace.getTraceId();
+public List<TraceSpanDTO> getModifiedTraceSpanDTO(List<TraceDTO> mergedTraces) {
+  List<TraceSpanDTO> traceSpanDTOList = new ArrayList<>();
 
-//       if (traceMap.containsKey(traceId)) {
-//           TraceDTO existingTrace = traceMap.get(traceId);
-//           existingTrace.getSpans().addAll(trace.getSpans());
-//       } else {
-//           traceMap.put(traceId, trace);
+  for (TraceDTO trace : mergedTraces) {
+      String traceID = trace.getTraceId();
+      List<Spans> spans = trace.getSpans();
+
+      List<SpanDTO> spanDTOList = new ArrayList<>();
+
+      for (Spans span : spans) {
+          SpanDTO spanDTO = new SpanDTO();
+          spanDTO.setSpans(span);
+
+          List<LogDTO> logDTOs = fetchLogDTOsForSpanId(span.getSpanId());
+
+          // Filter the LogDTO objects with severityText "ERROR" or "SEVERE"
+          List<LogDTO> matchingLogDTOs = logDTOs.stream()
+                  .filter(logDTO -> "ERROR".equals(logDTO.getSeverityText()) || "SEVERE".equals(logDTO.getSeverityText()))
+                  .collect(Collectors.toList());
+      
+          if (!matchingLogDTOs.isEmpty()) {
+              spanDTO.setErrorStatus(true);
+              spanDTO.setLogAttributes(matchingLogDTOs.stream()
+                      .flatMap(logDTO -> extractLogAttributes(logDTO).stream())
+                      .collect(Collectors.toList()));
+      
+              // Set traceId and spanId from the first matching LogRecord (assuming there's at least one)
+              LogRecord firstMatchingLogRecord = matchingLogDTOs.get(0).getScopeLogs().get(0).getLogRecords().get(0);
+              spanDTO.setLogTraceId(firstMatchingLogRecord.getTraceId());
+              spanDTO.setLogSpanId(firstMatchingLogRecord.getSpanId());
+              spanDTO.setErrorMessage(firstMatchingLogRecord.getBody()); // Assuming Body is a string
+          }
+      
+          spanDTOList.add(spanDTO);
+      }
+          
+
+      // Create a new TraceSpanDTO with the same properties but using the modified spanDTOList
+      TraceSpanDTO traceSpanDTO = new TraceSpanDTO();
+
+      traceSpanDTO.setTraceId(traceID);
+      traceSpanDTO.setServiceName(trace.getServiceName());
+      traceSpanDTO.setMethodName(trace.getMethodName());
+      traceSpanDTO.setOperationName(trace.getOperationName());
+      traceSpanDTO.setDuration(trace.getDuration());
+      traceSpanDTO.setStatusCode(trace.getStatusCode());
+      traceSpanDTO.setSpanCount(trace.getSpanCount());
+      traceSpanDTO.setCreatedTime(trace.getCreatedTime());
+      traceSpanDTO.setSpanDTOs(spanDTOList);
+
+      traceSpanDTOList.add(traceSpanDTO);
+  }
+
+  return traceSpanDTOList;
+}
+
+
+// Function to fetch LogDTO objects based on spanId (adjust this based on your data source)
+public List<LogDTO> fetchLogDTOsForSpanId(String spanId) {
+  PanacheQuery<LogDTO> query = logQueryRepo.find("spanId", spanId);
+  List<LogDTO> logDTOs = query.list();
+
+  return logDTOs;
+}
+
+private List<LogAttribute> extractLogAttributes(LogDTO logDTO) {
+  List<LogAttribute> logAttributes = new ArrayList<>();
+
+  List<ScopeLogs> scopeLogs = logDTO.getScopeLogs();
+  if (scopeLogs != null) {
+      for (ScopeLogs scopeLog : scopeLogs) {
+          List<LogRecord> logRecords = scopeLog.getLogRecords();
+          if (logRecords != null) {
+              for (LogRecord logRecord : logRecords) {
+                  // Extract the LogAttributes from the LogRecord's attributes list
+                  List<LogAttribute> attributes = logRecord.getAttributes();
+                  if (attributes != null) {
+                      logAttributes.addAll(attributes);
+                  }
+              }
+          }
+      }
+  }
+
+  return logAttributes;
+}
+
+
+
+// public TraceDTO getLogDTOByTraceID(List<TraceDTO> mergedTraces) {
+
+//   List<LogDTO> matchingLogDTOList = new ArrayList<>();
+//   for (TraceDTO trace : mergedTraces) {
+//     String traceID = trace.getTraceId();
+//     List<Spans> spans = trace.getSpans();
+//     List<LogDTO> logDTOList = logQueryRepo.find("traceId", traceID).list();
+//     System.out.println("--traceID-"+traceID + "SPANS--------"+spans +"-----------logs"+logDTOList);
+//     System.out.println("logsDTO-------------------------"+logDTOList);
+//     for (LogDTO logDTO : logDTOList) {
+//       for (Spans span : spans) {
+//           if (logDTO.getSpanId().equals(span.getSpanId())) {
+//               // Add the matching LogDTO to the list
+//               matchingLogDTOList.add(logDTO);
+//               System.out.println("-----------matchingLogDTOList-----*********---"+matchingLogDTOList);
+//           }
+//         }
+
 //       }
-//   }
+//     }
+//     List<LogDTO> filteredLogDTOList = matchingLogDTOList.stream()
+//             .filter(logDTO -> "ERROR".equals(logDTO.getSeverityText()) || "SEVERE".equals(logDTO.getSeverityText()))
+//             .collect(Collectors.toList());
 
-//   List<TraceDTO> mergedTraces = new ArrayList<>(traceMap.values());
-
-//   // Sort the spans within each merged trace
-//   for (TraceDTO mergedTrace : mergedTraces) {
-//       mergedTrace.setSpans(sortingParentChildOrder(mergedTrace.getSpans()));
-//   }
-
-//   return mergedTraces;
+//             System.out.println("----**------filteredLogDTOList--**---"+filteredLogDTOList.size());
+//   return null;
 // }
 
 
