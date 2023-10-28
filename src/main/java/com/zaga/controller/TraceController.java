@@ -555,15 +555,28 @@ public Response sortOrderTrace(
     }
 }
 
+// private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
+//     Instant currentInstant = Instant.now();
+//     Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+//     LocalDateTime fromDateTime = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
+//     LocalDateTime toDateTime = LocalDateTime.now();
+
+//     return filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
+// }   
+
 private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
     Instant currentInstant = Instant.now();
     Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
 
-    LocalDateTime fromDateTime = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
+    // Set the start time to the beginning of the day
+    LocalDateTime fromDateTime = LocalDate.now().atStartOfDay();
+
     LocalDateTime toDateTime = LocalDateTime.now();
 
     return filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
-}   
+}
+
   
 private List<TraceDTO> filterTracesByDateRange(List<TraceDTO> traces, LocalDate fromDate, LocalDate toDate) {
     LocalDateTime fromDateTime = fromDate.atStartOfDay();
