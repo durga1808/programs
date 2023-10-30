@@ -422,17 +422,47 @@ public Response sortOrderTrace(
 //     return filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
 // }   
 
+// private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
+//     Instant currentInstant = Instant.now();
+//     Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+//     LocalDateTime fromDateTime = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
+//     LocalDateTime toDateTime = LocalDateTime.now();
+
+//     System.out.println("fromDateTime: " + fromDateTime);
+//     System.out.println("toDateTime: " + toDateTime);
+
+//     List<TraceDTO> filteredTraces = filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
+
+//     System.out.println("Filtered Traces Count: " + filteredTraces.size());
+
+//     return filteredTraces;
+// }
+
 private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
     Instant currentInstant = Instant.now();
     Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
 
-    // Set the start time to the beginning of the day
-    LocalDateTime fromDateTime = LocalDate.now().atStartOfDay();
-
+    LocalDateTime fromDateTime = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
     LocalDateTime toDateTime = LocalDateTime.now();
 
-    return filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
+    // Ensure that 'fromDateTime' is limited to the start of the current day
+    LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+    fromDateTime = fromDateTime.isAfter(startOfDay) ? fromDateTime : startOfDay;
+
+    System.out.println("fromDateTime: " + fromDateTime);
+    System.out.println("toDateTime: " + toDateTime);
+
+    List<TraceDTO> filteredTraces = filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
+
+    System.out.println("Filtered Traces Count: " + filteredTraces.size());
+
+    return filteredTraces;
 }
+
+
+
+
 
   
 private List<TraceDTO> filterTracesByDateRange(List<TraceDTO> traces, LocalDate fromDate, LocalDate toDate) {
