@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.log.LogDTO;
+import com.zaga.entity.queryentity.trace.DBMetric;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.entity.queryentity.trace.TraceQuery;
@@ -33,6 +34,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.bson.Document;
 
 
 
@@ -218,13 +221,13 @@ public Response findErroredDataForLastTwo(
 
     @GET
     @Path("/DBSumaryChartDataCount")
-    public List<TraceDTO> getDBTraceMetricCount(){
+    public List<DBMetric> getDBTraceMetricCount(){
             // @QueryParam("serviceNameList") List<String> serviceNames,
             // @QueryParam("from") LocalDate from,
             // @QueryParam("to") LocalDate to,
             // @QueryParam("minutesAgo") int minutesAgo
                 // System.out.println("----------minutesAgo--------------------"+minutesAgo);
-        return traceQueryHandler.getAllDBTraceDTOs();
+        return traceQueryHandler.getAllDBMetrics();
     }
   
   
