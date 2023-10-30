@@ -1,16 +1,21 @@
 package com.zaga.handler;
 
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import com.zaga.entity.otellog.ScopeLogs;
 import com.zaga.entity.otellog.scopeLogs.LogRecord;
 import com.zaga.entity.otellog.scopeLogs.logRecord.LogAttribute;
+import com.zaga.entity.oteltrace.scopeSpans.Event;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
+import com.zaga.entity.oteltrace.scopeSpans.spans.Attributes;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.trace.SpanDTO;
 import com.zaga.entity.queryentity.trace.StatusCodeRange;
@@ -31,6 +36,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -597,6 +603,192 @@ public List<LogDTO> getErroredLogDTO(List<TraceDTO> mergedTraces) {
             System.out.println("----**------filteredLogDTOList--**---"+filteredLogDTOList.size());
   return filteredLogDTOList;
 }
+
+
+public List<TraceDTO> getAllDBTraceDTOs(){
+  MongoDatabase database = mongoClient.getDatabase("OtelTrace");
+  MongoCollection<TraceDTO> collection = database.getCollection("TraceDTO", TraceDTO.class);
+
+  // Define the aggregation pipeline
+  List<Bson> pipeline = Arrays.asList(
+      Aggregates.unwind("$spans"),
+      Aggregates.match(Filters.regex("spans.attributes.key", "^db", "m"))
+  );
+
+  // Execute the aggregation pipeline and retrieve the result
+  List<Document> documents = collection.aggregate(pipeline, Document.class).into(new ArrayList<>());
+
+  // Convert the Documents back to TraceDTO objects
+  List<TraceDTO> result = new ArrayList<>();
+  for (Document document : documents) {
+    System.out.println("---------DOCUMENtml: " + document);
+      TraceDTO traceDTO = new TraceDTO();
+      traceDTO.setTraceId(document.getString("traceId"));
+      traceDTO.setServiceName(document.getString("serviceName"));
+      traceDTO.setMethodName(document.getString("methodName"));
+      Spans spans = new Spans();
+      spans.setTraceId(document.getString("traceId"));
+      spans.setSpanId(document.getString("spanId"));
+      spans.setParentSpanId(document.getString("parentSpanId"));
+      spans.setName(document.getString("name"));
+      spans.setStartTimeUnixNano(document.getString("startTimeUnixNano"));
+      spans.setEndTimeUnixNano(document.getString("endTimeUnixNano"));
+      spans.setAttributes(document.get("attributes", List.class)); // Adjust as per your data structure
+      spans.setStatus(document.get("status", Map.class)); // Adjust as per your data structure
+
+      // Set the spans field in the TraceDTO
+      traceDTO.setSpans(Arrays.asList(spans));
+      result.add(traceDTO);
+  }
+
+  return result;
+}
+
+// public List<TraceDTO> getAllDBTraceMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
+// //   List<TraceDTO> traceList = traceQueryRepo.listAll();
+// //   Map<String, TraceMetrics> metricsMap = new HashMap<>();
+
+// //   Instant fromInstant = null;
+// //   Instant toInstant = null;
+
+// //   if (from != null && to != null) {
+// //     // If both from and to are provided, consider the date range
+// //     Instant startOfFrom = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+// //     Instant startOfTo = to.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+// //     // Ensure that fromInstant is earlier than toInstant
+// //     fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+// //     toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+
+// //     toInstant = toInstant.plus(1, ChronoUnit.DAYS);
+// //   } else if (minutesAgo > 0) {
+// //     // If minutesAgo is provided, calculate the time range based on minutesAgo
+// //     Instant currentInstant = Instant.now();
+// //     Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+// //     // Calculate the start of the current day
+// //     Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+// //     // Ensure that fromInstant is later than the start of the current day
+// //     if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
+// //         fromInstant = startOfCurrentDay;
+// //     } else {
+// //         fromInstant = minutesAgoInstant;
+// //     }
+
+// //     toInstant = currentInstant;
+// // } else {
+// //     // Handle the case when neither date range nor minutesAgo is provided
+// //     throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+// //   }
+
+// // // Filter the traceList based on your date and time criteria
+// // List<TraceDTO> filteredTraces = new ArrayList<>();
+// // for (TraceDTO traceDTO : traceList) {
+// //     if (traceDTO != null) {
+// //         Date traceCreateTime = traceDTO.getCreatedTime();
+// //         if (traceCreateTime != null) {
+// //             Instant traceInstant = traceCreateTime.toInstant();
+// //             if (serviceNameList.contains(traceDTO.getServiceName()) &&
+// //                 traceInstant.isAfter(fromInstant) &&
+// //                 traceInstant.isBefore(toInstant)) {
+// //                 filteredTraces.add(traceDTO);
+// //                 System.out.println("Filtered data----------"+filteredTraces);
+// //             }
+// //         }
+// //     }
+// // }
+
+// // Your MongoDB connection and collection initialization
+// MongoDatabase database = mongoClient.getDatabase("OtelTrace");
+// MongoCollection<Document> traceCollection = database.getCollection("TraceDTO");
+
+// List<Bson> pipeline = Arrays.asList(
+//   Aggregates.unwind("$spans"),
+//   Aggregates.match(new Document("spans.attributes.key",
+//       new Document("$regex", "^db").append("$options", "m"))
+//   )
+// );
+// AggregateIterable<Document> aggregationResult = traceCollection.aggregate(pipeline);
+
+
+// List<TraceDTO> matchingTraces = new ArrayList<>();
+
+// for (Document document : aggregationResult) {
+//     try {
+//         // Create a TraceDTO for each document
+//         TraceDTO traceDTO = new TraceDTO();
+        
+//         // Extract and set relevant data from the document in the TraceDTO object
+//         traceDTO.setTraceId(document.getString("traceId"));
+//         traceDTO.setServiceName(document.getString("serviceName"));
+//         traceDTO.setMethodName(document.getString("methodName"));
+//         traceDTO.setOperationName(document.getString("operationName"));
+//         traceDTO.setDuration(document.getLong("duration"));
+//         traceDTO.setStatusCode(document.getLong("statusCode"));
+//         traceDTO.setSpanCount(document.getString("spanCount"));
+//         traceDTO.setCreatedTime(document.getDate("createdTime"));
+
+//         List<Spans> spansList = new ArrayList<>();
+
+//         // Extract and map the "spans" field
+//         Document spansDocument = document.get("spans", Document.class);
+//         if (spansDocument != null) {
+//             Spans spans = new Spans();
+            
+//             // Map the fields for the Spans object
+//             spans.setTraceId(spansDocument.getString("traceId"));
+//             spans.setSpanId(spansDocument.getString("spanId"));
+//             spans.setParentSpanId(spansDocument.getString("parentSpanId"));
+//             spans.setName(spansDocument.getString("name"));
+//             spans.setKind(spansDocument.getInteger("kind"));
+//             spans.setStartTimeUnixNano(spansDocument.getString("startTimeUnixNano"));
+//             spans.setEndTimeUnixNano(spansDocument.getString("endTimeUnixNano"));
+            
+//             // Assuming "attributes" is a list of Documents, you can extract and map it accordingly
+//             List<Document> attributesDocuments = spansDocument.getList("attributes", Document.class);
+//             List<Attributes> attributesList = new ArrayList<>();
+            
+//             for (Document attributesDocument : attributesDocuments) {
+//                 Attributes attributes = new Attributes();
+//                 // Map the attributes fields here
+//                 // attributes.setSomeField(attributesDocument.getString("someField"));
+//                 // Set other attributes for Attributes
+//                 attributesList.add(attributes);
+//             }
+//             spans.setAttributes(attributesList);
+            
+//             // Map "status" field (assuming it's a map)
+//             Map<String, Object> statusMap = spansDocument.get("status", Map.class);
+//             spans.setStatus(statusMap);
+
+//             // Map "events" field (assuming it's a list)
+//             List<Document> eventsDocuments = spansDocument.getList("events", Document.class);
+//             List<Event> eventsList = new ArrayList<>();
+            
+//             for (Document eventDocument : eventsDocuments) {
+//                 Event event = new Event();
+//                 // Map the event fields here
+//                 // event.setSomeField(eventDocument.getString("someField"));
+//                 // Set other attributes for Event
+//                 eventsList.add(event);
+//             }
+//             spans.setEvents(eventsList);
+            
+//             traceDTO.setSpans(spansList); 
+//         }
+
+//         // Set other attributes based on the document's fields
+
+//         matchingTraces.add(traceDTO);
+//     } catch (Exception e) {
+//         // Log any exceptions that may occur during extraction
+//         System.err.println("Error extracting data: " + e.getMessage());
+//     }
+// }
+
+// return matchingTraces;
+// }
 
 
 
