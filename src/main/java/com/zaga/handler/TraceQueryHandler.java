@@ -35,6 +35,7 @@ import jakarta.inject.Inject;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -692,39 +693,56 @@ public List<DBMetric> getAllDBMetrics(List<String> serviceNameList, LocalDate fr
 
 
 
-public List<KafkaMetrics> getAllKafkaMetrics(List<String> serviceNames, LocalDate from, LocalDate to) {
+public List<KafkaMetrics> getAllKafkaMetrics(List<String> serviceNames, LocalDate from, LocalDate to,int minutesAgo) {
   MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
-          .getCollection("TraceDTO");
+  .getCollection("TraceDTO");
 
-          
-  // Match service names
-  Bson serviceNameFilter = Filters.in("serviceName", serviceNames);
+LocalDateTime currentTime = LocalDateTime.now();
+LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
 
-  List<Bson> pipeline = Arrays.asList(
-      Aggregates.addFields(new Field<>("justDate",
-              new Document("$dateToString",
-                      new Document("format", "%m-%d-%Y")
-                              .append("date", "$createdTime")))),
-      Aggregates.match(Filters.and(
-          Filters.regex("spans.attributes.key", "^messaging", "m"),
-          Filters.in("serviceName", serviceNames),
-          Filters.gte("justDate", from.format(DateTimeFormatter.ofPattern("MM-dd-yyyy"))),
-          Filters.lte("justDate", to.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")))
-      )),
-      Aggregates.unwind("$spans"),
-      Aggregates.match(Filters.and(
-          Filters.in("serviceName", serviceNames),
-          Filters.regex("spans.attributes.key", "^messaging", "m")
-      )),
-      Aggregates.project(Projections.fields(
-          Projections.computed("serviceName", "$serviceName"),
-          Projections.computed("startTimeUnixNano", "$spans.startTimeUnixNano"),
-          Projections.computed("endTimeUnixNano", "$spans.endTimeUnixNano"),
-          Projections.computed("justDate", "$justDate")
-      ))
-  );
+List<Bson> pipeline = new ArrayList<>();
 
-  AggregateIterable<Document> result = collection.aggregate(pipeline);
+if (from != null && to != null) {
+  // Date-wise filtering
+  pipeline.add(Aggregates.addFields(new Field<>("justDate",
+    new Document("$dateToString",
+      new Document("format", "%m-dd-yyyy")
+        .append("date", "$createdTime")))));
+  pipeline.add(Aggregates.match(Filters.and(
+    Filters.regex("spans.attributes.key", "^messaging", "m"),
+    Filters.in("serviceName", serviceNames),
+    Filters.gte("justDate", from.format(DateTimeFormatter.ofPattern("MM-dd-yyyy"))),
+    Filters.lte("justDate", to.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")))
+  )));
+} else {
+  // Date-wise filtering is not applied when 'from' is null
+}
+
+if (minutesAgo > 0) {
+  // Time-based filtering
+  LocalDateTime thresholdTime = currentTime.minusMinutes(minutesAgo);
+
+  if (from != null && from.isEqual(currentTime.toLocalDate())) {
+    // Ensure that the time filter doesn't go beyond the current day
+    thresholdTime = thresholdTime.isAfter(startOfToday) ? thresholdTime : startOfToday;
+  }
+  Bson timeFilter = Filters.gte("createdTime", Date.from(thresholdTime.atZone(ZoneId.systemDefault()).toInstant()));
+  pipeline.add(Aggregates.match(timeFilter));
+}
+
+pipeline.add(Aggregates.unwind("$spans"));
+pipeline.add(Aggregates.match(Filters.and(
+  Filters.in("serviceName", serviceNames),
+  Filters.regex("spans.attributes.key", "^messaging", "m")
+)));
+pipeline.add(Aggregates.project(Projections.fields(
+  Projections.computed("serviceName", "$serviceName"),
+  Projections.computed("startTimeUnixNano", "$spans.startTimeUnixNano"),
+  Projections.computed("endTimeUnixNano", "$spans.endTimeUnixNano"),
+  Projections.computed("justDate", "$justDate")
+)));
+
+AggregateIterable<Document> result = collection.aggregate(pipeline);
 
   Map<String, KafkaMetrics> kafkaMetricsMap = new HashMap<>();
 
@@ -769,6 +787,11 @@ public List<KafkaMetrics> getAllKafkaMetrics(List<String> serviceNames, LocalDat
 
   return resultList;
 }
+
+
+
+
+
 
 // Utility method to safely retrieve a string value or use a default fallback
 private String getAsStringOrFallback(Document document, String key, String fallback) {

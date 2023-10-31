@@ -242,7 +242,7 @@ public Response findErroredDataForLastTwo(
 
                 List<KafkaMetrics> kafkaMetrics;
     
-                kafkaMetrics = traceQueryHandler.getAllKafkaMetrics(serviceName, from, to);
+                kafkaMetrics = traceQueryHandler.getAllKafkaMetrics(serviceName, from, to,minutesAgo);
                    return kafkaMetrics;
     }
 
