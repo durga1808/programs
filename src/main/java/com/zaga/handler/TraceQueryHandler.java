@@ -17,6 +17,7 @@ import com.zaga.entity.otellog.scopeLogs.logRecord.LogAttribute;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.trace.DBMetric;
+import com.zaga.entity.queryentity.trace.KafkaMetrics;
 import com.zaga.entity.queryentity.trace.SpanDTO;
 import com.zaga.entity.queryentity.trace.StatusCodeRange;
 import com.zaga.entity.queryentity.trace.TraceDTO;
@@ -688,11 +689,82 @@ long endTimeUnixNano = Long.parseLong(endTimeUnixNanoStr);
 private String getAsStringOrFallback(Document document, String key, String fallback) {
     Object value = document.get(key);
     if (value instanceof String) {
-      System.out.println("serviceName----------------"+value.toString());
+      // System.out.println("serviceName----------------"+value.toString());
         return (String) value;
     }
     return fallback;
 }
+
+
+public List<KafkaMetrics> getAllKafkaMetrics(List<String> serviceNames) {
+  MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
+          .getCollection("TraceDTO");
+
+  List<Bson> pipeline = Arrays.asList(
+      Aggregates.unwind("$spans"),
+      Aggregates.match(
+          Filters.and(
+              Filters.regex("spans.attributes.key", "^messaging", "m"),
+              Filters.in("serviceName", serviceNames)
+          )
+      ),
+      Aggregates.project(Projections.fields(
+          Projections.computed("serviceName", "$serviceName"),
+          Projections.computed("startTimeUnixNano", "$spans.startTimeUnixNano"),
+          Projections.computed("endTimeUnixNano", "$spans.endTimeUnixNano")
+      ))
+  );
+
+  AggregateIterable<Document> result = collection.aggregate(pipeline);
+
+  Map<String, KafkaMetrics> kafkaMetricsMap = new HashMap<>();
+
+  ((AggregateIterable<Document>) result).forEach((Consumer<? super Document>) document -> {
+      String serviceName = getAsStringOrFallback(document, "serviceName", "Unknown");
+
+      String startTimeUnixNanoStr = document.getString("startTimeUnixNano");
+      String endTimeUnixNanoStr = document.getString("endTimeUnixNano");
+
+      long startTimeUnixNano = Long.parseLong(startTimeUnixNanoStr);
+      long endTimeUnixNano = Long.parseLong(endTimeUnixNanoStr);
+
+      if (document.containsKey("startTimeUnixNano") && document.containsKey("endTimeUnixNano")) {
+          Object startTimeUnixNanoObj = document.get("startTimeUnixNano");
+          Object endTimeUnixNanoObj = document.get("endTimeUnixNano");
+
+          if (startTimeUnixNanoObj instanceof Long && endTimeUnixNanoObj instanceof Long) {
+              startTimeUnixNano = (Long) startTimeUnixNanoObj;
+              endTimeUnixNano = (Long) endTimeUnixNanoObj;
+          }
+      }
+
+      ZonedDateTime startIST = Instant.ofEpochSecond(0, startTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
+      ZonedDateTime endIST = Instant.ofEpochSecond(0, endTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
+      long kafkaDuration = ChronoUnit.MILLIS.between(startIST, endIST);
+
+      System.out.println("kafkaDuration++++++++"+kafkaDuration);
+
+      String key = serviceName;
+      KafkaMetrics kafkaMetrics = kafkaMetricsMap.get(key);
+      if (kafkaMetrics == null) {
+          kafkaMetrics = new KafkaMetrics(serviceName, 0L, 0L);
+          kafkaMetricsMap.put(key, kafkaMetrics);
+      }
+
+      kafkaMetrics.setKafkaCallCount(kafkaMetrics.getKafkaCallCount() + 1);
+      if (kafkaDuration > 5) {
+          kafkaMetrics.setKafkaPeakLatency(kafkaMetrics.getKafkaPeakLatency() + 1);
+      }
+  });
+
+  List<KafkaMetrics> resultList = new ArrayList<>(kafkaMetricsMap.values());
+
+  return resultList;
+}
+
+
+
+
 
 public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
   List<TraceDTO> traceList = traceQueryRepo.listAll();
