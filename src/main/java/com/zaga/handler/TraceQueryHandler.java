@@ -614,95 +614,79 @@ public List<LogDTO> getErroredLogDTO(List<TraceDTO> mergedTraces) {
 
 
 
-public List<DBMetric> getAllDBMetrics(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
-  MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
-          .getCollection("TraceDTO");
+public List<DBMetric> getAllDBMetrics(List<String> serviceNameList, LocalDate from, LocalDate to) {
+    MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
+            .getCollection("TraceDTO");
 
-  // Match service names
-  Bson serviceNameFilter = Filters.in("serviceName", serviceNameList);
+    // Match service names
+    Bson serviceNameFilter = Filters.in("serviceName", serviceNameList);
 
-  List<Bson> pipeline = new ArrayList<>();
+    List<Bson> pipeline = Arrays.asList(
+      Aggregates.addFields(new Field<>("justDate",
+            new Document("$dateToString",
+                      new Document("format", "%m-%d-%Y")
+                              .append("date", "$createdTime")))),
+            Aggregates.match(Filters.and(
+                    Filters.regex("spans.attributes.key", "^db", "m"),
+                    Filters.in("serviceName", serviceNameList),
+                    Filters.gte("justDate", from.format(DateTimeFormatter.ofPattern("MM-dd-yyyy"))),
+                    Filters.lte("justDate", to.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")))
+            )),
+            Aggregates.unwind("$spans"),
+            Aggregates.match(Filters.and(
+                    Filters.in("serviceName", serviceNameList),
+                    Filters.regex("spans.attributes.key", "^db", "m")
+            )),
+            Aggregates.project(Projections.fields(
+                    Projections.computed("serviceName", "$serviceName"),
+                    Projections.computed("startTimeUnixNano", "$spans.startTimeUnixNano"),
+                    Projections.computed("endTimeUnixNano", "$spans.endTimeUnixNano")
+            ))
+    );
 
-  if (from != null && to != null) {
-      // Date-wise filtering
-      pipeline.add(Aggregates.addFields(new Field<>("justDate",
-          new Document("$dateToString",
-              new Document("format", "%m-dd-yyyy")
-                  .append("date", "$createdTime")))));
-      pipeline.add(Aggregates.match(Filters.and(
-          Filters.regex("spans.attributes.key", "^db", "m"),
-          Filters.in("serviceName", serviceNameList),
-          Filters.gte("justDate", from.format(DateTimeFormatter.ofPattern("MM-dd-yyyy"))),
-          Filters.lte("justDate", to.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")))
-      )));
-  } else if (minutesAgo > 0) {
-      // Time-based filtering
-      LocalDateTime currentTime = LocalDateTime.now();
-      LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-      LocalDateTime thresholdTime = currentTime.minusMinutes(minutesAgo);
+    AggregateIterable<Document> result = collection.aggregate(pipeline);
 
-      if (from != null && from.isEqual(currentTime.toLocalDate())) {
-          // Ensure that the time filter doesn't go beyond the current day
-          thresholdTime = thresholdTime.isAfter(startOfToday) ? thresholdTime : startOfToday;
-      }
-      Bson timeFilter = Filters.gte("createdTime", Date.from(thresholdTime.atZone(ZoneId.systemDefault()).toInstant()));
-      pipeline.add(Aggregates.match(timeFilter));
-  }
+    Map<String, DBMetric> dbMetricMap = new HashMap<>();
 
-  pipeline.add(Aggregates.unwind("$spans"));
-  pipeline.add(Aggregates.match(Filters.and(
-      Filters.in("serviceName", serviceNameList),
-      Filters.regex("spans.attributes.key", "^db", "m")
-  )));
-  pipeline.add(Aggregates.project(Projections.fields(
-      Projections.computed("serviceName", "$serviceName"),
-      Projections.computed("startTimeUnixNano", "$spans.startTimeUnixNano"),
-      Projections.computed("endTimeUnixNano", "$spans.endTimeUnixNano")
-  )));
+    ((AggregateIterable<Document>) result).forEach((Consumer<? super Document>) document -> {
+        String serviceName = getAsStringOrFallback(document, "serviceName", "Unknown");
 
-  AggregateIterable<Document> result = collection.aggregate(pipeline);
+        String startTimeUnixNanoStr = document.getString("startTimeUnixNano");
+        String endTimeUnixNanoStr = document.getString("endTimeUnixNano");
 
-  Map<String, DBMetric> dbMetricMap = new HashMap<>();
+        long startTimeUnixNano = Long.parseLong(startTimeUnixNanoStr);
+        long endTimeUnixNano = Long.parseLong(endTimeUnixNanoStr);
 
-  ((AggregateIterable<Document>) result).forEach((Consumer<? super Document>) document -> {
-      String serviceName = getAsStringOrFallback(document, "serviceName", "Unknown");
+        if (document.containsKey("startTimeUnixNano") && document.containsKey("endTimeUnixNano")) {
+            Object startTimeUnixNanoObj = document.get("startTimeUnixNano");
+            Object endTimeUnixNanoObj = document.get("endTimeUnixNano");
 
-      String startTimeUnixNanoStr = document.getString("startTimeUnixNano");
-      String endTimeUnixNanoStr = document.getString("endTimeUnixNano");
+            if (startTimeUnixNanoObj instanceof Long && endTimeUnixNanoObj instanceof Long) {
+                startTimeUnixNano = (Long) startTimeUnixNanoObj;
+                endTimeUnixNano = (Long) endTimeUnixNanoObj;
+            }
+        }
 
-      long startTimeUnixNano = Long.parseLong(startTimeUnixNanoStr);
-      long endTimeUnixNano = Long.parseLong(endTimeUnixNanoStr);
+        ZonedDateTime startIST = Instant.ofEpochSecond(0, startTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
+        ZonedDateTime endIST = Instant.ofEpochSecond(0, endTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
+        long dbduration = ChronoUnit.MILLIS.between(startIST, endIST);
 
-      if (document.containsKey("startTimeUnixNano") && document.containsKey("endTimeUnixNano")) {
-          Object startTimeUnixNanoObj = document.get("startTimeUnixNano");
-          Object endTimeUnixNanoObj = document.get("endTimeUnixNano");
+        String key = serviceName;
+        DBMetric dbMetric = dbMetricMap.get(key);
+        if (dbMetric == null) {
+            dbMetric = new DBMetric(serviceName, 0L, 0L); // Assuming your constructor is DBMetric(String serviceName, Long dbCallCount, Long dbPeakLatencyCount)
+            dbMetricMap.put(key, dbMetric);
+        }
 
-          if (startTimeUnixNanoObj instanceof Long && endTimeUnixNanoObj instanceof Long) {
-              startTimeUnixNano = (Long) startTimeUnixNanoObj;
-              endTimeUnixNano = (Long) endTimeUnixNanoObj;
-          }
-      }
+        dbMetric.setDbCallCount(dbMetric.getDbCallCount() + 1);
+        if (dbduration > 50) {
+            dbMetric.setDbPeakLatencyCount(Math.max(dbMetric.getDbPeakLatencyCount(), dbduration));
+        }
+    });
 
-      ZonedDateTime startIST = Instant.ofEpochSecond(0, startTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
-      ZonedDateTime endIST = Instant.ofEpochSecond(0, endTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
-      long dbduration = ChronoUnit.MILLIS.between(startIST, endIST);
+    List<DBMetric> resultList = new ArrayList<>(dbMetricMap.values());
 
-      String key = serviceName;
-      DBMetric dbMetric = dbMetricMap.get(key);
-      if (dbMetric == null) {
-          dbMetric = new DBMetric(serviceName, 0L, 0L);
-          dbMetricMap.put(key, dbMetric);
-      }
-
-      dbMetric.setDbCallCount(dbMetric.getDbCallCount() + 1);
-      if (dbduration > 50) {
-          dbMetric.setDbPeakLatencyCount(Math.max(dbMetric.getDbPeakLatencyCount(), dbduration));
-      }
-  });
-
-  List<DBMetric> resultList = new ArrayList<>(dbMetricMap.values());
-
-  return resultList;
+    return resultList;
 }
 
 
@@ -710,56 +694,49 @@ public List<DBMetric> getAllDBMetrics(List<String> serviceNameList, LocalDate fr
 
 
 public List<KafkaMetrics> getAllKafkaMetrics(List<String> serviceNames, LocalDate from, LocalDate to,int minutesAgo) {
-  MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
-  .getCollection("TraceDTO");
+MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
+          .getCollection("TraceDTO");
 
-LocalDateTime currentTime = LocalDateTime.now();
-LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+  LocalDateTime currentTime = LocalDateTime.now();
+  LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
 
-List<Bson> pipeline = new ArrayList<>();
+  List<Bson> pipeline = Arrays.asList(
+      Aggregates.addFields(new Field<>("justDate",
+              new Document("$dateToString",
+                      new Document("format", "%m-%d-%Y")
+                              .append("date", "$createdTime")))),
+      Aggregates.match(Filters.and(
+          Filters.regex("spans.attributes.key", "^messaging", "m"),
+          Filters.in("serviceName", serviceNames),
+          Filters.gte("justDate", from.format(DateTimeFormatter.ofPattern("MM-dd-yyyy"))),
+          Filters.lte("justDate", to.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")))
+      )),
+      Aggregates.unwind("$spans"),
+      Aggregates.match(Filters.and(
+          Filters.in("serviceName", serviceNames),
+          Filters.regex("spans.attributes.key", "^messaging", "m")
+      )),
+      Aggregates.project(Projections.fields(
+          Projections.computed("serviceName", "$serviceName"),
+          Projections.computed("startTimeUnixNano", "$spans.startTimeUnixNano"),
+          Projections.computed("endTimeUnixNano", "$spans.endTimeUnixNano"),
+          Projections.computed("justDate", "$justDate")
+      ))
+  );
 
-if (from != null && to != null) {
-  // Date-wise filtering
-  pipeline.add(Aggregates.addFields(new Field<>("justDate",
-    new Document("$dateToString",
-      new Document("format", "%m-dd-yyyy")
-        .append("date", "$createdTime")))));
-  pipeline.add(Aggregates.match(Filters.and(
-    Filters.regex("spans.attributes.key", "^messaging", "m"),
-    Filters.in("serviceName", serviceNames),
-    Filters.gte("justDate", from.format(DateTimeFormatter.ofPattern("MM-dd-yyyy"))),
-    Filters.lte("justDate", to.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")))
-  )));
-} else {
-  // Date-wise filtering is not applied when 'from' is null
-}
-
-if (minutesAgo > 0) {
-  // Time-based filtering
-  LocalDateTime thresholdTime = currentTime.minusMinutes(minutesAgo);
-
-  if (from != null && from.isEqual(currentTime.toLocalDate())) {
-    // Ensure that the time filter doesn't go beyond the current day
-    thresholdTime = thresholdTime.isAfter(startOfToday) ? thresholdTime : startOfToday;
+  // Filter by minutesAgo
+  if (minutesAgo > 0) {
+    LocalDateTime thresholdTime = currentTime.minusMinutes(minutesAgo);
+    if (from != null && from.isEqual(currentTime.toLocalDate())) {
+      // Ensure that the time filter doesn't go beyond the current day
+      thresholdTime = thresholdTime.isAfter(startOfToday) ? thresholdTime : startOfToday;
+    }
+    Bson timeFilter = Filters.gte("createdTime", Date.from(thresholdTime.atZone(ZoneId.systemDefault()).toInstant()));
+    pipeline.add(Aggregates.match(timeFilter));
   }
-  Bson timeFilter = Filters.gte("createdTime", Date.from(thresholdTime.atZone(ZoneId.systemDefault()).toInstant()));
-  pipeline.add(Aggregates.match(timeFilter));
-}
 
-pipeline.add(Aggregates.unwind("$spans"));
-pipeline.add(Aggregates.match(Filters.and(
-  Filters.in("serviceName", serviceNames),
-  Filters.regex("spans.attributes.key", "^messaging", "m")
-)));
-pipeline.add(Aggregates.project(Projections.fields(
-  Projections.computed("serviceName", "$serviceName"),
-  Projections.computed("startTimeUnixNano", "$spans.startTimeUnixNano"),
-  Projections.computed("endTimeUnixNano", "$spans.endTimeUnixNano"),
-  Projections.computed("justDate", "$justDate")
-)));
-
-AggregateIterable<Document> result = collection.aggregate(pipeline);
-
+  AggregateIterable<Document> result = collection.aggregate(pipeline);
+ 
   Map<String, KafkaMetrics> kafkaMetricsMap = new HashMap<>();
 
   ((AggregateIterable<Document>) result).forEach((Consumer<? super Document>) document -> {
@@ -803,11 +780,6 @@ AggregateIterable<Document> result = collection.aggregate(pipeline);
 
   return resultList;
 }
-
-
-
-
-
 
 // Utility method to safely retrieve a string value or use a default fallback
 private String getAsStringOrFallback(Document document, String key, String fallback) {
