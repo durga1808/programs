@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 public class DBMetric {
  private String serviceName;
  private Long dbCallCount;
- private String dbName;
+// private String dbName;
  private Long dbPeakLatencyCount;
 }

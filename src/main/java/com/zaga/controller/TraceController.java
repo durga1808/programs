@@ -221,15 +221,78 @@ public Response findErroredDataForLastTwo(
 
     @GET
     @Path("/DBSumaryChartDataCount")
-    public List<DBMetric> getDBTraceMetricCount(){
-            // @QueryParam("serviceNameList") List<String> serviceNames,
-            // @QueryParam("from") LocalDate from,
-            // @QueryParam("to") LocalDate to,
-            // @QueryParam("minutesAgo") int minutesAgo
-                // System.out.println("----------minutesAgo--------------------"+minutesAgo);
-        return traceQueryHandler.getAllDBMetrics();
+    public List<DBMetric> getDBTraceMetricCount(
+    @QueryParam("from") LocalDate from,
+    @QueryParam("to") LocalDate to,
+    //@QueryParam("minutesAgo") int minutesAgo,   
+    @QueryParam("serviceNameList") List<String> serviceNames){
+        return traceQueryHandler.getAllDBMetrics(serviceNames,from,to);
+        //,minutesAgo);
     }
   
+
+    // @GET
+    // @Path("/DBSumaryChartDataCount")
+    // public List<DBMetric> getDBTraceMetricCount(
+    //         @QueryParam("from") LocalDate fromDate,
+    //         @QueryParam("to") LocalDate toDate,
+    //         @QueryParam("minutesAgo") Integer minutesAgo,
+    //         @QueryParam("serviceNameList") List<String> serviceNames) {
+    
+    //     List<DBMetric> allDBMetrics = traceQueryHandler.getAllDBMetrics(serviceNames);
+    
+    //     if (fromDate != null && toDate != null) {
+    //         allDBMetrics = filterDBMetricsByDateRange(allDBMetrics, fromDate, toDate);
+    //     } else if (minutesAgo != null && minutesAgo > 0) {
+    //         allDBMetrics = filterDBMetricsByMinutesAgo(allDBMetrics, minutesAgo);
+    //     }
+    
+    //     return allDBMetrics;
+    // }
+    
+    // private List<DBMetric> filterDBMetricsByMinutesAgo(List<DBMetric> dbMetrics, int minutesAgo) {
+    //     Instant currentInstant = Instant.now();
+    //     Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+    
+    //     LocalDateTime fromDateTime = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
+    //     LocalDateTime toDateTime = LocalDateTime.now();
+    
+    //     // Ensure that 'fromDateTime' is limited to the start of the current day
+    //     LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+    //     fromDateTime = fromDateTime.isAfter(startOfDay) ? fromDateTime : startOfDay;
+    
+    //     System.out.println("fromDateTime: " + fromDateTime);
+    //     System.out.println("toDateTime: " + toDateTime);
+    
+    //     List<DBMetric> filteredDBMetrics = filterDBMetricsByDateTimeRange(dbMetrics, fromDateTime, toDateTime);
+    
+    //     System.out.println("Filtered DBMetrics Count: " + filteredDBMetrics.size());
+    
+    //     return filteredDBMetrics;
+    // }
+    
+    // private List<DBMetric> filterDBMetricsByDateRange(List<DBMetric> dbMetrics, LocalDate fromDate, LocalDate toDate) {
+    //     LocalDateTime fromDateTime = fromDate.atStartOfDay();
+    //     LocalDateTime toDateTime = toDate.atTime(LocalTime.MAX);
+    //     return filterDBMetricsByDateTimeRange(dbMetrics, fromDateTime, toDateTime);
+    // }
+    
+    // private List<DBMetric> filterDBMetricsByDateTimeRange(List<DBMetric> dbMetrics, LocalDateTime fromDateTime, LocalDateTime toDateTime) {
+    //     return dbMetrics.stream()
+    //             .filter(dbMetric -> {
+    //                 // Replace 'timestamp' with the actual field name representing the timestamp in your DBMetric class
+    //                 LocalDateTime dbMetricTimestamp = dbMetric.getTimestamp();
+    
+    //                 // Adjust the logic based on your actual requirements
+    //                 return !dbMetricTimestamp.isBefore(fromDateTime) && !dbMetricTimestamp.isAfter(toDateTime);
+    //             })
+    //             .collect(Collectors.toList());
+    // }
+    
+    
+    
+    
+
   
 //get data by traceId and also have same traceId then merge it as a one
 @GET
