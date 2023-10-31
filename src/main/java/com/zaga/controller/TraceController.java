@@ -225,9 +225,9 @@ public Response findErroredDataForLastTwo(
     public List<DBMetric> getDBTraceMetricCount(
     @QueryParam("from") LocalDate from,
     @QueryParam("to") LocalDate to,
-    //@QueryParam("minutesAgo") int minutesAgo,   
+    @QueryParam("minutesAgo") int minutesAgo,   
     @QueryParam("serviceNameList") List<String> serviceNames){
-        return traceQueryHandler.getAllDBMetrics(serviceNames,from,to);
+        return traceQueryHandler.getAllDBMetrics(serviceNames,from,to,minutesAgo);
         //,minutesAgo);
     }
   
