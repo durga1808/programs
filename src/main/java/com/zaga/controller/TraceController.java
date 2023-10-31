@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.oteltrace.scopeSpans.Spans;
 import com.zaga.entity.queryentity.log.LogDTO;
 import com.zaga.entity.queryentity.trace.DBMetric;
+import com.zaga.entity.queryentity.trace.KafkaMetrics;
 import com.zaga.entity.queryentity.trace.TraceDTO;
 import com.zaga.entity.queryentity.trace.TraceMetrics;
 import com.zaga.entity.queryentity.trace.TraceQuery;
@@ -395,7 +396,16 @@ public Response findByErrorTraceId(@QueryParam("traceId") String traceId) {
 }
   
 
-
+@GET
+    @Path("/KafkaSumaryChartDataCount")
+    public List<KafkaMetrics> getKafkaTraceMetricCount(
+            @QueryParam("serviceNameList") List<String> serviceName){
+            // @QueryParam("from") LocalDate from,
+            // @QueryParam("to") LocalDate to){
+            // @QueryParam("minutesAgo") int minutesAgo){
+                // System.out.println("----------minutesAgo--------------------"+minutesAgo);
+        return traceQueryHandler.getAllKafkaMetrics(serviceName);
+    }
 
 
 @GET
