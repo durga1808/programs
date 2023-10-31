@@ -613,7 +613,6 @@ public List<LogDTO> getErroredLogDTO(List<TraceDTO> mergedTraces) {
 
 
 
-
 public List<DBMetric> getAllDBMetrics(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
   MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
           .getCollection("TraceDTO");
