@@ -316,66 +316,41 @@ public List<TraceDTO> getAllTracesAsc(List<String> serviceNameList){
 }
 
 // sort order error first
-// public List<TraceDTO> findAllOrderByErrorFirst(List<String> serviceNameList) {
-//   MongoCollection<Document> traceCollection = mongoClient
-//           .getDatabase("OtelTrace")
-//           .getCollection("TraceDTO");
-
-//   // List<TraceDTO> allTraces = traceCollection.find(TraceDTO.class).into(new ArrayList<>());
-
-//   // List<TraceDTO> sortedTraces = allTraces.stream()
-//   //         .filter(trace -> serviceNameList.contains(trace.getServiceName())) // Filter by service name list
-//           // .sorted(Comparator
-//           //         // Sort by error status first (statusCode >= 400 && statusCode <= 599)
-//           //         .comparing((TraceDTO trace) -> {
-//           //             Long statusCode = trace.getStatusCode();
-//           //             return (statusCode != null && statusCode >= 400 && statusCode <= 599) ? 0 : 1;
-//           //         })
-//           //         // Then sort by status code in descending order
-//           //         .thenComparing(TraceDTO::getStatusCode, Comparator.nullsLast(Comparator.reverseOrder()))
-//           //         // Finally, sort by created time in descending order
-//           //         .thenComparing(TraceDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder())))
-//           // .collect(Collectors.toList());
-//           List<TraceDTO> sortedTraces = allTraces.stream()
-//           .filter(trace -> serviceNameList.contains(trace.getServiceName())) // Filter by service name list
-//           .sorted(Comparator
-//                   // Sort by error status first (statusCode >= 400 && statusCode <= 599)
-//                   .comparing((TraceDTO trace) -> {
-//                       Long statusCode = trace.getStatusCode();
-//                       return (statusCode != null && statusCode >= 400 && statusCode <= 599) ? 0 : 1;
-//                   })
-//                   // Then sort by status code in descending order
-//                   .thenComparing(TraceDTO::getStatusCode, Comparator.nullsLast(Comparator.reverseOrder()))
-//                   // Finally, sort by created time in descending order
-//                   .thenComparing(TraceDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder())))
-//           .collect(Collectors.toList());
-
-//   return sortedTraces;
-// }
-
 public List<TraceDTO> findAllOrderByErrorFirst(List<String> serviceNameList) {
   MongoCollection<Document> traceCollection = mongoClient
           .getDatabase("OtelTrace")
           .getCollection("TraceDTO");
 
-  // Retrieve all traces from the MongoDB collection
-  List<TraceDTO> allTraces = traceCollection.find(TraceDTO.class).into(new ArrayList<>());
+    List<TraceDTO> allTraces = traceCollection.find(TraceDTO.class).into(new ArrayList<>());
 
-  // Filter and sort the traces
+  // List<TraceDTO> sortedTraces = allTraces.stream()
+  //         .filter(trace -> serviceNameList.contains(trace.getServiceName())) // Filter by service name list
+  //         .sorted(Comparator
+  //                 // Sort by error status first (statusCode >= 400 && statusCode <= 599)
+  //                 .comparing((TraceDTO trace) -> {
+  //                     Long statusCode = trace.getStatusCode();
+  //                     return (statusCode != null && statusCode >= 400 && statusCode <= 599) ? 0 : 1;
+  //                 })
+  //                 // Then sort by status code in descending order
+  //                 .thenComparing(TraceDTO::getStatusCode, Comparator.nullsLast(Comparator.reverseOrder()))
+  //                 // Finally, sort by created time in descending order
+  //                 .thenComparing(TraceDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder())))
+  //         .collect(Collectors.toList());
   List<TraceDTO> sortedTraces = allTraces.stream()
-          .filter(trace -> serviceNameList.contains(trace.getServiceName()) && // Filter by service name list
-                  (trace.getStatusCode() == null || (trace.getStatusCode() >= 400 && trace.getStatusCode() <= 599))) // Filter by status code
-          .sorted(Comparator
-                  // Sort by created time in descending order
-                  .comparing(TraceDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder())))
-          .collect(Collectors.toList());
+        .filter(trace -> serviceNameList.contains(trace.getServiceName()))
+        .sorted(Comparator
+                // Sort by error status first (statusCode >= 400 && statusCode <= 599)
+                .comparing((TraceDTO trace) -> {
+                    Long statusCode = trace.getStatusCode();
+                    return (statusCode != null && statusCode >= 400 && statusCode <= 599) ? 0 : 1;
+                })
+                .thenComparing(TraceDTO::getStatusCode, Comparator.nullsLast(Comparator.naturalOrder())) // Handle nulls for statusCode
+                .thenComparing(TraceDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder()))) // Handle nulls for createdTime
+        .collect(Collectors.toList());
 
-  return sortedTraces;
+
+           return sortedTraces;
 }
-
-
-
-
 
 
 
