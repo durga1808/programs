@@ -419,15 +419,12 @@ public List<TraceDTO> getTraceFilterAsc(List<TraceDTO> traceList) {
 public List<TraceDTO> getTraceFilterOrderByErrorFirst(List<TraceDTO> traceList) {
   return traceList.stream()
       .sorted(Comparator
-          .comparing((TraceDTO trace) -> {
-              Long statusCode = trace.getStatusCode();
-              return (statusCode != null && statusCode >= 400 && statusCode <= 599) ? 0 : 1;
-          })
-          .thenComparing(TraceDTO::getStatusCode, Comparator.nullsLast(Comparator.reverseOrder()))
+          .comparing(TraceDTO::getStatusCode, Comparator.nullsLast(Comparator.reverseOrder()))
           .thenComparing(TraceDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder()))
       )
       .collect(Collectors.toList());
 }
+
 
 // Sort by duration in descending order
 public List<TraceDTO> getTraceFilterOrderByDuration(List<TraceDTO> traceList) {

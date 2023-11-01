@@ -141,16 +141,17 @@ public Response queryTraces(
         Map<String, Object> jsonResponse = new HashMap<>();
         jsonResponse.put("totalCount", totalCount);
         jsonResponse.put("data", traceList);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            String responseJson = objectMapper.writeValueAsString(jsonResponse);
-            return Response.ok(responseJson).build();
-        } catch (JsonProcessingException e) {
-             e.printStackTrace();
-        }
-
+        System.out.println("pagenumber: " + totalCount);
         return Response.ok(traceList).build();
+        // ObjectMapper objectMapper = new ObjectMapper();
+        // try {
+        //     String responseJson = objectMapper.writeValueAsString(jsonResponse);
+        //     return Response.ok(responseJson).build();
+        // } catch (JsonProcessingException e) {
+        //      e.printStackTrace();
+        // }
+
+        // return Response.ok(traceList).build();
     }
 
 
