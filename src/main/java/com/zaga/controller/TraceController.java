@@ -228,8 +228,7 @@ public Response findErroredDataForLastTwo(
     @QueryParam("minutesAgo") int minutesAgo,   
     @QueryParam("serviceNameList") List<String> serviceNames){
         return traceQueryHandler.getAllDBMetrics(serviceNames,from,to,minutesAgo);
-        //,minutesAgo);
-    }
+        }
   
 
     @GET
@@ -418,15 +417,17 @@ public Response sortOrderTrace(
     Map<String, Object> response = new HashMap<>();
     response.put("data", paginatedTraces);
     response.put("totalCount", totalCount);
-    try {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String responseJson = objectMapper.writeValueAsString(response);
-        return Response.ok(responseJson).build();
-    } catch (Exception e) {
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Error converting response to JSON")
-                .build();
-    }
+    System.out.println("total count----------"+totalCount);
+    return Response.ok(paginatedTraces).build();
+    // try {
+    //     ObjectMapper objectMapper = new ObjectMapper();
+    //     String responseJson = objectMapper.writeValueAsString(response);
+    //     return Response.ok(responseJson).build();
+    // } catch (Exception e) {
+    //     return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+    //             .entity("Error converting response to JSON")
+    //             .build();
+    // }
 }
 
 // private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
