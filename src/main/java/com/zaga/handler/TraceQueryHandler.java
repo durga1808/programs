@@ -1,7 +1,6 @@
 package com.zaga.handler;
 
 
-import com.fasterxml.jackson.databind.deser.DataFormatReaders.Match;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
@@ -620,43 +619,42 @@ public List<DBMetric> getAllDBMetrics(List<String> serviceNameList, LocalDate fr
   MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
           .getCollection("TraceDTO");
 
-//  Match service names
-    Bson serviceNameFilter = Filters.in("serviceName", serviceNameList);
+  // Match service names
+  Bson serviceNameFilter = Filters.in("serviceName", serviceNameList);
 
-    List<Bson> pipeline = new ArrayList<>();
+  List<Bson> pipeline = new ArrayList<>();
 
-    // Match serviceName, regex, and date/time conditions
-    Bson regexFilter = Filters.regex("spans.attributes.key", "^db", "m");
+  if (from != null && to != null) {
+      // Date-wise filtering
+      pipeline.add(Aggregates.match(Filters.and(
+              Filters.regex("spans.attributes.key", "^db", "m"),
+              serviceNameFilter,
+              Filters.gte("createdTime", Date.from(from.atStartOfDay(ZoneId.systemDefault()).toInstant())),
+              Filters.lt("createdTime", Date.from(to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()))
+      )));
+  } else if (minutesAgo == 1440) {
+    // Fetch data for today
+    LocalDateTime now = LocalDateTime.now(ZoneId.systemDefault());
+    LocalDateTime startOfToday = now.toLocalDate().atStartOfDay();
+    LocalDateTime endOfToday = startOfToday.plusDays(1);
 
-    if (from != null && to != null) {
-        // Date-wise filtering
-        Bson dateFilter = Filters.and(
-                Filters.gte("createdTime", Date.from(from.atStartOfDay(ZoneId.systemDefault()).toInstant())),
-                Filters.lt("createdTime", Date.from(to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()))
-        );
+    pipeline.add(Aggregates.match(Filters.and(
+        Filters.regex("spans.attributes.key", "^db", "m"),
+        serviceNameFilter,
+        Filters.gte("createdTime", Date.from(startOfToday.atZone(ZoneId.systemDefault()).toInstant())),
+        Filters.lt("createdTime", Date.from(endOfToday.atZone(ZoneId.systemDefault()).toInstant()))
+    )));
+} else if (minutesAgo > 0) {
+    // Time-based filtering
+    LocalDateTime thresholdTime = LocalDateTime.now().minusMinutes(minutesAgo);
 
-        pipeline.add(Aggregates.match(Filters.and(serviceNameFilter, regexFilter, dateFilter)));
-    } else if (minutesAgo == 1440) {
-        // Fetch data for today
-        LocalDateTime now = LocalDateTime.now(ZoneId.systemDefault());
-        LocalDateTime startOfToday = now.toLocalDate().atStartOfDay();
-        LocalDateTime endOfToday = startOfToday.plusDays(1);
+    pipeline.add(Aggregates.match(Filters.and(
+        Filters.regex("spans.attributes.key", "^db", "m"),
+        serviceNameFilter,
+        Filters.gte("createdTime", Date.from(thresholdTime.atZone(ZoneId.systemDefault()).toInstant()))
+    )));
+}
 
-        Bson timeFilter = Filters.and(
-                Filters.gte("createdTime", Date.from(startOfToday.atZone(ZoneId.systemDefault()).toInstant())),
-                Filters.lt("createdTime", Date.from(endOfToday.atZone(ZoneId.systemDefault()).toInstant()))
-        );
-
-        pipeline.add(Aggregates.match(Filters.and(serviceNameFilter, regexFilter, timeFilter)));
-    } else if (minutesAgo > 0) {
-      // Time-based filtering
-      LocalDateTime thresholdTime = LocalDateTime.now().minusMinutes(minutesAgo);
-  
-      Bson timeFilter = Filters.gte("createdTime", Date.from(thresholdTime.atZone(ZoneId.systemDefault()).toInstant()));
-  
-      pipeline.add(Aggregates.match(Filters.and(serviceNameFilter, regexFilter, timeFilter)));
-  }
-  
 
   pipeline.add(Aggregates.unwind("$spans"));
   pipeline.add(Aggregates.match(Filters.and(
@@ -677,10 +675,10 @@ public List<DBMetric> getAllDBMetrics(List<String> serviceNameList, LocalDate fr
       String serviceName = getAsStringOrFallback(document, "serviceName", "Unknown");
 
       String startTimeUnixNanoStr = document.getString("startTimeUnixNano");
-      String endTimeUnixNanoStr = document.getString("endTimeUnixNano");
+String endTimeUnixNanoStr = document.getString("endTimeUnixNano");
 
-      long startTimeUnixNano = Long.parseLong(startTimeUnixNanoStr);
-      long endTimeUnixNano = Long.parseLong(endTimeUnixNanoStr);
+long startTimeUnixNano = Long.parseLong(startTimeUnixNanoStr);
+long endTimeUnixNano = Long.parseLong(endTimeUnixNanoStr);
 
 
       ZonedDateTime startIST = Instant.ofEpochSecond(0, startTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
@@ -760,14 +758,12 @@ public List<KafkaMetrics> getAllKafkaMetrics(List<String> serviceNames, LocalDat
       ZonedDateTime startIST = Instant.ofEpochSecond(0, startTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
       ZonedDateTime endIST = Instant.ofEpochSecond(0, endTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
       long kafkaDuration = ChronoUnit.MILLIS.between(startIST, endIST);
-              System.out.println("kakfkadurationexceeded ---------------" + kafkaDuration);
 
       String key = serviceName;
       KafkaMetrics kafkaMetrics = kafkaMetricsMap.computeIfAbsent(key, k -> new KafkaMetrics(serviceName, 0L, 0L));
 
       kafkaMetrics.setKafkaCallCount(kafkaMetrics.getKafkaCallCount() + 1);
       if (kafkaDuration > 5) {
-        System.out.println("kakfkadurationexceeded ---------------" + kafkaDuration);
           kafkaMetrics.setKafkaPeakLatency(kafkaMetrics.getKafkaPeakLatency() + 1);
       }
   });
