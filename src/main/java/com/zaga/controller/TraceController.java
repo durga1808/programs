@@ -155,56 +155,56 @@ public Response queryTraces(
 
 
 
-@GET
-@Path("/getErroredDataForLastTwo")
-@Produces(MediaType.APPLICATION_JSON)
-public Response findErroredDataForLastTwo(
-        @QueryParam("page") @DefaultValue("1") int page,
-        @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-        @QueryParam("serviceName") String serviceName) {
+// @GET
+// @Path("/getErroredDataForLastTwo")
+// @Produces(MediaType.APPLICATION_JSON)
+// public Response findErroredDataForLastTwo(
+//         @QueryParam("page") @DefaultValue("1") int page,
+//         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+//         @QueryParam("serviceName") String serviceName) {
 
-    try {
-        List<TraceDTO> traces = traceQueryHandler.findErrorsLastTwoHours(serviceName);
+//     try {
+//         List<TraceDTO> traces = traceQueryHandler.findErrorsLastTwoHours(serviceName);
 
-        int totalCount = traces.size();
-        int startIndex = (page - 1) * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, totalCount);
+//         int totalCount = traces.size();
+//         int startIndex = (page - 1) * pageSize;
+//         int endIndex = Math.min(startIndex + pageSize, totalCount);
 
-        if (startIndex >= endIndex || traces.isEmpty()) {
-            Map<String, Object> emptyResponse = new HashMap<>();
-            emptyResponse.put("data", Collections.emptyList());
-            emptyResponse.put("totalCount", 0);
+//         if (startIndex >= endIndex || traces.isEmpty()) {
+//             Map<String, Object> emptyResponse = new HashMap<>();
+//             emptyResponse.put("data", Collections.emptyList());
+//             emptyResponse.put("totalCount", 0);
 
-            return Response.ok(emptyResponse).build();
-        }
+//             return Response.ok(emptyResponse).build();
+//         }
 
-        List<TraceDTO> erroredData = traces.subList(startIndex, endIndex);
+//         List<TraceDTO> erroredData = traces.subList(startIndex, endIndex);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("data", erroredData);
-        response.put("totalCount", totalCount);
+//         Map<String, Object> response = new HashMap<>();
+//         response.put("data", erroredData);
+//         response.put("totalCount", totalCount);
 
-      ObjectMapper objectMapper = new ObjectMapper();
-      String responseJson = objectMapper.writeValueAsString(response);
+//       ObjectMapper objectMapper = new ObjectMapper();
+//       String responseJson = objectMapper.writeValueAsString(response);
 
-      return Response.ok(responseJson).build();
-    } catch (Exception e) {
-      return Response
-          .status(Response.Status.INTERNAL_SERVER_ERROR)
-          .entity(e.getMessage())
-          .build();
-    }
-}
+//       return Response.ok(responseJson).build();
+//     } catch (Exception e) {
+//       return Response
+//           .status(Response.Status.INTERNAL_SERVER_ERROR)
+//           .entity(e.getMessage())
+//           .build();
+//     }
+// }
 
 
 
   
-  @GET
-  @Path("/count")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Map<String, Long> getTraceCount() {
-    return traceQueryHandler.getTraceCountWithinHour();
-  }
+//   @GET
+//   @Path("/count")
+//   @Produces(MediaType.APPLICATION_JSON)
+//   public Map<String, Long> getTraceCount() {
+//     return traceQueryHandler.getTraceCountWithinHour();
+//   }
 
 
 
