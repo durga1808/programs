@@ -744,12 +744,14 @@ public List<KafkaMetrics> getAllKafkaMetrics(List<String> serviceNames, LocalDat
       ZonedDateTime startIST = Instant.ofEpochSecond(0, startTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
       ZonedDateTime endIST = Instant.ofEpochSecond(0, endTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
       long kafkaDuration = ChronoUnit.MILLIS.between(startIST, endIST);
+              System.out.println("kakfkadurationexceeded ---------------" + kafkaDuration);
 
       String key = serviceName;
       KafkaMetrics kafkaMetrics = kafkaMetricsMap.computeIfAbsent(key, k -> new KafkaMetrics(serviceName, 0L, 0L));
 
       kafkaMetrics.setKafkaCallCount(kafkaMetrics.getKafkaCallCount() + 1);
       if (kafkaDuration > 5) {
+        System.out.println("kakfkadurationexceeded ---------------" + kafkaDuration);
           kafkaMetrics.setKafkaPeakLatency(kafkaMetrics.getKafkaPeakLatency() + 1);
       }
   });
