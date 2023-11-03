@@ -221,6 +221,19 @@ public Response queryTraces(
 
 
     @GET
+    @Path("/TraceSumaryChartPeaKLatencyCount")
+    public List<TraceMetrics> getPeaKLatency(
+            @QueryParam("serviceNameList") List<String> serviceNames,
+            @QueryParam("from") LocalDate from,
+            @QueryParam("to") LocalDate to,
+            @QueryParam("minutesAgo") int minutesAgo,
+            @QueryParam("peakLatencyThreshold") int peakLatencyThreshold){
+                System.out.println("----------minutesAgo--------------------"+minutesAgo);
+        return traceQueryHandler.getPeaKLatency(serviceNames,from,to,minutesAgo,peakLatencyThreshold);
+    }
+    
+
+    @GET
     @Path("/DBSumaryChartDataCount")
     public List<DBMetric> getDBTraceMetricCount(
     @QueryParam("from") LocalDate from,

@@ -881,4 +881,109 @@ private void calculateTraces(TraceDTO traceDTO, TraceMetrics metrics) {
   }
 }
 
+
+
+
+public List<TraceMetrics> getPeaKLatency(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo,long peakLatencyThreshold) {
+  List<TraceDTO> traceList = traceQueryRepo.listAll();
+  Map<String, TraceMetrics> metricsMap = new HashMap<>();
+
+  Instant fromInstant = null;
+  Instant toInstant = null;
+
+  if (from != null && to != null) {
+    Instant startOfFrom = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+    Instant startOfTo = to.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+    fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+    toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+
+    toInstant = toInstant.plus(1, ChronoUnit.DAYS);
+  } else if (minutesAgo > 0) {
+    Instant currentInstant = Instant.now();
+    Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+    // Calculate the start of the current day
+    Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+    if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
+        fromInstant = startOfCurrentDay;
+    } else {
+        fromInstant = minutesAgoInstant;
+    }
+
+    toInstant = currentInstant;
+} else {
+    throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+  }
+
+  for (TraceDTO traceDTO : traceList) {
+    Date traceCreateTime = traceDTO.getCreatedTime();
+    if (traceCreateTime == null) {
+      System.out.println("traceCreateTime is null in getTraceCount method");
+      continue;
+    }
+
+    Instant traceInstant = traceCreateTime.toInstant();
+
+    if (!serviceNameList.contains(traceDTO.getServiceName()) ||
+        !traceInstant.isAfter(fromInstant) ||
+        !traceInstant.isBefore(toInstant)) {
+      continue;
+    }
+
+    String serviceName = traceDTO.getServiceName();
+    TraceMetrics metrics = metricsMap.get(serviceName);
+
+    if (metrics == null) {
+      metrics = new TraceMetrics();
+      metrics.setServiceName(serviceName);
+      // metrics.setApiCallCount(0L);
+      metrics.setPeakLatency(0L);
+      // metrics.setTotalErrorCalls(0L);
+      // metrics.setTotalSuccessCalls(0L);
+      metricsMap.put(serviceName, metrics);
+    }
+
+    calculatePeakLatency(traceDTO, metrics,peakLatencyThreshold);
+  }
+
+  return new ArrayList<>(metricsMap.values());
+}
+
+private void calculatePeakLatency(TraceDTO traceDTO, TraceMetrics metrics,long peakLatencyThreshold) {
+  if (traceDTO == null) {
+    System.out.println("traceDTO is null in calculateTraces method");
+    return;
+  }
+
+  // if (traceDTO.getStatusCode() != null) {
+  //   if (traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599) {
+  //     metrics.setTotalErrorCalls(metrics.getTotalErrorCalls() + 1);
+  //   } else if (traceDTO.getStatusCode() >= 200 && traceDTO.getStatusCode() <= 299) {
+  //     metrics.setTotalSuccessCalls(metrics.getTotalSuccessCalls() + 1);
+  //   }
+  // }
+
+  // System.out.println("Before: metrics=" + metrics + ", apiCallCount=" + metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
+
+  // if (metrics.getApiCallCount() == null) {
+  //   // Log or print an error message if apiCallCount is unexpectedly null
+  //   System.out.println("apiCallCount is unexpectedly null in calculateTraces method");
+  //   return;
+  // }
+
+  // metrics.setApiCallCount(metrics.getTotalErrorCalls() + metrics.getTotalSuccessCalls());
+
+  // System.out.println("After: metrics=" + metrics + ", apiCallCount=" + metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
+
+ if (traceDTO.getDuration() != null && traceDTO.getDuration() > peakLatencyThreshold) {
+  metrics.setPeakLatency(metrics.getPeakLatency() + 1);
+} else {
+  System.out.println("statusCode is unexpectedly null in calculateTraces method");
+}
+}
+
+
+
 }
