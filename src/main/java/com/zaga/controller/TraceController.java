@@ -38,87 +38,84 @@ import java.util.stream.Collectors;
 
 import org.bson.Document;
 
-
-
 @Path("/traces")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class TraceController {
 
-  @Inject
-  TraceQueryHandler traceQueryHandler;
+    @Inject
+    TraceQueryHandler traceQueryHandler;
 
-  @Inject
-  TraceQueryRepo traceQueryRepo;
+    @Inject
+    TraceQueryRepo traceQueryRepo;
 
-  @GET
-  @Path("/getAllTraceData")
-  public Response getAllDetails() {
-    try {
-      List<TraceDTO> traceList = traceQueryHandler.getSampleTrace();
+    @GET
+    @Path("/getAllTraceData")
+    public Response getAllDetails() {
+        try {
+            List<TraceDTO> traceList = traceQueryHandler.getSampleTrace();
 
-      ObjectMapper objectMapper = new ObjectMapper();
-      String responseJson = objectMapper.writeValueAsString(traceList);
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseJson = objectMapper.writeValueAsString(traceList);
 
-      return Response.ok(responseJson).build();
-    } catch (Exception e) {
+            return Response.ok(responseJson).build();
+        } catch (Exception e) {
 
-      e.printStackTrace();
-      return Response
-          .status(Response.Status.INTERNAL_SERVER_ERROR)
-          .entity("An error occurred: " + e.getMessage())
-          .build();
-    }
-  }
-
-
-@GET
-@Path("/findById")
-public Response findById(@QueryParam("traceId") String traceId) {
-    if (traceId == null || traceId.isEmpty()) {
-        return Response.status(Response.Status.BAD_REQUEST)
-                .entity("traceId query parameter is required")
-                .build();
+            e.printStackTrace();
+            return Response
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("An error occurred: " + e.getMessage())
+                    .build();
+        }
     }
 
-    List<TraceDTO> data = traceQueryRepo.find("traceId = ?1", traceId).list();
+    @GET
+    @Path("/findById")
+    public Response findById(@QueryParam("traceId") String traceId) {
+        if (traceId == null || traceId.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("traceId query parameter is required")
+                    .build();
+        }
 
-    if (data.isEmpty()) {
-        return Response.status(Response.Status.NOT_FOUND)
-                .entity("No TraceDTO found for traceId: " + traceId)
-                .build();
+        List<TraceDTO> data = traceQueryRepo.find("traceId = ?1", traceId).list();
+
+        if (data.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("No TraceDTO found for traceId: " + traceId)
+                    .build();
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", data);
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseJson = objectMapper.writeValueAsString(response);
+
+            return Response.ok(responseJson).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error converting response to JSON")
+                    .build();
+        }
     }
 
-    Map<String, Object> response = new HashMap<>();
-    response.put("data", data);
-
-    try {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String responseJson = objectMapper.writeValueAsString(response);
-
-        return Response.ok(responseJson).build();
-    } catch (Exception e) {
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Error converting response to JSON")
-                .build();
-    }
-}
-
-  
-@POST
-@Path("/TraceQueryFilter")
-public Response queryTraces(
-    TraceQuery traceQuery,
-    @QueryParam("page") @DefaultValue("1") int page,
-    @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-    @QueryParam("from") LocalDate from,
-    @QueryParam("to") LocalDate to,
-    @QueryParam("minutesAgo") int minutesAgo,
-    @QueryParam("sortOrder") String sortOrder) {
+    @POST
+    @Path("/TraceQueryFilter")
+    public Response queryTraces(
+            TraceQuery traceQuery,
+            @QueryParam("page") @DefaultValue("1") int page,
+            @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+            @QueryParam("from") LocalDate from,
+            @QueryParam("to") LocalDate to,
+            @QueryParam("minutesAgo") int minutesAgo,
+            @QueryParam("sortOrder") String sortOrder) {
         System.out.println("from controller: " + from);
         System.out.println("to controller: " + to);
 
-        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery, page, pageSize, from, to, minutesAgo);
+        List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery, page, pageSize, from, to,
+                minutesAgo);
 
         if (sortOrder != null) {
             if ("new".equalsIgnoreCase(sortOrder)) {
@@ -131,8 +128,8 @@ public Response queryTraces(
                 traceList = traceQueryHandler.getTraceFilterOrderByDuration(traceList);
             } else {
                 return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Invalid sortOrder parameter. Use 'new', 'old', 'error', 'peakLatency'.")
-                    .build();
+                        .entity("Invalid sortOrder parameter. Use 'new', 'old', 'error', 'peakLatency'.")
+                        .build();
             }
         }
 
@@ -147,78 +144,71 @@ public Response queryTraces(
             String responseJson = objectMapper.writeValueAsString(jsonResponse);
             return Response.ok(responseJson).build();
         } catch (JsonProcessingException e) {
-             e.printStackTrace();
+            e.printStackTrace();
         }
 
         return Response.ok(traceList).build();
     }
 
+    // @GET
+    // @Path("/getErroredDataForLastTwo")
+    // @Produces(MediaType.APPLICATION_JSON)
+    // public Response findErroredDataForLastTwo(
+    // @QueryParam("page") @DefaultValue("1") int page,
+    // @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+    // @QueryParam("serviceName") String serviceName) {
 
+    // try {
+    // List<TraceDTO> traces =
+    // traceQueryHandler.findErrorsLastTwoHours(serviceName);
 
-// @GET
-// @Path("/getErroredDataForLastTwo")
-// @Produces(MediaType.APPLICATION_JSON)
-// public Response findErroredDataForLastTwo(
-//         @QueryParam("page") @DefaultValue("1") int page,
-//         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-//         @QueryParam("serviceName") String serviceName) {
+    // int totalCount = traces.size();
+    // int startIndex = (page - 1) * pageSize;
+    // int endIndex = Math.min(startIndex + pageSize, totalCount);
 
-//     try {
-//         List<TraceDTO> traces = traceQueryHandler.findErrorsLastTwoHours(serviceName);
+    // if (startIndex >= endIndex || traces.isEmpty()) {
+    // Map<String, Object> emptyResponse = new HashMap<>();
+    // emptyResponse.put("data", Collections.emptyList());
+    // emptyResponse.put("totalCount", 0);
 
-//         int totalCount = traces.size();
-//         int startIndex = (page - 1) * pageSize;
-//         int endIndex = Math.min(startIndex + pageSize, totalCount);
+    // return Response.ok(emptyResponse).build();
+    // }
 
-//         if (startIndex >= endIndex || traces.isEmpty()) {
-//             Map<String, Object> emptyResponse = new HashMap<>();
-//             emptyResponse.put("data", Collections.emptyList());
-//             emptyResponse.put("totalCount", 0);
+    // List<TraceDTO> erroredData = traces.subList(startIndex, endIndex);
 
-//             return Response.ok(emptyResponse).build();
-//         }
+    // Map<String, Object> response = new HashMap<>();
+    // response.put("data", erroredData);
+    // response.put("totalCount", totalCount);
 
-//         List<TraceDTO> erroredData = traces.subList(startIndex, endIndex);
+    // ObjectMapper objectMapper = new ObjectMapper();
+    // String responseJson = objectMapper.writeValueAsString(response);
 
-//         Map<String, Object> response = new HashMap<>();
-//         response.put("data", erroredData);
-//         response.put("totalCount", totalCount);
+    // return Response.ok(responseJson).build();
+    // } catch (Exception e) {
+    // return Response
+    // .status(Response.Status.INTERNAL_SERVER_ERROR)
+    // .entity(e.getMessage())
+    // .build();
+    // }
+    // }
 
-//       ObjectMapper objectMapper = new ObjectMapper();
-//       String responseJson = objectMapper.writeValueAsString(response);
+    // @GET
+    // @Path("/count")
+    // @Produces(MediaType.APPLICATION_JSON)
+    // public Map<String, Long> getTraceCount() {
+    // return traceQueryHandler.getTraceCountWithinHour();
+    // }
 
-//       return Response.ok(responseJson).build();
-//     } catch (Exception e) {
-//       return Response
-//           .status(Response.Status.INTERNAL_SERVER_ERROR)
-//           .entity(e.getMessage())
-//           .build();
-//     }
-// }
-
-
-
-  
-//   @GET
-//   @Path("/count")
-//   @Produces(MediaType.APPLICATION_JSON)
-//   public Map<String, Long> getTraceCount() {
-//     return traceQueryHandler.getTraceCountWithinHour();
-//   }
-
-
-
-  @GET
+    @GET
     @Path("/TraceSumaryChartDataCount")
     public List<TraceMetrics> getTraceMetricCount(
             @QueryParam("serviceNameList") List<String> serviceNames,
             @QueryParam("from") LocalDate from,
             @QueryParam("to") LocalDate to,
-            @QueryParam("minutesAgo") int minutesAgo){
-                System.out.println("----------minutesAgo--------------------"+minutesAgo);
-        return traceQueryHandler.getAllTraceMetricCount(serviceNames,from,to,minutesAgo);
+            @QueryParam("minutesAgo") int minutesAgo) {
+        System.out.println("----------minutesAgo--------------------" + minutesAgo);
+        return traceQueryHandler.getAllTraceMetricCount(serviceNames, from, to, minutesAgo);
     }
-
 
     @GET
     @Path("/TraceSumaryChartPeaKLatencyCount")
@@ -227,22 +217,31 @@ public Response queryTraces(
             @QueryParam("from") LocalDate from,
             @QueryParam("to") LocalDate to,
             @QueryParam("minutesAgo") int minutesAgo,
-            @QueryParam("peakLatencyThreshold") int peakLatencyThreshold){
-                System.out.println("----------minutesAgo--------------------"+minutesAgo);
-        return traceQueryHandler.getPeaKLatency(serviceNames,from,to,minutesAgo,peakLatencyThreshold);
+            @QueryParam("peakLatencyThreshold") int peakLatencyThreshold) {
+        System.out.println("----------minutesAgo--------------------" + minutesAgo);
+        return traceQueryHandler.getPeaKLatency(serviceNames, from, to, minutesAgo, peakLatencyThreshold);
     }
-    
 
     @GET
     @Path("/DBSumaryChartDataCount")
     public List<DBMetric> getDBTraceMetricCount(
-    @QueryParam("from") LocalDate from,
-    @QueryParam("to") LocalDate to,
-    @QueryParam("minutesAgo") int minutesAgo,   
-    @QueryParam("serviceNameList") List<String> serviceNames){
-        return traceQueryHandler.getAllDBMetrics(serviceNames,from,to,minutesAgo);
-        }
-  
+            @QueryParam("from") LocalDate from,
+            @QueryParam("to") LocalDate to,
+            @QueryParam("minutesAgo") int minutesAgo,
+            @QueryParam("serviceNameList") List<String> serviceNames) {
+        return traceQueryHandler.getAllDBMetrics(serviceNames, from, to, minutesAgo);
+    }
+
+    @GET
+    @Path("/DBSumaryChartPeakLatencyCount")
+    public List<DBMetric> getDBTracePeakLatencyCount(
+            @QueryParam("from") LocalDate from,
+            @QueryParam("to") LocalDate to,
+            @QueryParam("minutesAgo") int minutesAgo,
+            @QueryParam("serviceNameList") List<String> serviceNames,
+            @QueryParam("peakLatency") int peakLatency) {
+        return traceQueryHandler.getAllDBPeakLatency(serviceNames, from, to, minutesAgo, peakLatency);
+    }
 
     @GET
     @Path("/KafkaSumaryChartDataCount")
@@ -250,174 +249,74 @@ public Response queryTraces(
             @QueryParam("serviceNameList") List<String> serviceName,
             @QueryParam("from") LocalDate from,
             @QueryParam("to") LocalDate to,
-            @QueryParam("minutesAgo") int minutesAgo){
+            @QueryParam("minutesAgo") int minutesAgo) {
 
-                List<KafkaMetrics> kafkaMetrics;
-    
-                kafkaMetrics = traceQueryHandler.getAllKafkaMetrics(serviceName, from, to,minutesAgo);
-                   return kafkaMetrics;
+        List<KafkaMetrics> kafkaMetrics;
+
+        kafkaMetrics = traceQueryHandler.getAllKafkaMetrics(serviceName, from, to, minutesAgo);
+        return kafkaMetrics;
     }
 
+    @GET
+    @Path("/KafkaSumaryChartPeakLatencyCount")
+    public List<KafkaMetrics> getKafkaTracePeakLatencyCount(
+            @QueryParam("serviceNameList") List<String> serviceName,
+            @QueryParam("from") LocalDate from,
+            @QueryParam("to") LocalDate to,
+            @QueryParam("minutesAgo") int minutesAgo, @QueryParam("peakLatency") int peakLatency) {
 
+        List<KafkaMetrics> kafkaMetrics;
 
-   
-  
-//get data by traceId and also have same traceId then merge it as a one
-@GET
-@Path("/findByTraceId")
-public Response findByTraceId(@QueryParam("traceId") String traceId) {
-    if (traceId == null || traceId.isEmpty()) {
-        return Response.status(Response.Status.BAD_REQUEST)
-            .entity("traceId query parameter is required")
-            .build();
+        kafkaMetrics = traceQueryHandler.getAllKafkaPeakLatency(serviceName, from, to, minutesAgo, peakLatency);
+        return kafkaMetrics;
     }
 
-    List<TraceDTO> data = traceQueryRepo.find("traceId = ?1", traceId).list();
+    // get data by traceId and also have same traceId then merge it as a one
+    @GET
+    @Path("/findByTraceId")
+    public Response findByTraceId(@QueryParam("traceId") String traceId) {
+        if (traceId == null || traceId.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("traceId query parameter is required")
+                    .build();
+        }
 
-    if (data.isEmpty()) {
-        return Response.status(Response.Status.NOT_FOUND)
-            .entity("No TraceDTO found for traceId: " + traceId)
-            .build();
-    }
+        List<TraceDTO> data = traceQueryRepo.find("traceId = ?1", traceId).list();
 
-    List<TraceDTO> dto;
-    if (data.size() > 1) {
-        dto = traceQueryHandler.mergeTraces(data);
-    } else {
-        dto = data;
+        if (data.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("No TraceDTO found for traceId: " + traceId)
+                    .build();
+        }
+
+        List<TraceDTO> dto;
+        if (data.size() > 1) {
+            dto = traceQueryHandler.mergeTraces(data);
+        } else {
+            dto = data;
+            for (TraceDTO trace : dto) {
+                List<Spans> orderedSpanData = traceQueryHandler.sortingParentChildOrder(trace.getSpans());
+                trace.setSpans(orderedSpanData);
+            }
+        }
+
         for (TraceDTO trace : dto) {
-            List<Spans> orderedSpanData = traceQueryHandler.sortingParentChildOrder(trace.getSpans());
-            trace.setSpans(orderedSpanData);
+            for (Spans span : trace.getSpans()) {
+                System.out.println(
+                        "Span ID: " + span.getSpanId() + ", Parent Span ID: " + span.getParentSpanId() + ", Name: "
+                                + span.getName());
+            }
         }
-    }
 
-    for (TraceDTO trace : dto) {
-        for (Spans span : trace.getSpans()) {
-            System.out.println(
-                "Span ID: " + span.getSpanId() + ", Parent Span ID: " + span.getParentSpanId() + ", Name: "
-                    + span.getName());
-        }
-    }
+        List<TraceSpanDTO> traceDTO = traceQueryHandler.getModifiedTraceSpanDTO(dto);
 
- 
-    List<TraceSpanDTO> traceDTO = traceQueryHandler.getModifiedTraceSpanDTO(dto);      
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", traceDTO);
 
-    Map<String, Object> response = new HashMap<>();
-    response.put("data", traceDTO); 
-
-    try {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String responseJson = objectMapper.writeValueAsString(response);
-
-        return Response.ok(responseJson).build();
-    } catch (Exception e) {
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-            .entity("Error converting response to JSON")
-            .build();
-    }
-}
-  
-  
-//get data by traceId and also have same traceId then merge it as a one
-@GET
-@Path("/getByErrorTraceId")
-public Response findByErrorTraceId(@QueryParam("traceId") String traceId) {
-    if (traceId == null || traceId.isEmpty()) {
-        return Response.status(Response.Status.BAD_REQUEST)
-            .entity("traceId query parameter is required")
-            .build();
-    }
-
-    List<TraceDTO> data = traceQueryRepo.find("traceId = ?1", traceId).list();
-
-    if (data.isEmpty()) {
-        return Response.status(Response.Status.NOT_FOUND)
-            .entity("No TraceDTO found for traceId: " + traceId)
-            .build();
-    }
-
-    for (TraceDTO trace : data) {
-        for (Spans span : trace.getSpans()) {
-            System.out.println(
-                "Span ID: " + span.getSpanId() + ", Parent Span ID: " + span.getParentSpanId() + ", Name: "
-                    + span.getName());
-        }
-    }
-
- 
-    List<LogDTO> logDTOs = traceQueryHandler.getErroredLogDTO(data);      
-
-    Map<String, Object> response = new HashMap<>();
-    response.put("data", logDTOs); 
-
-    try {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String responseJson = objectMapper.writeValueAsString(response);
-
-        return Response.ok(responseJson).build();
-    } catch (Exception e) {
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-            .entity("Error converting response to JSON")
-            .build();
-    }
-}
-  
-
-
-@GET
-@Path("/getalldata-sortorder")
-@Produces(MediaType.APPLICATION_JSON)
-public Response sortOrderTrace(
-    @QueryParam("sortOrder") String sortOrder,
-    @QueryParam("page") int page,
-    @QueryParam("pageSize") int pageSize,
-    @QueryParam("from") LocalDate fromDate,
-    @QueryParam("to") LocalDate toDate,
-    @QueryParam("minutesAgo") Integer minutesAgo,
-    @QueryParam("serviceNameList") List<String> serviceNameList) {
-    if (page <= 0 || pageSize <= 0) {
-        return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Invalid page or pageSize parameters.")
-                .build();
-    }
-    List<TraceDTO> traces;
-    if ("new".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc(serviceNameList);
-    } else if ("old".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.getAllTracesAsc(serviceNameList);
-    } else if ("error".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.findAllOrderByErrorFirst(serviceNameList);
-    } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.findAllOrderByDuration(serviceNameList);
-    } else {
-        return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Invalid sortOrder parameter. Use 'new', 'old', 'error', 'peakLatency'.")
-                .build();
-    }
-    if (fromDate != null && toDate != null) {
-        // Swap 'fromDate' and 'toDate' if 'toDate' is earlier than 'fromDate'
-        if (toDate.isBefore(fromDate)) {
-            LocalDate temp = fromDate;
-            fromDate = toDate;
-            toDate = temp;
-        }
-        traces = filterTracesByDateRange(traces, fromDate, toDate);
-    } else if (minutesAgo != null && minutesAgo > 0) {
-        traces = filterTracesByMinutesAgo(traces, minutesAgo);
-    } else {
-        return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Either fromDate and toDate or minutesAgo must be provided.")
-                .build();
-    }
-    int startIndex = (page - 1) * pageSize;
-    int endIndex = Math.min(startIndex + pageSize, traces.size());
-    if (startIndex >= endIndex || traces.isEmpty()) {
-        Map<String, Object> emptyResponse = new HashMap<>();
-        emptyResponse.put("data", Collections.emptyList());
-        emptyResponse.put("totalCount", 0);
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            String responseJson = objectMapper.writeValueAsString(emptyResponse);
+            String responseJson = objectMapper.writeValueAsString(response);
+
             return Response.ok(responseJson).build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -425,93 +324,203 @@ public Response sortOrderTrace(
                     .build();
         }
     }
-    List<TraceDTO> paginatedTraces = traces.subList(startIndex, endIndex);
-    int totalCount = traces.size();
-    Map<String, Object> response = new HashMap<>();
-    response.put("data", paginatedTraces);
-    response.put("totalCount", totalCount);
-    // System.out.println("total count----------"+totalCount);
-    // return Response.ok(paginatedTraces).build();
-    try {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String responseJson = objectMapper.writeValueAsString(response);
-        return Response.ok(responseJson).build();
-    } catch (Exception e) {
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Error converting response to JSON")
-                .build();
+
+    // get data by traceId and also have same traceId then merge it as a one
+    @GET
+    @Path("/getByErrorTraceId")
+    public Response findByErrorTraceId(@QueryParam("traceId") String traceId) {
+        if (traceId == null || traceId.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("traceId query parameter is required")
+                    .build();
+        }
+
+        List<TraceDTO> data = traceQueryRepo.find("traceId = ?1", traceId).list();
+
+        if (data.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("No TraceDTO found for traceId: " + traceId)
+                    .build();
+        }
+
+        for (TraceDTO trace : data) {
+            for (Spans span : trace.getSpans()) {
+                System.out.println(
+                        "Span ID: " + span.getSpanId() + ", Parent Span ID: " + span.getParentSpanId() + ", Name: "
+                                + span.getName());
+            }
+        }
+
+        List<LogDTO> logDTOs = traceQueryHandler.getErroredLogDTO(data);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", logDTOs);
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseJson = objectMapper.writeValueAsString(response);
+
+            return Response.ok(responseJson).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error converting response to JSON")
+                    .build();
+        }
     }
-}
 
-// private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
-//     Instant currentInstant = Instant.now();
-//     Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+    @GET
+    @Path("/getalldata-sortorder")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response sortOrderTrace(
+            @QueryParam("sortOrder") String sortOrder,
+            @QueryParam("page") int page,
+            @QueryParam("pageSize") int pageSize,
+            @QueryParam("from") LocalDate fromDate,
+            @QueryParam("to") LocalDate toDate,
+            @QueryParam("minutesAgo") Integer minutesAgo,
+            @QueryParam("serviceNameList") List<String> serviceNameList) {
+        if (page <= 0 || pageSize <= 0) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Invalid page or pageSize parameters.")
+                    .build();
+        }
+        List<TraceDTO> traces;
+        if ("new".equalsIgnoreCase(sortOrder)) {
+            traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc(serviceNameList);
+        } else if ("old".equalsIgnoreCase(sortOrder)) {
+            traces = traceQueryHandler.getAllTracesAsc(serviceNameList);
+        } else if ("error".equalsIgnoreCase(sortOrder)) {
+            traces = traceQueryHandler.findAllOrderByErrorFirst(serviceNameList);
+        } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
+            traces = traceQueryHandler.findAllOrderByDuration(serviceNameList);
+        } else {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Invalid sortOrder parameter. Use 'new', 'old', 'error', 'peakLatency'.")
+                    .build();
+        }
+        if (fromDate != null && toDate != null) {
+            // Swap 'fromDate' and 'toDate' if 'toDate' is earlier than 'fromDate'
+            if (toDate.isBefore(fromDate)) {
+                LocalDate temp = fromDate;
+                fromDate = toDate;
+                toDate = temp;
+            }
+            traces = filterTracesByDateRange(traces, fromDate, toDate);
+        } else if (minutesAgo != null && minutesAgo > 0) {
+            traces = filterTracesByMinutesAgo(traces, minutesAgo);
+        } else {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Either fromDate and toDate or minutesAgo must be provided.")
+                    .build();
+        }
+        int startIndex = (page - 1) * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, traces.size());
+        if (startIndex >= endIndex || traces.isEmpty()) {
+            Map<String, Object> emptyResponse = new HashMap<>();
+            emptyResponse.put("data", Collections.emptyList());
+            emptyResponse.put("totalCount", 0);
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                String responseJson = objectMapper.writeValueAsString(emptyResponse);
+                return Response.ok(responseJson).build();
+            } catch (Exception e) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity("Error converting response to JSON")
+                        .build();
+            }
+        }
+        List<TraceDTO> paginatedTraces = traces.subList(startIndex, endIndex);
+        int totalCount = traces.size();
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", paginatedTraces);
+        response.put("totalCount", totalCount);
+        // System.out.println("total count----------"+totalCount);
+        // return Response.ok(paginatedTraces).build();
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseJson = objectMapper.writeValueAsString(response);
+            return Response.ok(responseJson).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error converting response to JSON")
+                    .build();
+        }
+    }
 
-//     LocalDateTime fromDateTime = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
-//     LocalDateTime toDateTime = LocalDateTime.now();
+    // private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int
+    // minutesAgo) {
+    // Instant currentInstant = Instant.now();
+    // Instant minutesAgoInstant = currentInstant.minus(minutesAgo,
+    // ChronoUnit.MINUTES);
 
-//     return filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
-// }   
+    // LocalDateTime fromDateTime =
+    // minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
+    // LocalDateTime toDateTime = LocalDateTime.now();
 
-// private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
-//     Instant currentInstant = Instant.now();
-//     Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+    // return filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
+    // }
 
-//     LocalDateTime fromDateTime = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
-//     LocalDateTime toDateTime = LocalDateTime.now();
+    // private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int
+    // minutesAgo) {
+    // Instant currentInstant = Instant.now();
+    // Instant minutesAgoInstant = currentInstant.minus(minutesAgo,
+    // ChronoUnit.MINUTES);
 
-//     System.out.println("fromDateTime: " + fromDateTime);
-//     System.out.println("toDateTime: " + toDateTime);
+    // LocalDateTime fromDateTime =
+    // minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
+    // LocalDateTime toDateTime = LocalDateTime.now();
 
-//     List<TraceDTO> filteredTraces = filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
+    // System.out.println("fromDateTime: " + fromDateTime);
+    // System.out.println("toDateTime: " + toDateTime);
 
-//     System.out.println("Filtered Traces Count: " + filteredTraces.size());
+    // List<TraceDTO> filteredTraces = filterTracesByDateTimeRange(traces,
+    // fromDateTime, toDateTime);
 
-//     return filteredTraces;
-// }
+    // System.out.println("Filtered Traces Count: " + filteredTraces.size());
 
-private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
-    Instant currentInstant = Instant.now();
-    Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+    // return filteredTraces;
+    // }
 
-    LocalDateTime fromDateTime = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
-    LocalDateTime toDateTime = LocalDateTime.now();
+    private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
+        Instant currentInstant = Instant.now();
+        Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
 
-    // Ensure that 'fromDateTime' is limited to the start of the current day
-    LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
-    fromDateTime = fromDateTime.isAfter(startOfDay) ? fromDateTime : startOfDay;
+        LocalDateTime fromDateTime = minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
+        LocalDateTime toDateTime = LocalDateTime.now();
 
-    System.out.println("fromDateTime: " + fromDateTime);
-    System.out.println("toDateTime: " + toDateTime);
+        // Ensure that 'fromDateTime' is limited to the start of the current day
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        fromDateTime = fromDateTime.isAfter(startOfDay) ? fromDateTime : startOfDay;
 
-    List<TraceDTO> filteredTraces = filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
+        System.out.println("fromDateTime: " + fromDateTime);
+        System.out.println("toDateTime: " + toDateTime);
 
-    System.out.println("Filtered Traces Count: " + filteredTraces.size());
+        List<TraceDTO> filteredTraces = filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
 
-    return filteredTraces;
-}
+        System.out.println("Filtered Traces Count: " + filteredTraces.size());
 
+        return filteredTraces;
+    }
 
+    private List<TraceDTO> filterTracesByDateRange(List<TraceDTO> traces, LocalDate fromDate, LocalDate toDate) {
+        LocalDateTime fromDateTime = fromDate.atStartOfDay();
+        LocalDateTime toDateTime = toDate.atTime(LocalTime.MAX);
+        return filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
+    }
 
-
-
-  
-private List<TraceDTO> filterTracesByDateRange(List<TraceDTO> traces, LocalDate fromDate, LocalDate toDate) {
-    LocalDateTime fromDateTime = fromDate.atStartOfDay();
-    LocalDateTime toDateTime = toDate.atTime(LocalTime.MAX);
-    return filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
-}
-private List<TraceDTO> filterTracesByDateTimeRange(List<TraceDTO> traces, LocalDateTime fromDateTime, LocalDateTime toDateTime) {
-    return traces.stream()
-            .filter(trace -> {
-                Date createdTime = trace.getCreatedTime();
-                if (createdTime != null) {
-                    LocalDateTime traceDateTime = createdTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-                    return !traceDateTime.isBefore(fromDateTime) && !traceDateTime.isAfter(toDateTime);
-                }
-                return false; 
-            })
-            .collect(Collectors.toList());
-}
+    private List<TraceDTO> filterTracesByDateTimeRange(List<TraceDTO> traces, LocalDateTime fromDateTime,
+            LocalDateTime toDateTime) {
+        return traces.stream()
+                .filter(trace -> {
+                    Date createdTime = trace.getCreatedTime();
+                    if (createdTime != null) {
+                        LocalDateTime traceDateTime = createdTime.toInstant().atZone(ZoneId.systemDefault())
+                                .toLocalDateTime();
+                        return !traceDateTime.isBefore(fromDateTime) && !traceDateTime.isAfter(toDateTime);
+                    }
+                    return false;
+                })
+                .collect(Collectors.toList());
+    }
 
 }
