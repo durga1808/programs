@@ -217,9 +217,10 @@ public class TraceController {
             @QueryParam("from") LocalDate from,
             @QueryParam("to") LocalDate to,
             @QueryParam("minutesAgo") int minutesAgo,
-            @QueryParam("peakLatencyThreshold") int peakLatencyThreshold) {
+            @QueryParam("minpeakLatency") int minpeakLatency,
+             @QueryParam("maxpeakLatency") int maxpeakLatency) {
         System.out.println("----------minutesAgo--------------------" + minutesAgo);
-        return traceQueryHandler.getPeaKLatency(serviceNames, from, to, minutesAgo, peakLatencyThreshold);
+        return traceQueryHandler.getPeaKLatency(serviceNames, from, to, minutesAgo, minpeakLatency, maxpeakLatency);
     }
 
     @GET
@@ -239,8 +240,9 @@ public class TraceController {
             @QueryParam("to") LocalDate to,
             @QueryParam("minutesAgo") int minutesAgo,
             @QueryParam("serviceNameList") List<String> serviceNames,
-            @QueryParam("peakLatency") int peakLatency) {
-        return traceQueryHandler.getAllDBPeakLatency(serviceNames, from, to, minutesAgo, peakLatency);
+            @QueryParam("minPeakLatency") int minPeakLatency,
+            @QueryParam("maxPeakLatency") int maxPeakLatency) {
+        return traceQueryHandler.getAllDBPeakLatency(serviceNames, from, to, minutesAgo, minPeakLatency, maxPeakLatency);
     }
 
     @GET
@@ -263,11 +265,13 @@ public class TraceController {
             @QueryParam("serviceNameList") List<String> serviceName,
             @QueryParam("from") LocalDate from,
             @QueryParam("to") LocalDate to,
-            @QueryParam("minutesAgo") int minutesAgo, @QueryParam("peakLatency") int peakLatency) {
+            @QueryParam("minutesAgo") int minutesAgo, 
+            @QueryParam("minPeakLatency") int minPeakLatency,
+            @QueryParam("maxPeakLatency") int maxPeakLatency) {
 
         List<KafkaMetrics> kafkaMetrics;
 
-        kafkaMetrics = traceQueryHandler.getAllKafkaPeakLatency(serviceName, from, to, minutesAgo, peakLatency);
+        kafkaMetrics = traceQueryHandler.getAllKafkaPeakLatency(serviceName, from, to, minutesAgo, minPeakLatency, maxPeakLatency);
         return kafkaMetrics;
     }
 

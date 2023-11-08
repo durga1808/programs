@@ -647,7 +647,7 @@ public class TraceQueryHandler {
   }
 
   public List<DBMetric> getAllDBPeakLatency(List<String> serviceNameList, LocalDate from, LocalDate to,
-      int minutesAgo, int peakLatency) {
+      int minutesAgo, int minPeakLatency, int maxPeakLatency) {
     MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
         .getCollection("TraceDTO");
 
@@ -710,20 +710,35 @@ public class TraceQueryHandler {
       ZonedDateTime endIST = Instant.ofEpochSecond(0, endTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
       long dbduration = ChronoUnit.MILLIS.between(startIST, endIST);
 
+      // System.out.println("ServiceName: " + serviceName + ", DBDuration: " + dbduration);
+      // System.out.println("minpeak: " + minPeakLatency + ", maxpeak : "+ maxPeakLatency);
+
+
       String key = serviceName;
       DBMetric dbMetric = dbMetricMap.computeIfAbsent(key, k -> new DBMetric(serviceName, 0L, 0L));
 
       // dbMetric.setDbCallCount(dbMetric.getDbCallCount() + 1);
-      if (dbduration > peakLatency) {
+      // if (dbduration > peakLatency) {
+      //   dbMetric.setDbPeakLatencyCount(Math.max(dbMetric.getDbPeakLatencyCount(), dbduration));
+      // }
+      //System.out.println("*************minPeakLatency: " + minPeakLatency + ", maxPeakLatency: " + maxPeakLatency);
+
+     if (dbduration >= minPeakLatency && dbduration <= maxPeakLatency) { 
+        // Update the count based on the maximum dbDuration
         dbMetric.setDbPeakLatencyCount(Math.max(dbMetric.getDbPeakLatencyCount(), dbduration));
-      }
-    });
+    }
+    //System.out.println("++++++++++++minpeak: " + minPeakLatency + ", +++++++++++maxpeak : "+ maxPeakLatency);
+    //System.out.println("--------------------ServiceName: " + serviceName + ", DBDuration: --------------" + dbduration);
+
+     });
+     
 
     List<DBMetric> resultList = new ArrayList<>(dbMetricMap.values());
 
     return resultList;
   }
 
+  
   public List<KafkaMetrics> getAllKafkaMetrics(List<String> serviceNames, LocalDate from, LocalDate to,
       int minutesAgo) {
     MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
@@ -795,7 +810,7 @@ public class TraceQueryHandler {
   }
 
   public List<KafkaMetrics> getAllKafkaPeakLatency(List<String> serviceNames, LocalDate from, LocalDate to,
-      int minutesAgo, int peakLatency) {
+      int minutesAgo, int minPeakLatency, int maxPeakLatency) {
     MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
         .getCollection("TraceDTO");
 
@@ -854,7 +869,10 @@ public class TraceQueryHandler {
       KafkaMetrics kafkaMetrics = kafkaMetricsMap.computeIfAbsent(key, k -> new KafkaMetrics(serviceName, 0L, 0L));
 
       // kafkaMetrics.setKafkaCallCount(kafkaMetrics.getKafkaCallCount() + 1);
-      if (kafkaDuration > peakLatency) {
+      // if (kafkaDuration > peakLatency) {
+      //   kafkaMetrics.setKafkaPeakLatency(kafkaMetrics.getKafkaPeakLatency() + 1);
+      // }
+      if (kafkaDuration >= minPeakLatency && kafkaDuration <= maxPeakLatency) {
         kafkaMetrics.setKafkaPeakLatency(kafkaMetrics.getKafkaPeakLatency() + 1);
       }
     });
@@ -988,7 +1006,7 @@ public class TraceQueryHandler {
   }
 
   public List<TraceMetrics> getPeaKLatency(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo,
-      long peakLatencyThreshold) {
+      int minpeakLatency, int maxpeakLatency) {
     List<TraceDTO> traceList = traceQueryRepo.listAll();
     Map<String, TraceMetrics> metricsMap = new HashMap<>();
 
@@ -1049,47 +1067,59 @@ public class TraceQueryHandler {
         metricsMap.put(serviceName, metrics);
       }
 
-      calculatePeakLatency(traceDTO, metrics, peakLatencyThreshold);
+      calculatePeakLatency(traceDTO, metrics, minpeakLatency, maxpeakLatency);
     }
 
     return new ArrayList<>(metricsMap.values());
   }
 
-  private void calculatePeakLatency(TraceDTO traceDTO, TraceMetrics metrics, long peakLatencyThreshold) {
+  // private void calculatePeakLatency(TraceDTO traceDTO, TraceMetrics metrics, long peakLatencyThreshold) {
+  //   if (traceDTO == null) {
+  //     System.out.println("traceDTO is null in calculateTraces method");
+  //     return;
+  //   }
+
+  //   // if (traceDTO.getStatusCode() != null) {
+  //   // if (traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599) {
+  //   // metrics.setTotalErrorCalls(metrics.getTotalErrorCalls() + 1);
+  //   // } else if (traceDTO.getStatusCode() >= 200 && traceDTO.getStatusCode() <=
+  //   // 299) {
+  //   // metrics.setTotalSuccessCalls(metrics.getTotalSuccessCalls() + 1);
+  //   // }
+  //   // }
+
+  //   // System.out.println("Before: metrics=" + metrics + ", apiCallCount=" +
+  //   // metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
+
+  //   // if (metrics.getApiCallCount() == null) {
+  //   // // Log or print an error message if apiCallCount is unexpectedly null
+  //   // System.out.println("apiCallCount is unexpectedly null in calculateTraces
+  //   // method");
+  //   // return;
+  //   // }
+
+  //   // metrics.setApiCallCount(metrics.getTotalErrorCalls() +
+  //   // metrics.getTotalSuccessCalls());
+
+  //   // System.out.println("After: metrics=" + metrics + ", apiCallCount=" +
+  //   // metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
+
+  //   if (traceDTO.getDuration() != null && traceDTO.getDuration() > peakLatencyThreshold) {
+  //     metrics.setPeakLatency(metrics.getPeakLatency() + 1);
+  //   } else {
+  //     System.out.println("statusCode is unexpectedly null in calculateTraces method");
+  //   }
+  // }
+private void calculatePeakLatency(TraceDTO traceDTO, TraceMetrics metrics, int minpeakLatency, int maxpeakLatency) {
     if (traceDTO == null) {
       System.out.println("traceDTO is null in calculateTraces method");
       return;
     }
-
-    // if (traceDTO.getStatusCode() != null) {
-    // if (traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599) {
-    // metrics.setTotalErrorCalls(metrics.getTotalErrorCalls() + 1);
-    // } else if (traceDTO.getStatusCode() >= 200 && traceDTO.getStatusCode() <=
-    // 299) {
-    // metrics.setTotalSuccessCalls(metrics.getTotalSuccessCalls() + 1);
-    // }
-    // }
-
-    // System.out.println("Before: metrics=" + metrics + ", apiCallCount=" +
-    // metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
-
-    // if (metrics.getApiCallCount() == null) {
-    // // Log or print an error message if apiCallCount is unexpectedly null
-    // System.out.println("apiCallCount is unexpectedly null in calculateTraces
-    // method");
-    // return;
-    // }
-
-    // metrics.setApiCallCount(metrics.getTotalErrorCalls() +
-    // metrics.getTotalSuccessCalls());
-
-    // System.out.println("After: metrics=" + metrics + ", apiCallCount=" +
-    // metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
-
-    if (traceDTO.getDuration() != null && traceDTO.getDuration() > peakLatencyThreshold) {
-      metrics.setPeakLatency(metrics.getPeakLatency() + 1);
+    Long duration = traceDTO.getDuration();
+    if (duration != null && duration >= minpeakLatency && duration <= maxpeakLatency) {
+        metrics.setPeakLatency(metrics.getPeakLatency() + 1);
     } else {
-      System.out.println("statusCode is unexpectedly null in calculateTraces method");
+        System.out.println("statusCode is unexpectedly null in calculateTraces method");
     }
   }
 
