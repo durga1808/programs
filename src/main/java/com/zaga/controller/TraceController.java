@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.bson.Document;
 
 @Path("/traces")
 @Produces(MediaType.APPLICATION_JSON)
@@ -150,55 +149,7 @@ public class TraceController {
         return Response.ok(traceList).build();
     }
 
-    // @GET
-    // @Path("/getErroredDataForLastTwo")
-    // @Produces(MediaType.APPLICATION_JSON)
-    // public Response findErroredDataForLastTwo(
-    // @QueryParam("page") @DefaultValue("1") int page,
-    // @QueryParam("pageSize") @DefaultValue("10") int pageSize,
-    // @QueryParam("serviceName") String serviceName) {
-
-    // try {
-    // List<TraceDTO> traces =
-    // traceQueryHandler.findErrorsLastTwoHours(serviceName);
-
-    // int totalCount = traces.size();
-    // int startIndex = (page - 1) * pageSize;
-    // int endIndex = Math.min(startIndex + pageSize, totalCount);
-
-    // if (startIndex >= endIndex || traces.isEmpty()) {
-    // Map<String, Object> emptyResponse = new HashMap<>();
-    // emptyResponse.put("data", Collections.emptyList());
-    // emptyResponse.put("totalCount", 0);
-
-    // return Response.ok(emptyResponse).build();
-    // }
-
-    // List<TraceDTO> erroredData = traces.subList(startIndex, endIndex);
-
-    // Map<String, Object> response = new HashMap<>();
-    // response.put("data", erroredData);
-    // response.put("totalCount", totalCount);
-
-    // ObjectMapper objectMapper = new ObjectMapper();
-    // String responseJson = objectMapper.writeValueAsString(response);
-
-    // return Response.ok(responseJson).build();
-    // } catch (Exception e) {
-    // return Response
-    // .status(Response.Status.INTERNAL_SERVER_ERROR)
-    // .entity(e.getMessage())
-    // .build();
-    // }
-    // }
-
-    // @GET
-    // @Path("/count")
-    // @Produces(MediaType.APPLICATION_JSON)
-    // public Map<String, Long> getTraceCount() {
-    // return traceQueryHandler.getTraceCountWithinHour();
-    // }
-
+  
     @GET
     @Path("/TraceSumaryChartDataCount")
     public List<TraceMetrics> getTraceMetricCount(
@@ -450,40 +401,6 @@ public class TraceController {
                     .build();
         }
     }
-
-    // private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int
-    // minutesAgo) {
-    // Instant currentInstant = Instant.now();
-    // Instant minutesAgoInstant = currentInstant.minus(minutesAgo,
-    // ChronoUnit.MINUTES);
-
-    // LocalDateTime fromDateTime =
-    // minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
-    // LocalDateTime toDateTime = LocalDateTime.now();
-
-    // return filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
-    // }
-
-    // private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int
-    // minutesAgo) {
-    // Instant currentInstant = Instant.now();
-    // Instant minutesAgoInstant = currentInstant.minus(minutesAgo,
-    // ChronoUnit.MINUTES);
-
-    // LocalDateTime fromDateTime =
-    // minutesAgoInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
-    // LocalDateTime toDateTime = LocalDateTime.now();
-
-    // System.out.println("fromDateTime: " + fromDateTime);
-    // System.out.println("toDateTime: " + toDateTime);
-
-    // List<TraceDTO> filteredTraces = filterTracesByDateTimeRange(traces,
-    // fromDateTime, toDateTime);
-
-    // System.out.println("Filtered Traces Count: " + filteredTraces.size());
-
-    // return filteredTraces;
-    // }
 
     private List<TraceDTO> filterTracesByMinutesAgo(List<TraceDTO> traces, int minutesAgo) {
         Instant currentInstant = Instant.now();

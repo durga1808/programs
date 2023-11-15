@@ -26,7 +26,6 @@ import com.zaga.repo.LogQueryRepo;
 import com.zaga.repo.TraceQueryRepo;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
-import io.quarkus.panache.common.Page;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
