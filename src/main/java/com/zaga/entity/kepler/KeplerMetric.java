@@ -1,5 +1,7 @@
 package com.zaga.entity.kepler;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -19,5 +21,12 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties("id")
 @MongoEntity(collection = "Metrics", database = "KeplerMetric")
 public class KeplerMetric extends PanacheMongoEntity {
-  private List<ResourceMetric> resourceMetrics;  
+  private List<ResourceMetric> resourceMetrics;
+  private long startTimeUnixNano;
+
+  
+  public void setStartTimeUnixNano(long startTimeEpochMillis) {
+    this.startTimeUnixNano = startTimeEpochMillis * 1_000_000;
+}
+ 
 }
