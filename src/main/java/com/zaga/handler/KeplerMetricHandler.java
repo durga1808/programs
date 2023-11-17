@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -103,67 +104,70 @@ public List<KeplerMetric> getAllKeplerData() {
 //     );
 //   }
 
- public List<KeplerMetric> getKeplerData(LocalDate from, LocalDate to, int minutesAgo) {
-        Bson timeFilter;
+public List<KeplerMetric> getKeplerData(LocalDate from, LocalDate to, int minutesAgo) {
+    Bson timeFilter;
 
-        if (from != null && to != null && to.isBefore(from)) {
-            LocalDate temp = from;
-            from = to;
-            to = temp;
-        }
-
-        if (from != null && to != null) {
-            timeFilter = createCustomDateFilter(from, to);
-        } else if (minutesAgo > 0) {
-            LocalDateTime currentDateTime = LocalDateTime.now();
-            LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-
-            LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
-            if (fromDateTime.isBefore(startOfToday)) {
-                fromDateTime = startOfToday;
-            }
-
-            LocalDateTime toDateTime = currentDateTime;
-
-            timeFilter = Filters.and(
-                Filters.gte("date", fromDateTime),
-                Filters.lt("date", toDateTime)
-            );
-        } else {
-            throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-        }
-
-        Bson finalFilter = Filters.and(timeFilter);
-
-        MongoCollection<Document> collection = mongoClient
-            .getDatabase("KeplerMetric")
-            .getCollection("Metrics");
-
-        List<KeplerMetric> filteredResults = new ArrayList<>();
-
-        try (MongoCursor<Document> cursor = collection.find(finalFilter).iterator()) {
-            while (cursor.hasNext()) {
-                Document document = cursor.next();
-                KeplerMetric keplerMetric = convertDocumentToKeplerMetric(document);
-                filteredResults.add(keplerMetric);
-            }
-        }
-
-        return filteredResults;
+    if (from != null && to != null && to.isBefore(from)) {
+        LocalDate temp = from;
+        from = to;
+        to = temp;
     }
 
-    private KeplerMetric convertDocumentToKeplerMetric(Document document) {
-        KeplerMetric keplerMetric = new KeplerMetric();
-        keplerMetric.setStartTimeUnixNano(document.getDate("startTimeUnixNano").toInstant().toEpochMilli() * 1_000_000);
-        return keplerMetric;
-    }
-    
-    
+    if (from != null && to != null) {
+        timeFilter = createCustomDateFilter(from, to);
+    } else if (minutesAgo > 0) {
+        LocalDateTime currentDateTime = LocalDateTime.now();
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
 
-    private Bson createCustomDateFilter(LocalDate from, LocalDate to) {
-        return Filters.and(
-            Filters.gte("date", from.atStartOfDay()),
-            Filters.lt("date", to.plusDays(1).atStartOfDay())
+        LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
+        if (fromDateTime.isBefore(startOfToday)) {
+            fromDateTime = startOfToday;
+        }
+
+        LocalDateTime toDateTime = currentDateTime;
+
+        ZoneOffset systemDefaultOffset = ZoneId.systemDefault().getRules().getStandardOffset(Instant.now());
+
+        timeFilter = Filters.and(
+            Filters.gte("resourceMetrics.scopeMetrics.metrics.sum.dataPoints.startTimeUnixNano", fromDateTime.toEpochSecond(systemDefaultOffset) * 1_000_000_000L),
+            Filters.lt("resourceMetrics.scopeMetrics.metrics.sum.dataPoints.startTimeUnixNano", toDateTime.toEpochSecond(systemDefaultOffset) * 1_000_000_000L)
         );
+    } else {
+        throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
     }
+
+    Bson finalFilter = Filters.and(timeFilter);
+
+    MongoCollection<Document> collection = mongoClient
+        .getDatabase("KeplerMetric")
+        .getCollection("Metrics");
+
+    List<KeplerMetric> filteredResults = new ArrayList<>();
+
+    try (MongoCursor<Document> cursor = collection.find(finalFilter).iterator()) {
+        while (cursor.hasNext()) {
+            Document document = cursor.next();
+            KeplerMetric keplerMetric = convertDocumentToKeplerMetric(document);
+            filteredResults.add(keplerMetric);
+        }
+    }
+
+    return filteredResults;
+}
+
+private KeplerMetric convertDocumentToKeplerMetric(Document document) {
+    KeplerMetric keplerMetric = new KeplerMetric();
+    return keplerMetric;
+}
+
+private Bson createCustomDateFilter(LocalDate from, LocalDate to) {
+    ZoneOffset systemDefaultOffset = ZoneId.systemDefault().getRules().getStandardOffset(Instant.now());
+    return Filters.and(
+        Filters.gte("resourceMetrics.scopeMetrics.metrics.sum.dataPoints.startTimeUnixNano", from.atStartOfDay().toEpochSecond(systemDefaultOffset) * 1_000_000_000L),
+        Filters.lt("resourceMetrics.scopeMetrics.metrics.sum.dataPoints.startTimeUnixNano", to.plusDays(1).atStartOfDay().toEpochSecond(systemDefaultOffset) * 1_000_000_000L)
+    );
+}
+
+
+
 }
