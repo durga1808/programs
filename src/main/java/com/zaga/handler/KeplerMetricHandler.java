@@ -23,10 +23,10 @@ public class KeplerMetricHandler {
   @Inject
   MongoClient mongoClient;
 
-  public List<KeplerMetric> getAllKeplerData() {
-    List<KeplerMetric> allKepler = keplerMetricRepo.listAll();
-    return allKepler;
-  }
+  // public List<KeplerMetric> getAllKeplerData() {
+  //   List<KeplerMetric> allKepler = keplerMetricRepo.listAll();
+  //   return allKepler;
+  // }
 
   public List<KeplerMetricQuery> getKeplerData(
     // LocalDate from,
