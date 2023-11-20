@@ -19,7 +19,5 @@ import lombok.ToString;
 public class KeplerMetricDTO {
     private Date date;
     private Double powerConsumption;
-    private Integer memoryUsage;
     private String serviceName;
-    private String type;
 }

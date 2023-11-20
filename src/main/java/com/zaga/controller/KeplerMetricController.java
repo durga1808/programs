@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.kepler.KeplerMetric;
 import com.zaga.entity.queryentity.kepler.KeplerMetricDTO;
 import com.zaga.entity.queryentity.kepler.KeplerMetricQuery;
@@ -62,7 +63,7 @@ public class KeplerMetricController {
     }
 
     @GET
-    @Path("/getByTime")
+    @Path("/getByTimeMock")
     public Response getKeplerMetricByTime(@QueryParam("minutesAgo") Integer minutesAgo) {
         Instant currentInstant = Instant.now();
         Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
@@ -104,21 +105,59 @@ public class KeplerMetricController {
 
     }
 
-
     @GET
     @Path("/getAllKepler-MetricData")
-    public List<KeplerMetricDTO> getAllKeplerMetricDatas( 
-        @QueryParam("from") LocalDate from,
-        @QueryParam("to") LocalDate to,
-        @QueryParam("minutesAgo") int minutesAgo) {
-        
-    List<KeplerMetricDTO> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(from, to, minutesAgo);
+    public Response getAllKeplerMetricDatas(
+            @QueryParam("from") LocalDate from,
+            @QueryParam("to") LocalDate to,
+            @QueryParam("minutesAgo") int minutesAgo) {
 
-    System.out.println("Number of records: " + keplerMetricData.size());
+        List<KeplerMetricDTO> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(from, to, minutesAgo);
 
-    return keplerMetricData;
+        System.out.println("Number of records: " + keplerMetricData.size());
+
+        List<String> uniqueServiceNamesList = new ArrayList<>();
+
+        for (KeplerMetricDTO metricEntry : keplerMetricData) {
+            if (!uniqueServiceNamesList.contains(metricEntry.getServiceName())) {
+                uniqueServiceNamesList.add(metricEntry.getServiceName());
+            }
+        }
+
+        for (String serviceName : uniqueServiceNamesList) {
+            System.out.println(serviceName);
+        }
+
+        System.out.println("=====================================================");
+
+        List<KeplerResponseData> finalResponse = new ArrayList<>();
+
+        // Find By ServiceName from response
+        for (String serviceName : uniqueServiceNamesList) {
+            List<ContainerPowerMetrics> containerPowerMetricsList = new ArrayList<>();
+            for (KeplerMetricDTO entry : keplerMetricData) {
+                if (entry.getServiceName().equals(serviceName)) {
+                    ContainerPowerMetrics containerPowerMetrics = new ContainerPowerMetrics(entry.getDate(),
+                            entry.getPowerConsumption());
+                    containerPowerMetricsList.add(containerPowerMetrics);
+                }
+            }
+            KeplerResponseData keplerResponseData = new KeplerResponseData(serviceName, containerPowerMetricsList);
+            finalResponse.add(keplerResponseData);
+        }
+
+        System.out.println("Final output " + finalResponse);
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String responseJson = objectMapper.writeValueAsString(finalResponse);
+
+            return Response.ok(responseJson, MediaType.APPLICATION_JSON).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error converting response to JSON")
+                    .build();
+        }
     }
-    
-
 
 }
