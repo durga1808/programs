@@ -114,7 +114,7 @@ public class KeplerMetricController {
 
         List<KeplerMetricDTO> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(from, to, minutesAgo);
 
-        System.out.println("Number of records: " + keplerMetricData.size());
+        System.out.println("+++++++++++++++++++++++++++Number of records: " + keplerMetricData.size());
 
         List<String> uniqueServiceNamesList = new ArrayList<>();
 

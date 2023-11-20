@@ -16,6 +16,7 @@ import jakarta.inject.Inject;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -109,7 +110,48 @@ public class KeplerMetricHandler {
 
 
 public List<KeplerMetricDTO> getAllKeplerByDateAndTime(LocalDate from, LocalDate to, int minutesAgo) {
-    Document timeFilter;
+//     Document timeFilter;
+//     if (from != null && to != null && to.isBefore(from)) {
+//         LocalDate temp = from;
+//         from = to;
+//         to = temp;
+//     }
+
+//     if (from != null && to != null) {
+//         timeFilter = createCustomDateFilter(from, to);
+//     } else if (minutesAgo > 0) {
+//         LocalDateTime currentDateTime = LocalDateTime.now();
+//         LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+
+//         LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
+//         if (fromDateTime.isBefore(startOfToday)) {
+//             fromDateTime = startOfToday;
+//         }
+//         LocalDateTime toDateTime = currentDateTime;
+
+//         Bson bsonFilter = Filters.and(
+//                 Filters.gte("date", fromDateTime),
+//                 Filters.lt("date", toDateTime)
+//         );
+
+//      timeFilter = Document.parse(bsonFilter.toBsonDocument().toJson());
+//     } else {
+//         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+//     }
+
+//     PanacheQuery<KeplerMetricDTO> query = keplerMetricRepo.find(timeFilter);
+//     return query.list();
+// }
+
+// private Document createCustomDateFilter(LocalDate from, LocalDate to) {
+//     Bson bsonFilter = Filters.and(
+//             Filters.gte("date", from.atStartOfDay()),
+//             Filters.lt("date", to.plusDays(1).atStartOfDay())
+//     );
+
+//    return Document.parse(bsonFilter.toBsonDocument().toJson());
+// }
+ Document timeFilter;
     if (from != null && to != null && to.isBefore(from)) {
         LocalDate temp = from;
         from = to;
@@ -129,11 +171,11 @@ public List<KeplerMetricDTO> getAllKeplerByDateAndTime(LocalDate from, LocalDate
         LocalDateTime toDateTime = currentDateTime;
 
         Bson bsonFilter = Filters.and(
-                Filters.gte("date", fromDateTime),
-                Filters.lt("date", toDateTime)
+                Filters.gte("date", Date.from(fromDateTime.atZone(ZoneId.systemDefault()).toInstant())),
+                Filters.lt("date", Date.from(toDateTime.atZone(ZoneId.systemDefault()).toInstant()))
         );
 
-     timeFilter = Document.parse(bsonFilter.toBsonDocument().toJson());
+        timeFilter = Document.parse(bsonFilter.toBsonDocument().toJson());
     } else {
         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
     }
@@ -148,9 +190,8 @@ private Document createCustomDateFilter(LocalDate from, LocalDate to) {
             Filters.lt("date", to.plusDays(1).atStartOfDay())
     );
 
-   return Document.parse(bsonFilter.toBsonDocument().toJson());
+    return Document.parse(bsonFilter.toBsonDocument().toJson());
 }
-
 
 
  }
