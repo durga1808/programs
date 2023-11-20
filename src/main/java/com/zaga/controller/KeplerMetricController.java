@@ -3,6 +3,7 @@ package com.zaga.controller;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
@@ -102,5 +103,22 @@ public class KeplerMetricController {
         return Response.ok(finalResponse).build();
 
     }
+
+
+    @GET
+    @Path("/getAllKepler-MetricData")
+    public List<KeplerMetricDTO> getAllKeplerMetricDatas( 
+        @QueryParam("from") LocalDate from,
+        @QueryParam("to") LocalDate to,
+        @QueryParam("minutesAgo") int minutesAgo) {
+        
+    List<KeplerMetricDTO> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(from, to, minutesAgo);
+
+    System.out.println("Number of records: " + keplerMetricData.size());
+
+    return keplerMetricData;
+    }
+    
+
 
 }
