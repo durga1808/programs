@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 @JsonIgnoreProperties("id")
-@MongoEntity(collection = "Metrics", database = "KeplerMetric")
+@MongoEntity(collection = "KeplerMetrics", database = "KeplerMetric")
 public class KeplerMetric extends PanacheMongoEntity {
   private List<ResourceMetric> resourceMetrics;
     

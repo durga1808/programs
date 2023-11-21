@@ -20,4 +20,7 @@ public class KeplerMetricDTO {
     private Date date;
     private Double powerConsumption;
     private String serviceName;
+    private String type;
+    private String keplerType;
+    private Resource resource;
 }
