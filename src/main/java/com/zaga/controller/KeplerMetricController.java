@@ -110,9 +110,11 @@ public class KeplerMetricController {
     public Response getAllKeplerMetricDatas(
             @QueryParam("from") LocalDate from,
             @QueryParam("to") LocalDate to,
-            @QueryParam("minutesAgo") int minutesAgo) {
+            @QueryParam("minutesAgo") int minutesAgo,
+            @QueryParam("type") String type
+        ) {
 
-        List<KeplerMetricDTO> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(from, to, minutesAgo);
+        List<KeplerMetricDTO> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(from, to, minutesAgo, type);
 
         System.out.println("+++++++++++++++++++++++++++Number of records: " + keplerMetricData.size());
 
