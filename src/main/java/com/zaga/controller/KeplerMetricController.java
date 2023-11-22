@@ -3,6 +3,7 @@ package com.zaga.controller;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -111,10 +112,10 @@ public class KeplerMetricController {
             @QueryParam("from") LocalDate from,
             @QueryParam("to") LocalDate to,
             @QueryParam("minutesAgo") int minutesAgo,
-            @QueryParam("type") String type
-        ) {
+            @QueryParam("type") String type) {
 
-        List<KeplerMetricDTO> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(from, to, minutesAgo, type);
+        List<KeplerMetricDTO> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(from, to, minutesAgo,
+                type);
 
         System.out.println("+++++++++++++++++++++++++++Number of records: " + keplerMetricData.size());
 
@@ -124,6 +125,21 @@ public class KeplerMetricController {
             if (!uniqueServiceNamesList.contains(metricEntry.getServiceName())) {
                 uniqueServiceNamesList.add(metricEntry.getServiceName());
             }
+        }
+
+        List<String> matchedSystemEntries = new ArrayList<>();
+
+        // Identify all items starting with "system" and store their indices
+        for (int i = 0; i < uniqueServiceNamesList.size(); i++) {
+            if (uniqueServiceNamesList.get(i).startsWith("system")) {
+                matchedSystemEntries.add(uniqueServiceNamesList.get(i));
+            }
+        }
+
+        // Move all matched entries to the front of the list
+        for (String matchedEntry : matchedSystemEntries) {
+            uniqueServiceNamesList.remove(matchedEntry); // Remove the matched entry
+            uniqueServiceNamesList.add(0, matchedEntry); // Add it to the beginning of the list
         }
 
         for (String serviceName : uniqueServiceNamesList) {
@@ -148,7 +164,7 @@ public class KeplerMetricController {
             finalResponse.add(keplerResponseData);
         }
 
-        System.out.println("Final output " + finalResponse);
+        // System.out.println("Final output " + finalResponse);
 
         try {
             ObjectMapper objectMapper = new ObjectMapper();
