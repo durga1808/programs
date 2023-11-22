@@ -199,7 +199,7 @@ public class KeplerMetricHandler {
 // }
 
 
-public List<KeplerMetricDTO> getAllKeplerByDateAndTime(LocalDate from, LocalDate to, int minutesAgo, String type) {
+public List<KeplerMetricDTO> getAllKeplerByDateAndTime(LocalDate from, LocalDate to, int minutesAgo, String type, List<String> keplerTypeList) {
  Document timeFilter;
     if (from != null && to != null && to.isBefore(from)) {
         LocalDate temp = from;
@@ -232,6 +232,11 @@ public List<KeplerMetricDTO> getAllKeplerByDateAndTime(LocalDate from, LocalDate
   if (type != null && !type.isEmpty()) {
       timeFilter.append("type", type);
   }
+
+
+  if (keplerTypeList != null && !keplerTypeList.isEmpty()) {
+    timeFilter.append("keplerType", new Document("$in", keplerTypeList));
+}
 
   PanacheQuery<KeplerMetricDTO> query = keplerMetricRepo.find(timeFilter);
   return query.list();
