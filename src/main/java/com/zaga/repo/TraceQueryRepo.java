@@ -53,7 +53,7 @@ public class TraceQueryRepo implements PanacheMongoRepository<TraceDTO> {
                 filteredTraceList.add(traceDTO);
             }
         }
-        System.out.println("filteredTraceList: " + filteredTraceList);
+        // System.out.println("filteredTraceList: " + filteredTraceList);
     
         return filteredTraceList;
     }

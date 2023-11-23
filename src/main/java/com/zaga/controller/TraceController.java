@@ -110,8 +110,8 @@ public class TraceController {
             @QueryParam("to") LocalDate to,
             @QueryParam("minutesAgo") int minutesAgo,
             @QueryParam("sortOrder") String sortOrder) {
-        System.out.println("from controller: " + from);
-        System.out.println("to controller: " + to);
+        // System.out.println("from controller: " + from);
+        // System.out.println("to controller: " + to);
 
         List<TraceDTO> traceList = traceQueryHandler.searchTracesPaged(traceQuery, page, pageSize, from, to,
                 minutesAgo);
@@ -157,7 +157,7 @@ public class TraceController {
             @QueryParam("from") LocalDate from,
             @QueryParam("to") LocalDate to,
             @QueryParam("minutesAgo") int minutesAgo) {
-        System.out.println("----------minutesAgo--------------------" + minutesAgo);
+        // System.out.println("----------minutesAgo--------------------" + minutesAgo);
         return traceQueryHandler.getAllTraceMetricCount(serviceNames, from, to, minutesAgo);
     }
 
@@ -170,7 +170,7 @@ public class TraceController {
             @QueryParam("minutesAgo") int minutesAgo,
             @QueryParam("minpeakLatency") int minpeakLatency,
              @QueryParam("maxpeakLatency") int maxpeakLatency) {
-        System.out.println("----------minutesAgo--------------------" + minutesAgo);
+        // System.out.println("----------minutesAgo--------------------" + minutesAgo);
         return traceQueryHandler.getPeaKLatency(serviceNames, from, to, minutesAgo, minpeakLatency, maxpeakLatency);
     }
 
@@ -257,9 +257,9 @@ public class TraceController {
 
         for (TraceDTO trace : dto) {
             for (Spans span : trace.getSpans()) {
-                System.out.println(
-                        "Span ID: " + span.getSpanId() + ", Parent Span ID: " + span.getParentSpanId() + ", Name: "
-                                + span.getName());
+                // System.out.println(
+                //         "Span ID: " + span.getSpanId() + ", Parent Span ID: " + span.getParentSpanId() + ", Name: "
+                //                 + span.getName());
             }
         }
 
@@ -300,9 +300,9 @@ public class TraceController {
 
         for (TraceDTO trace : data) {
             for (Spans span : trace.getSpans()) {
-                System.out.println(
-                        "Span ID: " + span.getSpanId() + ", Parent Span ID: " + span.getParentSpanId() + ", Name: "
-                                + span.getName());
+                // System.out.println(
+                //         "Span ID: " + span.getSpanId() + ", Parent Span ID: " + span.getParentSpanId() + ", Name: "
+                //                 + span.getName());
             }
         }
 
@@ -413,12 +413,12 @@ public class TraceController {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         fromDateTime = fromDateTime.isAfter(startOfDay) ? fromDateTime : startOfDay;
 
-        System.out.println("fromDateTime: " + fromDateTime);
-        System.out.println("toDateTime: " + toDateTime);
+        // System.out.println("fromDateTime: " + fromDateTime);
+        // System.out.println("toDateTime: " + toDateTime);
 
         List<TraceDTO> filteredTraces = filterTracesByDateTimeRange(traces, fromDateTime, toDateTime);
 
-        System.out.println("Filtered Traces Count: " + filteredTraces.size());
+        // System.out.println("Filtered Traces Count: " + filteredTraces.size());
 
         return filteredTraces;
     }

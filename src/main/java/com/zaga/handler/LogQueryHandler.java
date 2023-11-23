@@ -75,9 +75,9 @@ public class LogQueryHandler {
     }
     
     public long countLogRecords() {
-        System.out.println(
-          "LogQueryHandler.countLogRecords()" + logQueryRepo.count()
-        );
+        // System.out.println(
+        //   "LogQueryHandler.countLogRecords()" + logQueryRepo.count()
+        // );
         return logQueryRepo.count();
     }
 
@@ -293,9 +293,9 @@ public List<LogDTO> getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(
 // }
 
 public List<LogMetrics> getLogMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
-    System.out.println("from: " + from);
-    System.out.println("to: " + to);
-    System.out.println("minutesAgo: " + minutesAgo);
+    // System.out.println("from: " + from);
+    // System.out.println("to: " + to);
+    // System.out.println("minutesAgo: " + minutesAgo);
 
     List<LogDTO> logList = logQueryRepo.listAll();
     Map<String, LogMetrics> metricsMap = new HashMap<>();
@@ -472,7 +472,7 @@ private LogDTO mapDocumentToLogDTO(Document document) {
             LogRecord logRecord = new LogRecord();
             Body body = new Body();
             JsonObject jsonObject3 = jsonArray2.get(j).getAsJsonObject();
-            System.out.println("-------" + jsonObject3.get("timeUnixNano").getAsString());
+            // System.out.println("-------" + jsonObject3.get("timeUnixNano").getAsString());
             logRecord.setTimeUnixNano(jsonObject3.get("timeUnixNano").getAsString());
             logRecord.setObservedTimeUnixNano(jsonObject3.get("observedTimeUnixNano").getAsString());
             logRecord.setSeverityNumber(jsonObject3.get("severityNumber").getAsInt());
@@ -485,7 +485,7 @@ private LogDTO mapDocumentToLogDTO(Document document) {
             logRecords.add(logRecord);
         }
 
-        System.out.println("----scope name ---- " + jsonObject2.getAsJsonObject("scope").get("name").getAsString());
+        // System.out.println("----scope name ---- " + jsonObject2.getAsJsonObject("scope").get("name").getAsString());
     }
     
     ScopeLogs scopeLogs = new ScopeLogs();
@@ -500,7 +500,7 @@ private LogDTO mapDocumentToLogDTO(Document document) {
 
 
 public List<LogDTO> getFilterLogsByCreatedTimeDesc(List<LogDTO> logs) {
-    System.out.println("------getFilterLogsByCreatedTimeDesc---------"+logs.size());
+    // System.out.println("------getFilterLogsByCreatedTimeDesc---------"+logs.size());
     return logs.stream()
 .sorted(Comparator.comparing(LogDTO::getCreatedTime, Comparator.reverseOrder()))
 .collect(Collectors.toList());

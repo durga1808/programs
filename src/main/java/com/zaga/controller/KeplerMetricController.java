@@ -39,20 +39,10 @@ public class KeplerMetricController {
     @Inject
     KeplerMetricRepo keplerMetricRepo;
 
-    // @GET
-    // @Path("/getAllKepler")
-    // @Produces(MediaType.APPLICATION_JSON)
-    // public List<KeplerMetric> getLogMetricsCount() {
-    // return keplerMetricHandler.getAllKeplerData();
-    // }
 
     @GET
     @Path("/getKeplerData")
-    public List<KeplerMetricQuery> getKeplerByTimedased(
-    // @QueryParam("from") LocalDate from,
-    // @QueryParam("to") LocalDate to,
-    // @QueryParam("minutesAgo") int minutesAgo
-    ) {
+    public List<KeplerMetricQuery> getKeplerByTimedased( ) {
         return keplerMetricHandler.getKeplerData();
     }
 
@@ -79,11 +69,9 @@ public class KeplerMetricController {
             }
         }
 
-        for (String serviceName : uniqueServiceNamesList) {
-            System.out.println(serviceName);
-        }
-
-        System.out.println("=====================================================");
+        // for (String serviceName : uniqueServiceNamesList) {
+        //     // System.out.println(serviceName);
+        // }
 
         List<KeplerResponseData> finalResponse = new ArrayList<>();
 
@@ -101,7 +89,6 @@ public class KeplerMetricController {
             finalResponse.add(keplerResponseData);
         }
 
-        System.out.println("Final output " + finalResponse);
         return Response.ok(finalResponse).build();
 
     }
@@ -118,7 +105,6 @@ public class KeplerMetricController {
         List<KeplerMetricDTO> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(from, to, minutesAgo,
                 type,keplerTypeList);
 
-        System.out.println("+++++++++++++++++++++++++++Number of records: " + keplerMetricData.size());
 
         List<String> uniqueServiceNamesList = new ArrayList<>();
 
@@ -143,11 +129,6 @@ public class KeplerMetricController {
             uniqueServiceNamesList.add(0, matchedEntry); // Add it to the beginning of the list
         }
 
-        for (String serviceName : uniqueServiceNamesList) {
-            System.out.println(serviceName);
-        }
-
-        System.out.println("=====================================================");
 
         List<KeplerResponseData> finalResponse = new ArrayList<>();
 
@@ -165,7 +146,6 @@ public class KeplerMetricController {
             finalResponse.add(keplerResponseData);
         }
 
-        // System.out.println("Final output " + finalResponse);
 
         try {
             ObjectMapper objectMapper = new ObjectMapper();

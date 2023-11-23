@@ -145,10 +145,6 @@ public class TraceQueryHandler {
         .getCollection("TraceDTO");
 
     Bson projection = Projections.excludeId();
-
-    System.out.println("Skip: " + (page - 1) * pageSize);
-    System.out.println("Limit: " + pageSize);
-
     Bson sort = Sorts.descending("createdTime");
 
     return collection
@@ -163,8 +159,6 @@ public class TraceQueryHandler {
   // statuscode from TraceDTO entity
   public List<TraceDTO> searchTracesPaged(TraceQuery query, int page, int pageSize, LocalDate from, LocalDate to,
       int minutesAgo) {
-    System.out.println("from Date --------------" + from);
-    System.out.println("to Date --------------" + to);
 
     // Swap 'from' and 'to' if 'to' is earlier than 'from'
     if (from != null && to != null && to.isBefore(from)) {
@@ -219,7 +213,7 @@ public class TraceQueryHandler {
     }
 
     FindIterable<Document> result = getFilteredResults(query, 0, Integer.MAX_VALUE, from, to, minutesAgo);
-    System.out.println("countQueryTraces: " + result.into(new ArrayList<>()).size());
+
     long totalCount = result.into(new ArrayList<>()).size();
     return totalCount;
   }
@@ -256,72 +250,7 @@ public class TraceQueryHandler {
         .collect(Collectors.toList());
   }
 
-  // // pagination data with merge and sorting implementations
-  // public List<TraceDTO> findRecentDataPaged(int page, int pageSize) {
-  // List<TraceDTO> traceList = traceQueryRepo.listAll();
-  // int startIndex = (page - 1) * pageSize;
-  // int endIndex = Math.min(startIndex + pageSize, traceList.size());
-  // return traceList.subList(startIndex, endIndex);
-  // }
-
-  // //Count calculation for pagination
-  // public long countData() {
-  // System.out.println("TraceQueryHandler.countData()" + traceQueryRepo.count());
-  // return traceQueryRepo.count();
-  // }
-
-  // public List<TraceDTO> findErrorsLastTwoHours(String serviceName) {
-  // Date twoHoursAgo = new Date(System.currentTimeMillis() - 2 * 60 * 60 * 1000);
-
-  // PanacheQuery<TraceDTO> query = traceQueryRepo.find("serviceName = ?1 and
-  // createdTime >= ?2", serviceName, twoHoursAgo);
-  // List<TraceDTO> traceList = query.list();
-
-  // List<TraceDTO> sortedTraceList = traceList.stream()
-  // .filter(traceDTO -> traceDTO.getStatusCode() != null &&
-  // traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599)
-  // .sorted(Comparator.comparing(TraceDTO::getCreatedTime).reversed())
-  // .collect(Collectors.toList());
-
-  // return sortedTraceList;
-  // }
-
-  // // appicalll counts calculations
-  // public Map<String, Long> getTraceCountWithinHour() {
-  // List<TraceDTO> traceList = TraceDTO.listAll();
-
-  // Map<String, Long> serviceNameCounts = new HashMap<>();
-
-  // for (TraceDTO trace : traceList) {
-  // String serviceName = trace.getServiceName();
-  // serviceNameCounts.put(
-  // serviceName,
-  // serviceNameCounts.getOrDefault(serviceName, 0L) + 1
-  // );
-  // }
-
-  // return serviceNameCounts;
-  // }
-
-  // //method for filtering page and page size, time and sortorder list out the
-  // data
-  // public List<TraceDTO> getPaginatedTraces(int page, int pageSize, int
-  // timeAgoMinutes) {
-  // Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
-  // List<TraceDTO> traces = traceQueryRepo.find("createdTime >= ?1", startTime)
-  // .page(Page.of(page - 1, pageSize))
-  // .list();
-
-  // return traces;
-  // }
-
-  // //time method for sortorder pagination
-  // public long getTraceCountInMinutes(int page, int pageSize, int
-  // timeAgoMinutes) {
-  // Instant startTime = Instant.now().minus(timeAgoMinutes, ChronoUnit.MINUTES);
-  // return traceQueryRepo.find("createdTime >= ?1", startTime).count();
-  // }
-
+ 
   // sort order decending
   public List<TraceDTO> getAllTracesOrderByCreatedTimeDesc(List<String> serviceNameList) {
     return traceQueryRepo.findAllOrderByCreatedTimeDesc(serviceNameList);
@@ -546,15 +475,12 @@ public class TraceQueryHandler {
       String traceID = trace.getTraceId();
       List<Spans> spans = trace.getSpans();
       List<LogDTO> logDTOList = logQueryRepo.find("traceId", traceID).list();
-      // System.out.println("--traceID-"+traceID + "SPANS--------"+spans
-      // +"-----------logs"+logDTOList);
-      // System.out.println("logsDTO-------------------------"+logDTOList);
+
       for (LogDTO logDTO : logDTOList) {
         for (Spans span : spans) {
           if (logDTO.getSpanId().equals(span.getSpanId())) {
             // Add the matching LogDTO to the list
             matchingLogDTOList.add(logDTO);
-            // System.out.println("-----------matchingLogDTOList-----*********---"+matchingLogDTOList);
           }
         }
 
@@ -564,7 +490,6 @@ public class TraceQueryHandler {
         .filter(logDTO -> "ERROR".equals(logDTO.getSeverityText()) || "SEVERE".equals(logDTO.getSeverityText()))
         .collect(Collectors.toList());
 
-    System.out.println("----**------filteredLogDTOList--**---" + filteredLogDTOList.size());
     return filteredLogDTOList;
   }
 
@@ -709,25 +634,17 @@ public class TraceQueryHandler {
       ZonedDateTime endIST = Instant.ofEpochSecond(0, endTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
       long dbduration = ChronoUnit.MILLIS.between(startIST, endIST);
 
-      // System.out.println("ServiceName: " + serviceName + ", DBDuration: " + dbduration);
-      // System.out.println("minpeak: " + minPeakLatency + ", maxpeak : "+ maxPeakLatency);
 
 
       String key = serviceName;
       DBMetric dbMetric = dbMetricMap.computeIfAbsent(key, k -> new DBMetric(serviceName, 0L, 0L));
 
-      // dbMetric.setDbCallCount(dbMetric.getDbCallCount() + 1);
-      // if (dbduration > peakLatency) {
-      //   dbMetric.setDbPeakLatencyCount(Math.max(dbMetric.getDbPeakLatencyCount(), dbduration));
-      // }
-      //System.out.println("*************minPeakLatency: " + minPeakLatency + ", maxPeakLatency: " + maxPeakLatency);
-
+      
      if (dbduration >= minPeakLatency && dbduration <= maxPeakLatency) { 
         // Update the count based on the maximum dbDuration
         dbMetric.setDbPeakLatencyCount(Math.max(dbMetric.getDbPeakLatencyCount(), dbduration));
     }
-    //System.out.println("++++++++++++minpeak: " + minPeakLatency + ", +++++++++++maxpeak : "+ maxPeakLatency);
-    //System.out.println("--------------------ServiceName: " + serviceName + ", DBDuration: --------------" + dbduration);
+
 
      });
      
@@ -885,7 +802,6 @@ public class TraceQueryHandler {
   private String getAsStringOrFallback(Document document, String key, String fallback) {
     Object value = document.get(key);
     if (value instanceof String) {
-      // System.out.println("serviceName----------------"+value.toString());
       return (String) value;
     }
     return fallback;
@@ -933,8 +849,6 @@ public class TraceQueryHandler {
     for (TraceDTO traceDTO : traceList) {
       Date traceCreateTime = traceDTO.getCreatedTime();
       if (traceCreateTime == null) {
-        // Log or print an error message, including details about the null value
-        System.out.println("traceCreateTime is null in getTraceCount method");
         continue;
       }
 
@@ -969,8 +883,6 @@ public class TraceQueryHandler {
 
   private void calculateTraces(TraceDTO traceDTO, TraceMetrics metrics) {
     if (traceDTO == null) {
-      // Log or print an error message, including details about the null value
-      System.out.println("traceDTO is null in calculateTraces method");
       return;
     }
 
@@ -982,25 +894,18 @@ public class TraceQueryHandler {
       }
     }
 
-    System.out.println("Before: metrics=" + metrics + ", apiCallCount=" + metrics.getApiCallCount() + ", duration="
-        + traceDTO.getDuration());
-
+   
     if (metrics.getApiCallCount() == null) {
-      // Log or print an error message if apiCallCount is unexpectedly null
-      System.out.println("apiCallCount is unexpectedly null in calculateTraces method");
       return;
     }
 
     metrics.setApiCallCount(metrics.getTotalErrorCalls() + metrics.getTotalSuccessCalls());
 
-    System.out.println("After: metrics=" + metrics + ", apiCallCount=" + metrics.getApiCallCount() + ", duration="
-        + traceDTO.getDuration());
-
+    
     if (traceDTO.getDuration() != null && traceDTO.getDuration() > 500) {
       metrics.setPeakLatency(metrics.getPeakLatency() + 1);
     } else {
-      // Log or print a message if statusCode is unexpectedly null
-      System.out.println("statusCode is unexpectedly null in calculateTraces method");
+      
     }
   }
 
@@ -1041,7 +946,6 @@ public class TraceQueryHandler {
     for (TraceDTO traceDTO : traceList) {
       Date traceCreateTime = traceDTO.getCreatedTime();
       if (traceCreateTime == null) {
-        System.out.println("traceCreateTime is null in getTraceCount method");
         continue;
       }
 
@@ -1072,53 +976,15 @@ public class TraceQueryHandler {
     return new ArrayList<>(metricsMap.values());
   }
 
-  // private void calculatePeakLatency(TraceDTO traceDTO, TraceMetrics metrics, long peakLatencyThreshold) {
-  //   if (traceDTO == null) {
-  //     System.out.println("traceDTO is null in calculateTraces method");
-  //     return;
-  //   }
-
-  //   // if (traceDTO.getStatusCode() != null) {
-  //   // if (traceDTO.getStatusCode() >= 400 && traceDTO.getStatusCode() <= 599) {
-  //   // metrics.setTotalErrorCalls(metrics.getTotalErrorCalls() + 1);
-  //   // } else if (traceDTO.getStatusCode() >= 200 && traceDTO.getStatusCode() <=
-  //   // 299) {
-  //   // metrics.setTotalSuccessCalls(metrics.getTotalSuccessCalls() + 1);
-  //   // }
-  //   // }
-
-  //   // System.out.println("Before: metrics=" + metrics + ", apiCallCount=" +
-  //   // metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
-
-  //   // if (metrics.getApiCallCount() == null) {
-  //   // // Log or print an error message if apiCallCount is unexpectedly null
-  //   // System.out.println("apiCallCount is unexpectedly null in calculateTraces
-  //   // method");
-  //   // return;
-  //   // }
-
-  //   // metrics.setApiCallCount(metrics.getTotalErrorCalls() +
-  //   // metrics.getTotalSuccessCalls());
-
-  //   // System.out.println("After: metrics=" + metrics + ", apiCallCount=" +
-  //   // metrics.getApiCallCount() + ", duration=" + traceDTO.getDuration());
-
-  //   if (traceDTO.getDuration() != null && traceDTO.getDuration() > peakLatencyThreshold) {
-  //     metrics.setPeakLatency(metrics.getPeakLatency() + 1);
-  //   } else {
-  //     System.out.println("statusCode is unexpectedly null in calculateTraces method");
-  //   }
-  // }
+  
 private void calculatePeakLatency(TraceDTO traceDTO, TraceMetrics metrics, int minpeakLatency, int maxpeakLatency) {
     if (traceDTO == null) {
-      System.out.println("traceDTO is null in calculateTraces method");
       return;
     }
     Long duration = traceDTO.getDuration();
     if (duration != null && duration >= minpeakLatency && duration <= maxpeakLatency) {
         metrics.setPeakLatency(metrics.getPeakLatency() + 1);
     } else {
-        System.out.println("statusCode is unexpectedly null in calculateTraces method");
     }
   }
 
