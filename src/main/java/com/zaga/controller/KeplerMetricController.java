@@ -1,10 +1,12 @@
 package com.zaga.controller;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
@@ -69,9 +71,6 @@ public class KeplerMetricController {
             }
         }
 
-        // for (String serviceName : uniqueServiceNamesList) {
-        //     // System.out.println(serviceName);
-        // }
 
         List<KeplerResponseData> finalResponse = new ArrayList<>();
 
@@ -101,11 +100,14 @@ public class KeplerMetricController {
             @QueryParam("minutesAgo") int minutesAgo,
             @QueryParam("type") String type,
             @QueryParam("keplerType") List<String> keplerTypeList) {
+                LocalDateTime Time1 = LocalDateTime.now();
 
         List<KeplerMetricDTO> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(from, to, minutesAgo,
                 type,keplerTypeList);
 
 
+
+        LocalDateTime Time5 = LocalDateTime.now();
         List<String> uniqueServiceNamesList = new ArrayList<>();
 
         for (KeplerMetricDTO metricEntry : keplerMetricData) {
@@ -125,8 +127,8 @@ public class KeplerMetricController {
 
         // Move all matched entries to the front of the list
         for (String matchedEntry : matchedSystemEntries) {
-            uniqueServiceNamesList.remove(matchedEntry); // Remove the matched entry
-            uniqueServiceNamesList.add(0, matchedEntry); // Add it to the beginning of the list
+            uniqueServiceNamesList.remove(matchedEntry); 
+            uniqueServiceNamesList.add(0, matchedEntry); 
         }
 
 
@@ -145,12 +147,16 @@ public class KeplerMetricController {
             KeplerResponseData keplerResponseData = new KeplerResponseData(serviceName, containerPowerMetricsList);
             finalResponse.add(keplerResponseData);
         }
+        
+             LocalDateTime Time6 = LocalDateTime.now();
+            System.out.println("Mapping logic ended Timestamp------ " + Duration.between(Time5, Time6));
 
 
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             String responseJson = objectMapper.writeValueAsString(finalResponse);
-
+            LocalDateTime Time2 = LocalDateTime.now();
+            System.out.println("API ended Timestamp------ " + Duration.between(Time1, Time2));
             return Response.ok(responseJson, MediaType.APPLICATION_JSON).build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)

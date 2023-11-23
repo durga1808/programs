@@ -12,6 +12,7 @@ import io.quarkus.mongodb.panache.PanacheQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -188,6 +189,8 @@ public class KeplerMetricHandler {
 
 
 public List<KeplerMetricDTO> getAllKeplerByDateAndTime(LocalDate from, LocalDate to, int minutesAgo, String type, List<String> keplerTypeList) {
+
+  LocalDateTime Time3 = LocalDateTime.now();
  Document timeFilter;
     if (from != null && to != null && to.isBefore(from)) {
         LocalDate temp = from;
@@ -227,6 +230,11 @@ public List<KeplerMetricDTO> getAllKeplerByDateAndTime(LocalDate from, LocalDate
 }
 
   PanacheQuery<KeplerMetricDTO> query = keplerMetricRepo.find(timeFilter);
+
+  
+   LocalDateTime Time4 = LocalDateTime.now();
+  
+   System.out.println("DB call ended Timestamp------ " + Duration.between(Time3, Time4));
   return query.list();
 }
 
@@ -234,11 +242,10 @@ private Document createCustomDateFilter(LocalDate from, LocalDate to) {
   Bson bsonFilter = Filters.and(
           Filters.gte("date", from.atStartOfDay()),
           Filters.lt("date", to.plusDays(1).atStartOfDay())
-  );
+  );    
 
   return Document.parse(bsonFilter.toBsonDocument().toJson());
 }
-
 
 
 }
