@@ -1,5 +1,6 @@
 package com.zaga.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.queryentity.kepler.KeplerMetricDTO;
 import com.zaga.entity.queryentity.kepler.Response.ContainerPowerMetrics;
@@ -105,7 +106,7 @@ public class KeplerMetricController {
     @QueryParam("minutesAgo") int minutesAgo,
     @QueryParam("type") String type,
     @QueryParam("keplerType") List<String> keplerTypeList
-  ) {
+  ) throws JsonProcessingException {
     LocalDateTime APICallStart = LocalDateTime.now();
 
     System.out.println(
@@ -121,60 +122,63 @@ public class KeplerMetricController {
     );
 
     List<String> uniqueServiceNamesList = new ArrayList<>();
-
-    for (KeplerMetricDTO metricEntry : keplerMetricData) {
-      if (!uniqueServiceNamesList.contains(metricEntry.getServiceName())) {
-        uniqueServiceNamesList.add(metricEntry.getServiceName());
-      }
-    }
-
     List<String> matchedSystemEntries = new ArrayList<>();
-
-    // Identify all items starting with "system" and store their indices
-    for (int i = 0; i < uniqueServiceNamesList.size(); i++) {
-      if (uniqueServiceNamesList.get(i).startsWith("system")) {
-        matchedSystemEntries.add(uniqueServiceNamesList.get(i));
-      }
-    }
-
-    // Move all matched entries to the front of the list
-    for (String matchedEntry : matchedSystemEntries) {
-      uniqueServiceNamesList.remove(matchedEntry);
-      uniqueServiceNamesList.add(0, matchedEntry);
-    }
-
     List<KeplerResponseData> finalResponse = new ArrayList<>();
+    String responseJson = "";
 
-    // Find By ServiceName from response
-    for (String serviceName : uniqueServiceNamesList) {
-      List<ContainerPowerMetrics> containerPowerMetricsList = new ArrayList<>();
-      for (KeplerMetricDTO entry : keplerMetricData) {
-        if (entry.getServiceName().equals(serviceName)) {
-          ContainerPowerMetrics containerPowerMetrics = new ContainerPowerMetrics(
-            entry.getDate(),
-            entry.getPowerConsumption()
-          );
-          containerPowerMetricsList.add(containerPowerMetrics);
+    if (keplerMetricData.size() > 0) {
+      for (KeplerMetricDTO metricEntry : keplerMetricData) {
+        if (!uniqueServiceNamesList.contains(metricEntry.getServiceName())) {
+          uniqueServiceNamesList.add(metricEntry.getServiceName());
         }
       }
-      KeplerResponseData keplerResponseData = new KeplerResponseData(
-        serviceName,
-        containerPowerMetricsList
-      );
-      finalResponse.add(keplerResponseData);
+
+      // Identify all items starting with "system" and store their indices
+      for (int i = 0; i < uniqueServiceNamesList.size(); i++) {
+        if (uniqueServiceNamesList.get(i).startsWith("system")) {
+          matchedSystemEntries.add(uniqueServiceNamesList.get(i));
+        }
+      }
+
+      // Move all matched entries to the front of the list
+      for (String matchedEntry : matchedSystemEntries) {
+        uniqueServiceNamesList.remove(matchedEntry);
+        uniqueServiceNamesList.add(0, matchedEntry);
+      }
+
+      // Find By ServiceName from response
+      for (String serviceName : uniqueServiceNamesList) {
+        List<ContainerPowerMetrics> containerPowerMetricsList = new ArrayList<>();
+        for (KeplerMetricDTO entry : keplerMetricData) {
+          if (entry.getServiceName().equals(serviceName)) {
+            ContainerPowerMetrics containerPowerMetrics = new ContainerPowerMetrics(
+              entry.getDate(),
+              entry.getPowerConsumption()
+            );
+            containerPowerMetricsList.add(containerPowerMetrics);
+          }
+        }
+        KeplerResponseData keplerResponseData = new KeplerResponseData(
+          serviceName,
+          containerPowerMetricsList
+        );
+        finalResponse.add(keplerResponseData);
+      }
+      ObjectMapper objectMapper = new ObjectMapper();
+      responseJson = objectMapper.writeValueAsString(finalResponse);
     }
 
     try {
-      ObjectMapper objectMapper = new ObjectMapper();
-      String responseJson = objectMapper.writeValueAsString(finalResponse);
-
       LocalDateTime APICallEnd = LocalDateTime.now();
 
       System.out.println(
         "------------API call endTimestamp------ " + APICallEnd
       );
 
-      System.out.println("-----------API call duration------- " +(Duration.between(APICallStart, APICallEnd)));
+      System.out.println(
+        "-----------API call duration------- " +
+        (Duration.between(APICallStart, APICallEnd))
+      );
 
       return Response.ok(responseJson, MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {

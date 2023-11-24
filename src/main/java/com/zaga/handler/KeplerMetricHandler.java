@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.List;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.json.JsonWriterSettings;
 
 @ApplicationScoped
 public class KeplerMetricHandler {
@@ -25,179 +26,173 @@ public class KeplerMetricHandler {
   @Inject
   MongoClient mongoClient;
 
-  public List<KeplerMetricDTO> getAllKeplerByDateAndTime(
+  // public List<KeplerMetricDTO> getAllKeplerByDateAndTime(
+  //   LocalDate from,
+  //   LocalDate to,
+  //   int minutesAgo,
+  //   String type,
+  //   List<String> keplerTypeList
+  // ) {
+  //   Document timeFilter;
+  //   if (from != null && to != null && to.isBefore(from)) {
+  //     LocalDate temp = from;
+  //     from = to;
+  //     to = temp;
+  //   }
+
+  //   if (from != null && to != null) {
+  //     timeFilter = createCustomDateFilter(from, to);
+  //   } else if (minutesAgo > 0) {
+  //     LocalDateTime currentDateTime = LocalDateTime.now();
+  //     LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+
+  //     LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
+  //     if (fromDateTime.isBefore(startOfToday)) {
+  //       fromDateTime = startOfToday;
+  //     }
+  //     LocalDateTime toDateTime = currentDateTime;
+
+  //     LocalDateTime DBCallOneStart = LocalDateTime.now();
+      
+  //     System.out.println(
+  //       "------------DB call One startTimestamp------ " + DBCallOneStart
+  //     );
+
+  //     Bson bsonFilter = Filters.and(
+  //       Filters.gte(
+  //         "date",
+  //         Date.from(fromDateTime.atZone(ZoneId.systemDefault()).toInstant())
+  //       ),
+  //       Filters.lt(
+  //         "date",
+  //         Date.from(toDateTime.atZone(ZoneId.systemDefault()).toInstant())
+  //       )
+  //     );
+      
+  //     LocalDateTime DBCallOneEnd = LocalDateTime.now();
+
+  //     System.out.println(
+  //       "------------DB call One endTimestamp------ " + DBCallOneEnd
+  //     );
+
+  //     System.out.println(
+  //       "-----------DB call ended Timestamp------ " +
+  //       Duration.between(DBCallOneStart, DBCallOneEnd)
+  //     );
+
+ 
+  //     timeFilter = Document.parse(bsonFilter.toBsonDocument().toJson());
+
+  //   } else {
+  //     throw new IllegalArgumentException(
+  //       "Either date range or minutesAgo must be provided"
+  //     );
+  //   }
+
+  //   if (type != null && !type.isEmpty()) {
+  //     timeFilter.append("type", type);
+  //   }
+
+  //   if (keplerTypeList != null && !keplerTypeList.isEmpty()) {
+  //     timeFilter.append("keplerType", new Document("$in", keplerTypeList));
+  //   }
+
+  //   LocalDateTime DBCallTwoStart = LocalDateTime.now();
+
+  //   System.out.println(
+  //     "------------DB call Two startTimestamp------ " + DBCallTwoStart
+  //   );
+
+  //   PanacheQuery<KeplerMetricDTO> query = keplerMetricRepo.find(timeFilter);
+
+  //   LocalDateTime DBCallTwoEnd = LocalDateTime.now();
+
+  //   System.out.println(
+  //     "------------DB call Two endTimestamp------ " + DBCallTwoEnd
+  //   );
+
+  //   System.out.println(
+  //     "-----------DB call ended Timestamp------ " +
+  //     Duration.between(DBCallTwoStart, DBCallTwoEnd)
+  //   );
+
+  //   return query.list();
+  // }
+
+
+  
+
+
+public List<KeplerMetricDTO> getAllKeplerByDateAndTime(
     LocalDate from,
     LocalDate to,
     int minutesAgo,
     String type,
     List<String> keplerTypeList
-  ) {
-    Document timeFilter;
+) {
+    LocalDateTime startTime = LocalDateTime.now();
+
+    Bson bsonFilter;
+
     if (from != null && to != null && to.isBefore(from)) {
-      LocalDate temp = from;
-      from = to;
-      to = temp;
+        LocalDate temp = from;
+        from = to;
+        to = temp;
     }
 
     if (from != null && to != null) {
-      timeFilter = createCustomDateFilter(from, to);
+        bsonFilter = Filters.and(
+            Filters.gte("date", Date.from(from.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant())),
+            Filters.lt("date", Date.from(to.plusDays(1).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()))
+        );
     } else if (minutesAgo > 0) {
-      LocalDateTime currentDateTime = LocalDateTime.now();
-      LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+        LocalDateTime currentDateTime = LocalDateTime.now();
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+        LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
 
-      LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
-      if (fromDateTime.isBefore(startOfToday)) {
-        fromDateTime = startOfToday;
-      }
-      LocalDateTime toDateTime = currentDateTime;
+        if (fromDateTime.isBefore(startOfToday)) {
+            fromDateTime = startOfToday;
+        }
 
-      LocalDateTime DBCallOneStart = LocalDateTime.now();
-      
-      System.out.println(
-        "------------DB call One startTimestamp------ " + DBCallOneStart
-      );
-
-      Bson bsonFilter = Filters.and(
-        Filters.gte(
-          "date",
-          Date.from(fromDateTime.atZone(ZoneId.systemDefault()).toInstant())
-        ),
-        Filters.lt(
-          "date",
-          Date.from(toDateTime.atZone(ZoneId.systemDefault()).toInstant())
-        )
-      );
-      
-      LocalDateTime DBCallOneEnd = LocalDateTime.now();
-
-      System.out.println(
-        "------------DB call One endTimestamp------ " + DBCallOneEnd
-      );
-
-      System.out.println(
-        "-----------DB call ended Timestamp------ " +
-        Duration.between(DBCallOneStart, DBCallOneEnd)
-      );
-
- 
-      timeFilter = Document.parse(bsonFilter.toBsonDocument().toJson());
-
+        bsonFilter = Filters.and(
+            Filters.gte("date", Date.from(fromDateTime.atZone(ZoneId.systemDefault()).toInstant())),
+            Filters.lt("date", Date.from(currentDateTime.atZone(ZoneId.systemDefault()).toInstant()))
+        );
     } else {
-      throw new IllegalArgumentException(
-        "Either date range or minutesAgo must be provided"
-      );
+        throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
     }
 
     if (type != null && !type.isEmpty()) {
-      timeFilter.append("type", type);
+        bsonFilter = Filters.and(bsonFilter, Filters.eq("type", type));
     }
 
     if (keplerTypeList != null && !keplerTypeList.isEmpty()) {
-      timeFilter.append("keplerType", new Document("$in", keplerTypeList));
+        bsonFilter = Filters.and(bsonFilter, Filters.in("keplerType", keplerTypeList));
     }
 
-    LocalDateTime DBCallTwoStart = LocalDateTime.now();
+    LocalDateTime dbCallStart = LocalDateTime.now();
+    System.out.println("------------DB call startTimestamp------ " + dbCallStart);
 
-    System.out.println(
-      "------------DB call Two startTimestamp------ " + DBCallTwoStart
-    );
+    Document documentFilter = Document.parse(bsonFilter.toBsonDocument().toJson());
 
-    PanacheQuery<KeplerMetricDTO> query = keplerMetricRepo.find(timeFilter);
+    PanacheQuery<KeplerMetricDTO> query = keplerMetricRepo.find(documentFilter);
 
-    LocalDateTime DBCallTwoEnd = LocalDateTime.now();
-
-    System.out.println(
-      "------------DB call Two endTimestamp------ " + DBCallTwoEnd
-    );
-
-    System.out.println(
-      "-----------DB call ended Timestamp------ " +
-      Duration.between(DBCallTwoStart, DBCallTwoEnd)
-    );
+    LocalDateTime dbCallEnd = LocalDateTime.now();
+    System.out.println("------------DB call endTimestamp------ " + dbCallEnd);
+    System.out.println("-----------DB call ended Timestamp------ " + Duration.between(dbCallStart, dbCallEnd));
 
     return query.list();
-  }
-
-  private Document createCustomDateFilter(LocalDate from, LocalDate to) {
-    Bson bsonFilter = Filters.and(
-      Filters.gte("date", from.atStartOfDay()),
-      Filters.lt("date", to.plusDays(1).atStartOfDay())
-    );
-
-    return Document.parse(bsonFilter.toBsonDocument().toJson());
-  }
 }
-//get all kepler metric dto
-//   public List<KeplerMetricDTO> getAllKeplerByMinutes(LocalDate from, LocalDate to, int minutesAgo) {
-//    return keplerMetricRepo.listAll();
-// }
-// public List<KeplerMetricDTO> getAllKeplerByDateAndTime(LocalDate from, LocalDate to, int minutesAgo) {
-//     Document timeFilter;
-//     if (from != null && to != null && to.isBefore(from)) {
-//         LocalDate temp = from;
-//         from = to;
-//         to = temp;
-//     }
-//     if (from != null && to != null) {
-//         timeFilter = createCustomDateFilter(from, to);
-//     } else if (minutesAgo > 0) {
-//         LocalDateTime currentDateTime = LocalDateTime.now();
-//         LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-//         LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
-//         if (fromDateTime.isBefore(startOfToday)) {
-//             fromDateTime = startOfToday;
-//         }
-//         LocalDateTime toDateTime = currentDateTime;
-//         Bson bsonFilter = Filters.and(
-//                 Filters.gte("date", fromDateTime),
-//                 Filters.lt("date", toDateTime)
-//         );
-//      timeFilter = Document.parse(bsonFilter.toBsonDocument().toJson());
-//     } else {
-//         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-//     }
-//     PanacheQuery<KeplerMetricDTO> query = keplerMetricRepo.find(timeFilter);
-//     return query.list();
-// }
-// private Document createCustomDateFilter(LocalDate from, LocalDate to) {
-//     Bson bsonFilter = Filters.and(
-//             Filters.gte("date", from.atStartOfDay()),
-//             Filters.lt("date", to.plusDays(1).atStartOfDay())
-//     );
-//    return Document.parse(bsonFilter.toBsonDocument().toJson());
-// }
-// public List<KeplerMetricDTO> getAllKeplerByDateAndTime(LocalDate from, LocalDate to, int minutesAgo) {
-//  Document timeFilter;
-//     if (from != null && to != null && to.isBefore(from)) {
-//         LocalDate temp = from;
-//         from = to;
-//         to = temp;
-//     }
-//     if (from != null && to != null) {
-//         timeFilter = createCustomDateFilter(from, to);
-//     } else if (minutesAgo > 0) {
-//         LocalDateTime currentDateTime = LocalDateTime.now();
-//         LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-//         LocalDateTime fromDateTime = currentDateTime.minusMinutes(minutesAgo);
-//         if (fromDateTime.isBefore(startOfToday)) {
-//             fromDateTime = startOfToday;
-//         }
-//         LocalDateTime toDateTime = currentDateTime;
-//         Bson bsonFilter = Filters.and(
-//                 Filters.gte("date", Date.from(fromDateTime.atZone(ZoneId.systemDefault()).toInstant())),
-//                 Filters.lt("date", Date.from(toDateTime.atZone(ZoneId.systemDefault()).toInstant()))
-//         );
-//         timeFilter = Document.parse(bsonFilter.toBsonDocument().toJson());
-//     } else {
-//         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-//     }
-//     PanacheQuery<KeplerMetricDTO> query = keplerMetricRepo.find(timeFilter);
-//     return query.list();
-// }
-// private Document createCustomDateFilter(LocalDate from, LocalDate to) {
-//     Bson bsonFilter = Filters.and(
-//             Filters.gte("date", from.atStartOfDay()),
-//             Filters.lt("date", to.plusDays(1).atStartOfDay())
-//     );
-//     return Document.parse(bsonFilter.toBsonDocument().toJson());
-// }
+
+  // private Document createCustomDateFilter(LocalDate from, LocalDate to) {
+  //   Bson bsonFilter = Filters.and(
+  //     Filters.gte("date", from.atStartOfDay()),
+  //     Filters.lt("date", to.plusDays(1).atStartOfDay())
+  //   );
+
+  //   return Document.parse(bsonFilter.toBsonDocument().toJson());
+  // }
+}
+
+
+
