@@ -135,7 +135,7 @@ private List<KeplerResponseData> executeAggregationPipeline(
 private List<KeplerResponseData> executeAnotherLogic(
         MongoCollection<Document> collection,
         LocalDate from,
-        LocalDate to,
+        Integer minutesAgo,
         String type,
         List<String> keplerTypeList
 ){
