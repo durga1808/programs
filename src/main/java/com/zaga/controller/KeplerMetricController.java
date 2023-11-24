@@ -36,11 +36,7 @@ public class KeplerMetricController {
   @Inject
   KeplerMetricRepo keplerMetricRepo;
 
-  // @GET
-  // @Path("/getKeplerData")
-  // public List<KeplerMetricQuery> getKeplerByTimedased( ) {
-  //     return keplerMetricHandler.getKeplerData();
-  // }
+
 
   @POST
   @Path("/addKeplerMock")
@@ -98,7 +94,8 @@ public class KeplerMetricController {
     return Response.ok(finalResponse).build();
   }
 
-  @GET
+
+ @GET
   @Path("/getAllKepler-MetricData")
   public Response getAllKeplerMetricDatas(
     @QueryParam("from") LocalDate from,
@@ -113,60 +110,18 @@ public class KeplerMetricController {
       "------------API call startTimestamp------ " + APICallStart
     );
 
-    List<KeplerMetricDTO> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(
+    List<KeplerResponseData> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(
       from,
       to,
       minutesAgo,
       type,
       keplerTypeList
     );
-
-    List<String> uniqueServiceNamesList = new ArrayList<>();
-    List<String> matchedSystemEntries = new ArrayList<>();
-    List<KeplerResponseData> finalResponse = new ArrayList<>();
-    String responseJson = "";
-
-    if (keplerMetricData.size() > 0) {
-      for (KeplerMetricDTO metricEntry : keplerMetricData) {
-        if (!uniqueServiceNamesList.contains(metricEntry.getServiceName())) {
-          uniqueServiceNamesList.add(metricEntry.getServiceName());
-        }
-      }
-
-      // Identify all items starting with "system" and store their indices
-      for (int i = 0; i < uniqueServiceNamesList.size(); i++) {
-        if (uniqueServiceNamesList.get(i).startsWith("system")) {
-          matchedSystemEntries.add(uniqueServiceNamesList.get(i));
-        }
-      }
-
-      // Move all matched entries to the front of the list
-      for (String matchedEntry : matchedSystemEntries) {
-        uniqueServiceNamesList.remove(matchedEntry);
-        uniqueServiceNamesList.add(0, matchedEntry);
-      }
-
-      // Find By ServiceName from response
-      for (String serviceName : uniqueServiceNamesList) {
-        List<ContainerPowerMetrics> containerPowerMetricsList = new ArrayList<>();
-        for (KeplerMetricDTO entry : keplerMetricData) {
-          if (entry.getServiceName().equals(serviceName)) {
-            ContainerPowerMetrics containerPowerMetrics = new ContainerPowerMetrics(
-              entry.getDate(),
-              entry.getPowerConsumption()
-            );
-            containerPowerMetricsList.add(containerPowerMetrics);
-          }
-        }
-        KeplerResponseData keplerResponseData = new KeplerResponseData(
-          serviceName,
-          containerPowerMetricsList
-        );
-        finalResponse.add(keplerResponseData);
-      }
+      String responseJson = "";
       ObjectMapper objectMapper = new ObjectMapper();
-      responseJson = objectMapper.writeValueAsString(finalResponse);
-    }
+      responseJson = objectMapper.writeValueAsString(keplerMetricData);
+
+    
 
     try {
       LocalDateTime APICallEnd = LocalDateTime.now();
@@ -188,4 +143,116 @@ public class KeplerMetricController {
         .build();
     }
   }
+
+
+//   @GET
+//   @Path("/getAllKepler-MetricData")
+//   public Response getAllKeplerMetricDatas(
+//     @QueryParam("from") LocalDate from,
+//     @QueryParam("to") LocalDate to,
+//     @QueryParam("minutesAgo") int minutesAgo,
+//     @QueryParam("type") String type,
+//     @QueryParam("keplerType") List<String> keplerTypeList
+//   ) throws JsonProcessingException {
+//     LocalDateTime APICallStart = LocalDateTime.now();
+
+//     System.out.println(
+//       "------------API call startTimestamp------ " + APICallStart
+//     );
+
+//     List<KeplerMetricDTO> keplerMetricData = keplerMetricHandler.getAllKeplerByDateAndTime(
+//       from,
+//       to,
+//       minutesAgo,
+//       type,
+//       keplerTypeList
+//     );
+
+//     List<String> uniqueServiceNamesList = new ArrayList<>();
+//     List<String> matchedSystemEntries = new ArrayList<>();
+//     List<KeplerResponseData> finalResponse = new ArrayList<>();
+//     String responseJson = "";
+
+//     if (keplerMetricData.size() > 0) {
+//       for (KeplerMetricDTO metricEntry : keplerMetricData) {
+//         if (!uniqueServiceNamesList.contains(metricEntry.getServiceName())) {
+//           uniqueServiceNamesList.add(metricEntry.getServiceName());
+//         }
+//       }
+
+//       // Identify all items starting with "system" and store their indices
+//       for (int i = 0; i < uniqueServiceNamesList.size(); i++) {
+//         if (uniqueServiceNamesList.get(i).startsWith("system")) {
+//           matchedSystemEntries.add(uniqueServiceNamesList.get(i));
+//         }
+//       }
+
+//       // Move all matched entries to the front of the list
+//       for (String matchedEntry : matchedSystemEntries) {
+//         uniqueServiceNamesList.remove(matchedEntry);
+//         uniqueServiceNamesList.add(0, matchedEntry);
+//       }
+
+//       // Find By ServiceName from response
+//       for (String serviceName : uniqueServiceNamesList) {
+//         List<ContainerPowerMetrics> containerPowerMetricsList = new ArrayList<>();
+//         int totalCount = 0; 
+//         int countForService = 0; // Counter variable
+    
+//         for (KeplerMetricDTO entry : keplerMetricData) {
+//             if (entry.getServiceName().equals(serviceName)) {
+//                 ContainerPowerMetrics containerPowerMetrics = new ContainerPowerMetrics(
+//                         entry.getDate(),
+//                         entry.getPowerConsumption()
+//                 );
+//                 containerPowerMetricsList.add(containerPowerMetrics);
+//                 countForService++; // Increment the counter
+//             }
+//         }
+    
+//         // Print the count for the current serviceName
+//         System.out.println("Count for " + serviceName + ": " + countForService);
+    
+        
+//         KeplerResponseData keplerResponseData = new KeplerResponseData(
+//           serviceName,
+//           containerPowerMetricsList
+//         );
+//         finalResponse.add(keplerResponseData);
+
+//           // Increment the total count
+//     totalCount += countForService;
+    
+//       System.out.println("--------------Total Count:----------- " + totalCount);
+//       }
+//       ObjectMapper objectMapper = new ObjectMapper();
+//       responseJson = objectMapper.writeValueAsString(finalResponse);
+
+//     }
+
+//     try {
+//       LocalDateTime APICallEnd = LocalDateTime.now();
+
+//       System.out.println(
+//         "------------API call endTimestamp------ " + APICallEnd
+//       );
+
+//       System.out.println(
+//         "-----------API call duration------- " +
+//         (Duration.between(APICallStart, APICallEnd))
+//       );
+
+//       return Response.ok(responseJson, MediaType.APPLICATION_JSON).build();
+//     } catch (Exception e) {
+//       return Response
+//         .status(Response.Status.INTERNAL_SERVER_ERROR)
+//         .entity("Error converting response to JSON")
+//         .build();
+//     }
+//   }
+
+
+
+
+
 }
