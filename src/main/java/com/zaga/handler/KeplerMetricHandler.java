@@ -19,6 +19,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import org.bson.Document;
@@ -48,9 +49,17 @@ public class KeplerMetricHandler {
     MongoDatabase database = mongoClient.getDatabase("KeplerMetric");
     MongoCollection<Document> collection = database.getCollection("KeplerMetricDTO");
 
-    // Implementing the aggregation pipeline
-    List<KeplerResponseData> result = executeAggregationPipeline(collection, from, to, type, keplerTypeList);
-    System.out.println("result:-------------- " + result);
+    List<KeplerResponseData> result;
+
+    if (from != null && to != null) {
+        result = executeAggregationPipeline(collection, from, to, type, keplerTypeList);
+    } else if (from != null && minutesAgo > 0) {
+        result = executeAnotherLogic(collection, from, minutesAgo, type, keplerTypeList);
+    } else {
+        System.out.println("Invalid parameters. Provide either 'from' or 'minutesAgo'.");
+        result = Collections.emptyList();
+    }
+
     LocalDateTime endTime = LocalDateTime.now();
     System.out.println("------------DB call endTimestamp------ " + endTime);
     System.out.println("-----------DB call ended Timestamp------ " + Duration.between(startTime, endTime));
@@ -119,6 +128,18 @@ private List<KeplerResponseData> executeAggregationPipeline(
     }
 
     return result;
+}
+
+
+
+private List<KeplerResponseData> executeAnotherLogic(
+        MongoCollection<Document> collection,
+        LocalDate from,
+        LocalDate to,
+        String type,
+        List<String> keplerTypeList
+){
+  return null;
 }
 
 public static KeplerResponseData fromDocument(Document document) {
@@ -240,7 +261,7 @@ public static KeplerResponseData fromDocument(Document document) {
 
 
 
-  
+
 
 // public List<KeplerMetricDTO> getAllKeplerByDateAndTime(
 //     LocalDate from,
