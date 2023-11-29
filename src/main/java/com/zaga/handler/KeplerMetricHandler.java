@@ -120,9 +120,9 @@ public class KeplerMetricHandler {
             String type,
             List<String> keplerTypeList) {
         List<Document> pipeline = Arrays.asList(new Document("$match",
-                new Document("$and", Arrays.asList(new Document("$or", Arrays.asList(new Document("type", "string"))),
+                new Document("$and", Arrays.asList(new Document("$or", Arrays.asList(new Document("type", type))),
                         new Document("keplerType",
-                                new Document("$in", Arrays.asList("string"))),
+                                new Document("$in", keplerTypeList)),
                         new Document("$expr",
                                 new Document("$and", Arrays.asList(new Document("$gte", Arrays.asList("$date",
                                         new Document("$subtract",
