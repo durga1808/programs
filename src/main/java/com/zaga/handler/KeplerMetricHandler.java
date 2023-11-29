@@ -71,8 +71,8 @@ public class KeplerMetricHandler {
             LocalDate to,
             String type,
             List<String> keplerTypeList) {
-        System.out.println("from date-------" + from.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")));
-        System.out.println("from date-------" + to.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")));
+        // System.out.println("from date-------" + from.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")));
+        // System.out.println("from date-------" + to.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")));
         List<Document> pipeline = Arrays.asList(
                 new Document("$addFields",
                         new Document("justDate",
@@ -106,7 +106,7 @@ public class KeplerMetricHandler {
 
         List<KeplerResponseData> result = new ArrayList<>();
         for (Document document : aggregationResult) {
-            System.out.println("result-------" + document.toJson());
+            // System.out.println("result-------" + document.toJson());
             result.add(fromDocument(document));
         }
 
@@ -147,7 +147,7 @@ public class KeplerMetricHandler {
 
         List<KeplerResponseData> result = new ArrayList<>();
         for (Document document : aggregationResult) {
-            System.out.println("result-------" + document.toJson());
+            // System.out.println("result-------" + document.toJson());
             result.add(fromDocument(document));
         }
 
