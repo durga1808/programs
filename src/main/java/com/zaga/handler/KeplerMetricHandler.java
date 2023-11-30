@@ -87,7 +87,9 @@ public class KeplerMetricHandler {
                                 new Document("$or",
                                         Arrays.asList(new Document("type", type))),
                                 new Document("keplerType",
-                                        new Document("$in", keplerTypeList))))),
+                                        new Document("$in", keplerTypeList)),
+                                 new Document("powerConsumption",
+                                                new Document("$gt", 0L))))),
                 new Document("$group",
                         new Document("_id", "$serviceName")
                                 .append("matchedDocuments",
@@ -128,7 +130,9 @@ public class KeplerMetricHandler {
                                         new Document("$subtract",
                                                 Arrays.asList(new java.util.Date(), minutesAgo * 60L * 1000L)))),
                                         new Document("$lte", Arrays.asList("$date",
-                                                new java.util.Date())))))))),
+                                                new java.util.Date()))))),
+                                         new Document("powerConsumption",
+                                                new Document("$gt", 0L))))),
                 new Document("$group",
                         new Document("_id", "$serviceName")
                                 .append("matchedDocuments",
