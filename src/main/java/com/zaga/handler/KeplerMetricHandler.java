@@ -4,27 +4,20 @@ import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
-import com.zaga.entity.queryentity.kepler.KeplerMetricDTO;
 import com.zaga.entity.queryentity.kepler.Response.ContainerPowerMetrics;
 import com.zaga.entity.queryentity.kepler.Response.KeplerResponseData;
 import com.zaga.repo.KeplerMetricRepo;
-import io.quarkus.mongodb.panache.PanacheQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import org.bson.Document;
-import org.bson.conversions.Bson;
-import org.bson.json.JsonWriterSettings;
 
 @ApplicationScoped
 public class KeplerMetricHandler {
@@ -34,6 +27,7 @@ public class KeplerMetricHandler {
 
     @Inject
     MongoClient mongoClient;
+
 
     public List<KeplerResponseData> getAllKeplerByDateAndTime(
             LocalDate from,
@@ -47,6 +41,8 @@ public class KeplerMetricHandler {
         MongoDatabase database = mongoClient.getDatabase("KeplerMetric");
         MongoCollection<Document> collection = database.getCollection("KeplerMetricDTO");
 
+
+        
         List<KeplerResponseData> result;
 
         if (from != null && to != null) {
@@ -71,8 +67,7 @@ public class KeplerMetricHandler {
             LocalDate to,
             String type,
             List<String> keplerTypeList) {
-        // System.out.println("from date-------" + from.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")));
-        // System.out.println("from date-------" + to.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")));
+ 
         List<Document> pipeline = Arrays.asList(
                 new Document("$addFields",
                         new Document("justDate",
@@ -121,6 +116,7 @@ public class KeplerMetricHandler {
             Integer minutesAgo,
             String type,
             List<String> keplerTypeList) {
+
         List<Document> pipeline = Arrays.asList(new Document("$match",
                 new Document("$and", Arrays.asList(new Document("$or", Arrays.asList(new Document("type", type))),
                         new Document("keplerType",
