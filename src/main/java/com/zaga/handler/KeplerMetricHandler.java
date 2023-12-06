@@ -100,14 +100,14 @@ public class KeplerMetricHandler {
                                 .append("count", 1L)));
 
         AggregateIterable<Document> aggregationResult = collection.aggregate(pipeline);
-
+        
         List<KeplerResponseData> result = new ArrayList<>();
         for (Document document : aggregationResult) {
-            // System.out.println("result-------" + document.toJson());
+            long count = document.getLong("count");
+            System.out.println("Size of DTO List for matched params " + count);
             result.add(fromDocument(document));
         }
-        System.out.println("Size of DTO List: " + result.size());
-
+                System.out.println("Final Size of DTO List: " + result.size());
         return result;
     }
 
@@ -148,12 +148,15 @@ public class KeplerMetricHandler {
 
         List<KeplerResponseData> result = new ArrayList<>();
         for (Document document : aggregationResult) {
-            // System.out.println("result-------" + document.toJson());
+            long count = document.getLong("count");
+            System.out.println("Size of DTO List for matched params " + count);
             result.add(fromDocument(document));
         }
-        System.out.println("Size of DTO List: " + result.size());
-
+        
+        System.out.println("Final Size of DTO List: " + result.size());
+        
         return result;
+        
     }
 
     public static KeplerResponseData fromDocument(Document document) {
