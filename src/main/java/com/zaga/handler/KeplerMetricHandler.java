@@ -106,6 +106,7 @@ public class KeplerMetricHandler {
             // System.out.println("result-------" + document.toJson());
             result.add(fromDocument(document));
         }
+        System.out.println("Size of DTO List: " + result.size());
 
         return result;
     }
@@ -150,6 +151,7 @@ public class KeplerMetricHandler {
             // System.out.println("result-------" + document.toJson());
             result.add(fromDocument(document));
         }
+        System.out.println("Size of DTO List: " + result.size());
 
         return result;
     }
