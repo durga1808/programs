@@ -14,4 +14,5 @@ import lombok.ToString;
 public class KeplerResponseData {
     private String displayName;
     private List<ContainerPowerMetrics> containerPowerMetrics;
+    private Integer totalCount;
 }

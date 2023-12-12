@@ -47,62 +47,65 @@ public class KeplerMetricController {
     return keplerMetricDTO;
   }
 
+  // @GET
+  // @Path("/getByTimeMock")
+  // public Response getKeplerMetricByTime(
+  //   @QueryParam("minutesAgo") Integer minutesAgo
+  // ) {
+  //   Instant currentInstant = Instant.now();
+  //   Instant minutesAgoInstant = currentInstant.minus(
+  //     minutesAgo,
+  //     ChronoUnit.MINUTES
+  //   );
+
+  //   List<KeplerMetricDTO> resDto = keplerMetricRepo
+  //     .find("date >= ?1", minutesAgoInstant)
+  //     .list();
+
+  //   List<String> uniqueServiceNamesList = new ArrayList<>();
+
+  //   for (KeplerMetricDTO metricEntry : resDto) {
+  //     if (!uniqueServiceNamesList.contains(metricEntry.getServiceName())) {
+  //       uniqueServiceNamesList.add(metricEntry.getServiceName());
+  //     }
+  //   }
+
+  //   List<KeplerResponseData> finalResponse = new ArrayList<>();
+
+  //   // Find By ServiceName from response
+  //   for (String serviceName : uniqueServiceNamesList) {
+  //     List<ContainerPowerMetrics> containerPowerMetricsList = new ArrayList<>();
+  //     for (KeplerMetricDTO entry : resDto) {
+  //       if (entry.getServiceName().equals(serviceName)) {
+  //         ContainerPowerMetrics containerPowerMetrics = new ContainerPowerMetrics(
+  //           entry.getDate(),
+  //           entry.getPowerConsumption()
+  //         );
+  //         containerPowerMetricsList.add(containerPowerMetrics);
+  //       }
+  //     }
+  //     KeplerResponseData keplerResponseData = new KeplerResponseData(
+  //       serviceName,
+  //       containerPowerMetricsList
+  //     );
+  //     finalResponse.add(keplerResponseData);
+  //   }
+
+  //   return Response.ok(finalResponse).build();
+  // }
+
+
+  
   @GET
-  @Path("/getByTimeMock")
-  public Response getKeplerMetricByTime(
-    @QueryParam("minutesAgo") Integer minutesAgo
-  ) {
-    Instant currentInstant = Instant.now();
-    Instant minutesAgoInstant = currentInstant.minus(
-      minutesAgo,
-      ChronoUnit.MINUTES
-    );
-
-    List<KeplerMetricDTO> resDto = keplerMetricRepo
-      .find("date >= ?1", minutesAgoInstant)
-      .list();
-
-    List<String> uniqueServiceNamesList = new ArrayList<>();
-
-    for (KeplerMetricDTO metricEntry : resDto) {
-      if (!uniqueServiceNamesList.contains(metricEntry.getServiceName())) {
-        uniqueServiceNamesList.add(metricEntry.getServiceName());
-      }
-    }
-
-    List<KeplerResponseData> finalResponse = new ArrayList<>();
-
-    // Find By ServiceName from response
-    for (String serviceName : uniqueServiceNamesList) {
-      List<ContainerPowerMetrics> containerPowerMetricsList = new ArrayList<>();
-      for (KeplerMetricDTO entry : resDto) {
-        if (entry.getServiceName().equals(serviceName)) {
-          ContainerPowerMetrics containerPowerMetrics = new ContainerPowerMetrics(
-            entry.getDate(),
-            entry.getPowerConsumption()
-          );
-          containerPowerMetricsList.add(containerPowerMetrics);
-        }
-      }
-      KeplerResponseData keplerResponseData = new KeplerResponseData(
-        serviceName,
-        containerPowerMetricsList
-      );
-      finalResponse.add(keplerResponseData);
-    }
-
-    return Response.ok(finalResponse).build();
-  }
-
-
- @GET
   @Path("/getAllKepler-MetricData")
   public Response getAllKeplerMetricDatas(
     @QueryParam("from") LocalDate from,
     @QueryParam("to") LocalDate to,
     @QueryParam("minutesAgo") int minutesAgo,
     @QueryParam("type") String type,
-    @QueryParam("keplerType") List<String> keplerTypeList
+    @QueryParam("keplerType") List<String> keplerTypeList,
+    @QueryParam("page") int page,
+    @QueryParam("pageSize") int pageSize
   ) throws JsonProcessingException {
     LocalDateTime APICallStart = LocalDateTime.now();
 
@@ -115,7 +118,9 @@ public class KeplerMetricController {
       to,
       minutesAgo,
       type,
-      keplerTypeList
+      keplerTypeList,
+      page,
+      pageSize
     );
       String responseJson = "";
       ObjectMapper objectMapper = new ObjectMapper();
@@ -143,6 +148,7 @@ public class KeplerMetricController {
         .build();
     }
   }
+
 
 
 //   @GET
