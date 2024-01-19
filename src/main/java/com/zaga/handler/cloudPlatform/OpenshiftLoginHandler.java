@@ -23,7 +23,7 @@ import jakarta.ws.rs.core.Response;
 public class OpenshiftLoginHandler  implements LoginHandler{
 
      @Inject
-  ServiceListRepo serviceListRepo;
+    ServiceListRepo serviceListRepo;
 
     public OpenShiftClient login(String username, String password, String oauthToken, boolean useOAuthToken, String clusterUrl) {
         try {
