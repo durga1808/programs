@@ -14,6 +14,7 @@ import io.fabric8.kubernetes.api.model.apps.DeploymentList;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.client.OpenShiftClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -28,7 +29,7 @@ public class OpenshiftLoginHandler  implements LoginHandler{
     public OpenShiftClient login(String username, String password, String oauthToken, boolean useOAuthToken, String clusterUrl) {
         try {
             KubernetesClient kubernetesClient;
-
+    
             if (useOAuthToken) {
                 kubernetesClient = new KubernetesClientBuilder()
                     .withConfig(new ConfigBuilder()
@@ -45,14 +46,15 @@ public class OpenshiftLoginHandler  implements LoginHandler{
                         .build())
                     .build();
             }
-
+    
             OpenShiftClient openShiftClient = kubernetesClient.adapt(OpenShiftClient.class);
-
+    
             // Attempt to list OpenShift projects as a verification step
             if (isLoginSuccessful(openShiftClient)) {
+                logSuccess("Login successful");
                 return openShiftClient;
             } else {
-                // kubernetesClient.close();
+               System.out.println("Login failed. Invalid credentials or insufficient permissions.");
                 return null;
             }
         } catch (Exception e) {
@@ -60,22 +62,28 @@ public class OpenshiftLoginHandler  implements LoginHandler{
             return null;
         }
     }
-
+    
     private boolean isLoginSuccessful(OpenShiftClient openShiftClient) {
         // Attempt to list OpenShift projects or perform other verification steps
         try {
             openShiftClient.projects().list();
             return true; // Login is successful
-        } catch (Exception e) {
-            logError("Error while verifying login", e);
+        } catch (KubernetesClientException e) {
+            logError("Error while verifying login: " + e.getMessage(), e);
             return false; // Login is unsuccessful
         }
     }
-
+    
     private void logError(String message, Exception e) {
         System.err.println(message);
         e.printStackTrace();
     }
+    
+    private void logSuccess(String message) {
+        System.out.println(message);
+    }
+    
+
 
 
 

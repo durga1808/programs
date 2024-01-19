@@ -1,8 +1,11 @@
 package com.zaga.controller;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import com.zaga.handler.cloudPlatform.LoginHandler;
 
 import io.fabric8.openshift.client.OpenShiftClient;
+import jakarta.ejb.Timeout;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -24,19 +27,36 @@ public class OpenshiftController {
 
     private OpenShiftClient authenticatedClient;
 
+   
+    @ConfigProperty(name = "my.timeout.property", defaultValue = "5000") // Set the timeout to 5 seconds (adjust as needed)
+    long timeout;
+
     @GET
     @Path("/login")
     @Produces(MediaType.APPLICATION_JSON)
-    public String login(
+    public Response login(
         @QueryParam("username") String username,
         @QueryParam("password") String password,
         @QueryParam("oauthToken") String oauthToken, 
         @QueryParam("useOAuthToken") boolean useOAuthToken,
         @QueryParam("clusterUrl") String clusterUrl
     ) {
-        authenticatedClient = loginHandler.login(username, password, oauthToken, useOAuthToken,clusterUrl);
-        return (authenticatedClient != null) ? "Login successful!" : "Login failed";
-    }   
+        try {
+            authenticatedClient = loginHandler.login(username, password, oauthToken, useOAuthToken, clusterUrl);
+    
+            if (authenticatedClient != null) {
+                String successMessage = "Login successful!";
+                return Response.status(Response.Status.OK).entity(successMessage).build();
+            } else {
+                String errorMessage = "Incorrect username or password.";
+                return Response.status(Response.Status.UNAUTHORIZED).entity(errorMessage).build();
+            }
+        } catch (Exception e) {
+            String errorMessage = "Login request timed out or failed: " + e.getMessage();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(errorMessage).build();
+        }
+    }
+    
 
    
     @GET
