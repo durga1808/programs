@@ -107,8 +107,13 @@ public class OpenshiftLoginHandler  implements LoginHandler{
 
                         String deploymentName = deployment.getMetadata().getName();
 
+
                         Map<String, String> annotations = deployment.getSpec().getTemplate().getMetadata().getAnnotations();
                         String injectJavaValue = annotations.get("instrumentation.opentelemetry.io/inject-java");
+
+                         // Extracting createdTime from metadata
+                        String createdTime = deployment.getMetadata().getCreationTimestamp();
+
 
                         if (injectJavaValue == null) {
                             injectJavaValue = "false";
@@ -119,6 +124,7 @@ public class OpenshiftLoginHandler  implements LoginHandler{
                         serviceList.setServiceName(serviceName);
                         serviceList.setInstrumented(injectJavaValue);
                         serviceList.setDeploymentName(deploymentName);
+                        serviceList.setCreatedTime(createdTime);
 
                         serviceListRepo.persist(serviceList);
 

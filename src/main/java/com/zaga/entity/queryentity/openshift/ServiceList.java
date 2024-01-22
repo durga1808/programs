@@ -1,5 +1,7 @@
 package com.zaga.entity.queryentity.openshift;
 
+import java.time.LocalDate;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
@@ -17,5 +19,5 @@ public class ServiceList {
     private String serviceName;
     private String instrumented;
     private String deploymentName;
-    
+    private String createdTime;
     }
