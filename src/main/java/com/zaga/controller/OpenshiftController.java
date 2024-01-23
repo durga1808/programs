@@ -73,7 +73,7 @@ public class OpenshiftController {
         @PathParam(value = "namespace") String namespace,
          @PathParam(value = "deploymentName") String deploymentName) {
             loginHandler.instrumentDeployment(authenticatedClient, namespace, deploymentName);
-        return Response.ok("Deployment instrumented successfully.").build();
+        return Response.ok("Instrumented").build();
     }
 
     @POST
@@ -82,7 +82,7 @@ public class OpenshiftController {
         @PathParam(value = "namespace") String namespace,
          @PathParam(value = "deploymentName") String deploymentName) {
             loginHandler.unInstrumentDeployment(authenticatedClient, namespace, deploymentName);
-        return Response.ok("Deployment instrumented successfully.").build();
+        return Response.ok("Uninstrumented").build();
     }
     
 
