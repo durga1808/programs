@@ -49,7 +49,7 @@ public class OpenshiftController {
                 return Response.status(Response.Status.OK).entity(successMessage).build();
             } else {
                 String errorMessage = "Incorrect username or password.";
-                return Response.status(Response.Status.UNAUTHORIZED).entity(errorMessage).build();
+                return Response.status(Response.Status.OK).entity(errorMessage).build();
             }
         } catch (Exception e) {
             String errorMessage = "Login request timed out or failed: " + e.getMessage();
