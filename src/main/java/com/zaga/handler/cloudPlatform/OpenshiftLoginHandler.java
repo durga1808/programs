@@ -127,7 +127,7 @@ public class OpenshiftLoginHandler  implements LoginHandler{
                         serviceList.setDeploymentName(deploymentName);
                         serviceList.setCreatedTime(createdTime);
 
-                        serviceListRepo.persist(serviceList);
+                        // serviceListRepo.persist(serviceList);
 
                         deploymentsInfoList.add(serviceList);
                     }
