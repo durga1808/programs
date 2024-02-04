@@ -31,10 +31,11 @@ public class OpenshiftLoginHandler  implements LoginHandler{
             KubernetesClient kubernetesClient;
     
             if (useOAuthToken) {
-                kubernetesClient = new KubernetesClientBuilder()
+                kubernetesClient = new KubernetesClientBuilder()       //"https://api.zagaopenshift.zagaopensource.com:6443"
                     .withConfig(new ConfigBuilder()
                         .withOauthToken(oauthToken)
-                        .withMasterUrl(clusterUrl)  //"https://api.zagaopenshift.zagaopensource.com:6443"
+                        .withMasterUrl(clusterUrl)
+                        .withTrustCerts(true) 
                         .build())
                     .build();
             } else {
@@ -43,6 +44,7 @@ public class OpenshiftLoginHandler  implements LoginHandler{
                         .withPassword(password)
                         .withUsername(username)
                         .withMasterUrl(clusterUrl)
+                        .withTrustCerts(true) 
                         .build())
                     .build();
             }
@@ -54,15 +56,14 @@ public class OpenshiftLoginHandler  implements LoginHandler{
                 logSuccess("Login successful");
                 return openShiftClient;
             } else {
-               System.out.println("Login failed. Invalid credentials or insufficient permissions.");
+                System.out.println("Login failed. Invalid credentials or insufficient permissions.");
                 return null;
             }
         } catch (Exception e) {
             logError("Error while logging in", e);
             return null;
         }
-    }
-    
+    } 
     private boolean isLoginSuccessful(OpenShiftClient openShiftClient) {
         // Attempt to list OpenShift projects or perform other verification steps
         try {
