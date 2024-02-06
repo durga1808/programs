@@ -11,7 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PodMetricsResponseData {
-    private String podName;
-    private List<MetricDTO> metrics  = new ArrayList<>();;
+    // private String podName;
+    private String namespaceName;
+    private List<PodMetricDTO> pods;
+    // private List<MetricDTO> metrics  = new ArrayList<>();
     // private int totalCount;
 }

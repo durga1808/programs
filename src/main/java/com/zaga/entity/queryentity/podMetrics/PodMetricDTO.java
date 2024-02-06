@@ -3,7 +3,7 @@ package com.zaga.entity.queryentity.podMetrics;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.zaga.entity.queryentity.metric.MetricDTO;
+// import com.zaga.entity.queryentity.metric.MetricDTO;
 
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import lombok.AllArgsConstructor;
@@ -17,4 +17,5 @@ import lombok.NoArgsConstructor;
 public class PodMetricDTO {
     private List<MetricDTO> metrics = new ArrayList<>();
     private String podName;
+    private String namespaceName;
 }
