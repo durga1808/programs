@@ -15,5 +15,5 @@ public class PodMetricsResponseData {
     private String namespaceName;
     private List<PodMetricDTO> pods;
     // private List<MetricDTO> metrics  = new ArrayList<>();
-    // private int totalCount;
+    private int totalCount;
 }
