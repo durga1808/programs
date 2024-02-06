@@ -2,6 +2,8 @@ package com.zaga.entity.queryentity.node;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import lombok.AllArgsConstructor;
@@ -13,6 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
+@JsonIgnoreProperties("id")
 @MongoEntity(collection = "NodeMetricDTO",database = "OtelNode")
 public class NodeMetricDTO extends PanacheMongoEntity{
     private Date date;
