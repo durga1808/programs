@@ -4,10 +4,6 @@ import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Aggregates;
-import com.mongodb.client.model.Field;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
 import com.zaga.entity.queryentity.podMetrics.MetricDTO;
 import com.zaga.entity.queryentity.podMetrics.PodMetricDTO;
 import com.zaga.entity.queryentity.podMetrics.PodMetricsResponseData;
@@ -20,13 +16,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 
 @ApplicationScoped
 public class PodMetricsHandler {
@@ -125,6 +117,7 @@ public class PodMetricsHandler {
                     )
                 )
             ),
+            new Document("$sort", new Document("metrics.date", 1)),  // add the time sorting
             new Document(
                 "$group",
                 new Document(
@@ -233,6 +226,7 @@ public List<PodMetricsResponseData> executeAggregationPipelineWithMinutesAgo(
                 )
             ))
         ),
+        new Document("$sort", new Document("metrics.date", 1)), // Add sort stage
         new Document("$unwind", "$metrics"),
         new Document("$group",
             new Document("_id",

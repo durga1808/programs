@@ -52,9 +52,9 @@ public class PodMetricController {
                 minutesAgo
         );
 
-        // String responseJson = "";
-        // ObjectMapper objectMapper = new ObjectMapper();
-        // responseJson = objectMapper.writeValueAsString(podMetricsData);
+        String responseJson = "";
+        ObjectMapper objectMapper = new ObjectMapper();
+        responseJson = objectMapper.writeValueAsString(podMetricsData);
 
         try {
             LocalDateTime APICallEnd = LocalDateTime.now();
@@ -64,7 +64,7 @@ public class PodMetricController {
             System.out.println("-----------API call duration------- " +
                     (Duration.between(APICallStart, APICallEnd)));
 
-            return Response.ok(podMetricsData, MediaType.APPLICATION_JSON).build();
+            return Response.ok(responseJson, MediaType.APPLICATION_JSON).build();
         } catch (Exception e) {
             return Response
                     .status(Response.Status.INTERNAL_SERVER_ERROR)
