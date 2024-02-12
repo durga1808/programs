@@ -66,7 +66,7 @@ public class PodMetricsHandler {
     
 
     // @SuppressWarnings("unchecked")
-    public List<PodMetricsResponseData> executeAggregationPipeline(
+public List<PodMetricsResponseData> executeAggregationPipeline(
         MongoDatabase database,
         MongoCollection<Document> collection,
         LocalDate from,
@@ -77,94 +77,49 @@ public class PodMetricsHandler {
         int skip = (page - 1) * pageSize; // Calculate the number of documents to skip
     
         List<Document> pipeline = Arrays.asList(
-            new Document("$unwind", "$metrics"),
-            new Document(
-                "$addFields",
-                new Document(
-                    "metrics",
-                    new Document(
-                        "$mergeObjects",
-                        Arrays.asList(
-                            "$metrics",
-                            new Document(
-                                "justDate",
-                                new Document(
-                                    "$dateToString",
-                                    new Document("format", "%m-%d-%Y")
-                                        .append("date", "$metrics.date")
-                                )
-                            )
-                        )
-                    )
-                )
-            ),
-            new Document(
-                "$match",
-                new Document(
-                    "$and",
-                    Arrays.asList(
-                        new Document(
-                            "metrics.justDate",
-                            new Document(
-                                "$gte",
-                                from.format(DateTimeFormatter.ofPattern("MM-dd-yyyy"))
-                            )
-                                .append(
-                                    "$lte",
-                                    to.format(DateTimeFormatter.ofPattern("MM-dd-yyyy"))
-                                )
-                        )
-                    )
-                )
-            ),
-            new Document("$sort", new Document("metrics.date", 1)),  // add the time sorting
-            new Document(
-                "$group",
-                new Document(
-                    "_id",
-                    new Document("namespaceName", "$namespaceName")
-                        .append("podName", "$podName")
-                )
-                    .append("namespaceName", new Document("$first", "$namespaceName"))
-                    .append("podName", new Document("$first", "$podName"))
-                    .append("metrics", new Document("$push", "$metrics"))
-                    .append("totalCount", new Document("$sum", 1)) // Calculate total count for each pod
-            ),
-            new Document(
-                "$project",
-                new Document("_id", 0)
-                    .append("namespaceName", "$_id.namespaceName")
-                    .append("podName", "$_id.podName")
-                    .append(
-                        "metrics",
-                        new Document("$slice", Arrays.asList("$metrics", skip, pageSize))
-                    )
-                    .append("totalCount", 1) 
-            )
-        );
-
-        AggregateIterable<Document> aggregationResult = collection.aggregate(
-    pipeline,
-    Document.class
+    new Document("$addFields", 
+        new Document("justDate", 
+            new Document("$dateToString", 
+                new Document("format", "%m-%d-%Y").append("date", "$date")))),
+    new Document("$match", 
+        new Document("justDate", 
+            new Document("$gte", from.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")))
+                .append("$lte", to.format(DateTimeFormatter.ofPattern("MM-dd-yyyy"))))),
+    new Document("$sort", new Document("date", 1)), // sort by date ascending
+    new Document("$group", 
+        new Document("_id", 
+            new Document("namespaceName", "$namespaceName")
+                .append("podName", "$podName"))
+                .append("namespaceName", new Document("$first", "$namespaceName"))
+                .append("podName", new Document("$first", "$podName"))
+                .append("metrics", new Document("$push", "$$ROOT"))
+                .append("totalCount", new Document("$sum", 1))),
+    new Document("$project", 
+        new Document("_id", 0)
+            .append("namespaceName", "$_id.namespaceName")
+            .append("podName", "$_id.podName")
+            .append("metrics", 
+                new Document("$slice", Arrays.asList("$metrics", skip, pageSize)))
+            .append("totalCount", 1))
 );
 
-// Result list to hold PodMetricsResponseData objects
-List<PodMetricsResponseData> resultList = new ArrayList<>();
+AggregateIterable<Document> aggregationResult = collection.aggregate(pipeline, Document.class);
 
-// Iterate through aggregation result
+List<PodMetricsResponseData> resultList = new ArrayList<>();
+int totalCount = 0; 
+
 for (Document doc : aggregationResult) {
     List<Document> metrics = (List<Document>) doc.get("metrics");
     if (metrics != null && !metrics.isEmpty()) {
+        totalCount += doc.getInteger("totalCount"); 
         String namespaceName = doc.getString("namespaceName");
         String podName = doc.getString("podName");
-        Integer totalCount = doc.getInteger("totalCount");
         PodMetricsResponseData responseData = new PodMetricsResponseData();
         responseData.setNamespaceName(namespaceName);
         responseData.setTotalCount(totalCount); 
         // responseData.setPodName(podName);
         List<PodMetricDTO> podMetricsList = new ArrayList<>();
 
-        // Create a single MetricDTO object for all metrics
         List<MetricDTO> metricDTOs = new ArrayList<>();
         for (Document metricDoc : metrics) {
             MetricDTO metricData = new MetricDTO();
@@ -174,116 +129,101 @@ for (Document doc : aggregationResult) {
             metricDTOs.add(metricData);
         }
 
-        // Set the metrics list for the response data
         PodMetricDTO podMetricsData = new PodMetricDTO();
         podMetricsData.setPodName(podName);
         podMetricsData.setNamespaceName(namespaceName);
         podMetricsData.setMetrics(metricDTOs);
         podMetricsList.add(podMetricsData);
 
-        // Set the pods list for the response data
         responseData.setPods(podMetricsList);
 
         resultList.add(responseData);
     }
 }
 
+
 return resultList;
 }
     
     
-public List<PodMetricsResponseData> executeAggregationPipelineWithMinutesAgo(
+
+    public List<PodMetricsResponseData> executeAggregationPipelineWithMinutesAgo(
         MongoDatabase database, MongoCollection<Document> collection,
         int minutesAgo, int page, int pageSize) {
     LocalDateTime currentTime = LocalDateTime.now().minusMinutes(minutesAgo);
-    int skip = (page - 1) * pageSize; // Calculate the number of documents to skip
+    int skip = (page - 1) * pageSize;
 
     List<Document> pipeline = Arrays.asList(
-        new Document("$addFields",
-            new Document("metrics",
-                new Document("$map",
-                    new Document("input", "$metrics")
-                        .append("in",
-                            new Document("$mergeObjects",
-                                Arrays.asList(
-                                    "$$this",
-                                    new Document("justDate",
-                                        new Document("$dateToString",
-                                            new Document("format", "%m-%d-%Y")
-                                                .append("date", "$$this.date")
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                )
+        new Document("$match",
+            new Document("date",
+                new Document("$gte", Date.from(currentTime.atZone(ZoneId.systemDefault()).toInstant()))
             )
         ),
-        new Document("$match",
-            new Document("$and", Arrays.asList(
-                new Document("metrics.date",
-                    new Document("$gte", Date.from(currentTime.atZone(ZoneId.systemDefault()).toInstant()))
-                )
-            ))
-        ),
-        new Document("$sort", new Document("metrics.date", 1)), // Add sort stage
-        new Document("$unwind", "$metrics"),
+        new Document("$sort", new Document("date", 1)),
         new Document("$group",
             new Document("_id",
                 new Document("namespaceName", "$namespaceName")
                     .append("podName", "$podName"))
                 .append("namespaceName", new Document("$first", "$namespaceName"))
                 .append("podName", new Document("$first", "$podName"))
-                .append("metrics", new Document("$push", "$metrics"))
-        ),
-        new Document("$group",
-            new Document("_id", "$namespaceName")
-                .append("namespaceName", new Document("$first", "$namespaceName"))
-                .append("pods", new Document("$push",
-                    new Document("podName", "$podName").append("metrics", "$metrics")))
+                .append("metrics", new Document("$push",
+                    new Document("cpuUsage", "$cpuUsage")
+                        .append("memoryUsage", "$memoryUsage")
+                        .append("date", "$date")))
+                .append("totalCount", new Document("$sum", 1)) // Calculate total count for each pod
         ),
         new Document("$project",
             new Document("_id", 0)
-                .append("namespaceName", "$_id")
-                .append("pods", new Document("$slice", Arrays.asList("$pods", skip, pageSize)))
+                .append("namespaceName", "$_id.namespaceName")
+                .append("podName", "$_id.podName")
+                .append("metrics",
+                    new Document("$slice", Arrays.asList("$metrics", skip, pageSize)))
+                .append("totalCount", 1)
         )
     );
 
+  
     AggregateIterable<Document> aggregationResult = collection.aggregate(pipeline, Document.class);
     List<PodMetricsResponseData> resultList = new ArrayList<>();
-    for (Document doc : aggregationResult) {
-        List<Document> pods = (List<Document>) doc.get("pods");
-        if (pods != null && !pods.isEmpty()) { // Check if pods is not null and not empty
-            PodMetricsResponseData responseData = new PodMetricsResponseData();
-            responseData.setNamespaceName(doc.getString("namespaceName"));
-            List<PodMetricDTO> podMetricsList = new ArrayList<>();
-            int totalCount = 0;
-            for (Document podDoc : pods) {
-                PodMetricDTO podMetricsData = new PodMetricDTO();
-                podMetricsData.setPodName(podDoc.getString("podName"));
-                podMetricsData.setNamespaceName(doc.getString("namespaceName"));
-                List<Document> metrics = (List<Document>) podDoc.get("metrics");
-                if (metrics != null && !metrics.isEmpty()) {
-                    List<MetricDTO> metricDataList = new ArrayList<>();
-                    totalCount += metrics.size(); // Increment total count by the number of metrics in this pod
-                    for (Document metricDoc : metrics) {
-                        MetricDTO metricData = new MetricDTO();
-                        metricData.setCpuUsage(metricDoc.getDouble("cpuUsage"));
-                        metricData.setDate(metricDoc.getDate("date"));
-                        metricData.setMemoryUsage(metricDoc.getLong("memoryUsage"));
-                        metricDataList.add(metricData);
-                    }
-                    podMetricsData.setMetrics(metricDataList);
-                }
-                podMetricsList.add(podMetricsData);
-            }
-            responseData.setPods(podMetricsList);
-            responseData.setTotalCount(totalCount); // Set total count for this namespace
-            resultList.add(responseData);
+int totalCount = 0;
+
+for (Document doc : aggregationResult) {
+    List<Document> metrics = (List<Document>) doc.get("metrics");
+    if (metrics != null && !metrics.isEmpty()) {
+        totalCount += doc.getInteger("totalCount");
+        String namespaceName = doc.getString("namespaceName");
+        String podName = doc.getString("podName");
+        PodMetricsResponseData responseData = new PodMetricsResponseData();
+        responseData.setNamespaceName(namespaceName);
+        responseData.setTotalCount(totalCount); 
+        // responseData.setPodName(podName);
+        List<PodMetricDTO> podMetricsList = new ArrayList<>();
+
+        List<MetricDTO> metricDTOs = new ArrayList<>();
+        for (Document metricDoc : metrics) {
+            MetricDTO metricData = new MetricDTO();
+            metricData.setCpuUsage(metricDoc.getDouble("cpuUsage"));
+            metricData.setDate(metricDoc.getDate("date"));
+            metricData.setMemoryUsage(metricDoc.getLong("memoryUsage"));
+            metricDTOs.add(metricData);
         }
+
+        PodMetricDTO podMetricsData = new PodMetricDTO();
+        podMetricsData.setPodName(podName);
+        podMetricsData.setNamespaceName(namespaceName);
+        podMetricsData.setMetrics(metricDTOs);
+        podMetricsList.add(podMetricsData);
+
+        responseData.setPods(podMetricsList);
+
+        resultList.add(responseData);
     }
-    return resultList;
 }
+
+
+return resultList;
+}
+
 }
 
 
