@@ -16,6 +16,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import org.bson.Document;
@@ -26,21 +27,6 @@ public class PodMetricsHandler {
   @Inject
   MongoClient mongoClient;
 
-    // public List<PodMetricsResponseData> getAllPodMetricsByDate(LocalDate from, LocalDate to, int page, int pageSize, int minutesAgo) {
-    //     LocalDateTime startTime = LocalDateTime.now();
-    //     System.out.println("------------DB call startTimestamp------ " + startTime);
-
-    //     MongoDatabase database = mongoClient.getDatabase("OtelPodMetrics");
-    //     MongoCollection<Document> collection = database.getCollection("PodMetricDTO");
-
-    //     List<PodMetricsResponseData> result = executeAggregationPipeline(database, collection,from,to);
-
-    //     LocalDateTime endTime = LocalDateTime.now();
-    //     System.out.println("------------DB call endTimestamp------ " + endTime);
-    //     System.out.println("-----------DB call ended Timestamp------ " + Duration.between(startTime, endTime));
-
-    //     return result;
-    // }
 
     public List<PodMetricsResponseData> getAllPodMetricsByDate(LocalDate from, LocalDate to, int page, int pageSize, int minutesAgo) {
         LocalDateTime startTime = LocalDateTime.now();
@@ -65,7 +51,7 @@ public class PodMetricsHandler {
     }
     
 
-    // @SuppressWarnings("unchecked")
+// @SuppressWarnings("unchecked")
 public List<PodMetricsResponseData> executeAggregationPipeline(
         MongoDatabase database,
         MongoCollection<Document> collection,
@@ -141,6 +127,7 @@ for (Document doc : aggregationResult) {
     }
 }
 
+resultList.sort(Comparator.comparing(PodMetricsResponseData::getNamespaceName));
 
 return resultList;
 }
@@ -215,12 +202,13 @@ for (Document doc : aggregationResult) {
         podMetricsList.add(podMetricsData);
 
         responseData.setPods(podMetricsList);
+        
 
         resultList.add(responseData);
     }
 }
 
-
+resultList.sort(Comparator.comparing(PodMetricsResponseData::getNamespaceName));
 return resultList;
 }
 
