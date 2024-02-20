@@ -65,6 +65,21 @@ public class OpenshiftController {
         return loginHandler.listAllServices(authenticatedClient);
     }
 
+    @GET
+    @Path("/viewClusterInfo")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response viewClusterInfo() {
+        return loginHandler.viewClusterInfo(authenticatedClient);
+    }
+
+    @GET
+    @Path("/viewClusterStatus")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response viewClusterCondition() {
+        return loginHandler.viewClusterCondition(authenticatedClient);
+    }
+
+
 
     @POST
     @Path("/instrument/{namespace}/{deploymentName}")

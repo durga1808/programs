@@ -16,5 +16,9 @@ public interface LoginHandler {
     void unInstrumentDeployment(OpenShiftClient authenticatedClient,String namespace, String deploymentName);
 
     String logout(OpenShiftClient authenticatedClient);
+
+    Response viewClusterInfo(OpenShiftClient authenticatedClient);
+
+    Response viewClusterCondition(OpenShiftClient authenticatedClient);
 }
 

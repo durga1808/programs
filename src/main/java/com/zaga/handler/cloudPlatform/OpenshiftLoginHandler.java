@@ -1,12 +1,18 @@
 package com.zaga.handler.cloudPlatform;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.zaga.entity.queryentity.openshift.ServiceList;
 import com.zaga.repo.ServiceListRepo;
 
+import io.fabric8.kubernetes.api.model.ComponentCondition;
+import io.fabric8.kubernetes.api.model.ComponentStatus;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.NamespaceList;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -15,6 +21,7 @@ import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.openshift.api.model.config.v1.ClusterVersion;
 import io.fabric8.openshift.client.OpenShiftClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -243,8 +250,64 @@ public class OpenshiftLoginHandler  implements LoginHandler{
         }
         return "Logged out successfully!";
     }
-      
+    @Override
+    public Response viewClusterInfo(OpenShiftClient authenticatedClient) {
+        
+    OpenShiftClient openShiftClient = authenticatedClient.adapt(OpenShiftClient.class);    
+    List<ClusterVersion>  clusterInfo = openShiftClient.config().clusterVersions().list().getItems();
+    System.out.println(clusterInfo);
+    List<Map<String,String>> clusterListInfo = new ArrayList<>();
+    for (ClusterVersion clusterVersion : clusterInfo) {
+        Gson gson = new Gson();
+        JsonElement jsonElement = gson.toJsonTree(clusterVersion);
+        JsonObject jsonObject = (JsonObject) jsonElement.getAsJsonObject().get("spec");
+        // System.out.println(jsonElement.getAsJsonObject().get("kind"));
+        System.out.println("clusterID " + jsonObject.get("clusterID"));
+        System.out.println("Channel " + jsonObject.get("channel"));
+        JsonObject jsonObject2 = (JsonObject) jsonElement.getAsJsonObject().get("status");
+        System.out.println("Version " + jsonObject2.get("desired").getAsJsonObject().get("version"));
+        Map<String, String> clusterInfoMap = new HashMap<>();
+        clusterInfoMap.put("clusterID", jsonObject.get("clusterID").getAsString());
+        clusterInfoMap.put("channel " , jsonObject.get("channel").getAsString());
+        clusterInfoMap.put("version " , jsonObject2.get("desired").getAsJsonObject().get("version").getAsString());
+        clusterListInfo.add(clusterInfoMap);
+    }
+    return Response.ok(clusterListInfo).build();
+}
 
+    @Override
+    public Response viewClusterCondition(OpenShiftClient authenticatedClient) {
+            
+            OpenShiftClient openShiftClient = authenticatedClient.adapt(OpenShiftClient.class);
+            List<ComponentStatus> clusterStatus = openShiftClient.componentstatuses().list().getItems();
+
+            List<Map<String, String>> clusterListInfo = new ArrayList<>();
+
+            for (ComponentStatus componentStatus : clusterStatus) {
+                String componentName = componentStatus.getMetadata().getName();
+
+                List<String> types = new ArrayList<>();
+                for (ComponentCondition condition : componentStatus.getConditions()) {
+                    types.add(condition.getType());
+                }
+
+                Map<String, String> clusterMap = new HashMap<>();
+                clusterMap.put("name", componentName);
+                clusterMap.put("condition", String.join(", ", types)); 
+
+                // Adding the map to the list
+                clusterListInfo.add(clusterMap);
+            }
+
+            Gson gson = new Gson();
+            String jsonOutput = gson.toJson(clusterListInfo);
+
+            System.out.println(jsonOutput);
+
+            return Response.ok(jsonOutput).build();
+
+    
+}}
  
 
-}
+
