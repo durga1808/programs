@@ -1,10 +1,10 @@
 package com.zaga.repo;
 
-import com.zaga.entity.otelevent.OtelEvents;
+import com.zaga.entity.queryentity.events.EventsDTO;
 
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
-public class EventQueryRepo implements PanacheMongoRepository<OtelEvents>{
+public class EventDTORepo implements PanacheMongoRepository<EventsDTO>{
     
 }
