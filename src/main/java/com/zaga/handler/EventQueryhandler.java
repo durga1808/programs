@@ -26,36 +26,9 @@ public List<EventsDTO> getAllEvent() {
 
     return eventDTORepo.listAll();
 }
-// public List<String> filterEvents(String objectKind) {
-//     List<EventsDTO> allEvents = getAllEvents();
-//     List<String> matchingEvents = new ArrayList<>();
-
-//     for (EventsDTO event : allEvents) {
-//         if (event.getObjectKind().equals(objectKind)) {
-//             for (ScopeLogs scopeLog : event.getScopeLogs()) {
-//                 for (LogRecords logRecord : scopeLog.getLogRecords()) {
-//                     if (logRecord.getBody() != null && logRecord.getBody().getStringValue() != null) {
-//                         matchingEvents.add("Object Kind: " + objectKind + ", Body: " + logRecord.getBody().getStringValue());
-//                     }
-//                 }
-//             }
-//         }
-//     }
-
-//     return matchingEvents;
-// }
-
-// private List<EventsDTO> getAllEvents() {
-//     // Implement this method to retrieve events from your data source
-//     // For demonstration purposes, I'll return an empty list here
-//     return List.of();
-// }
 
 
 
-public List<EventsDTO> getRecentEvent(String objectKind) {
-    return  
-}
 
 
 }
