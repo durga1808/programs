@@ -87,7 +87,6 @@ public class EventController {
 
 
 
-private final ObjectMapper objectMapper = new ObjectMapper();
 
 
 @GET
@@ -95,6 +94,11 @@ private final ObjectMapper objectMapper = new ObjectMapper();
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public String getFilteredEventsAsJsonString(@QueryParam("minutesAgo") int minutesAgo) throws JsonProcessingException {
+     
+    final ObjectMapper objectMapper = new ObjectMapper();
+
+
+
     if (minutesAgo != 30) {
         throw new IllegalArgumentException("Only '30' minutes ago data is allowed");
     }
