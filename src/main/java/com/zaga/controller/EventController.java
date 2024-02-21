@@ -4,7 +4,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,18 +33,19 @@ public class EventController {
     @GET
     @Path("/getAllEvents")
     public Response getAllEvents(
-            @QueryParam("from") LocalDate from,
-            @QueryParam("to") LocalDate to,
+            // @QueryParam("from") LocalDate from,
+            // @QueryParam("to") LocalDate to,
             @QueryParam("minutesAgo") int minutesAgo) {
         try {
             List<EventsDTO> allEvents = handler.getAllEvent();
 
-            if (from != null && to != null) {
-                Instant fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
-                Instant toInstant = to.atStartOfDay(ZoneId.systemDefault()).toInstant().plusSeconds(86399);                                                                   // day
+            // if (from != null && to != null) {
+            //     Instant fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+            //     Instant toInstant = to.atStartOfDay(ZoneId.systemDefault()).toInstant().plusSeconds(86399);                                                                   // day
 
-                allEvents = filterEventsByDateRange(allEvents, fromInstant, toInstant);
-            } else if (minutesAgo > 0) {
+            //     allEvents = filterEventsByDateRange(allEvents, fromInstant, toInstant);
+            // }
+              if (minutesAgo > 0) {
                 Instant currentInstant = Instant.now();
                 Instant fromInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
 
@@ -65,11 +68,11 @@ public class EventController {
 
     }
 
-    private List<EventsDTO> filterEventsByDateRange(List<EventsDTO> events, Instant from, Instant to) {
-        return events.stream()
-                .filter(event -> isWithinDateRange(event.getCreatedTime().toInstant(), from, to))
-                .collect(Collectors.toList());
-    }
+    // private List<EventsDTO> filterEventsByDateRange(List<EventsDTO> events, Instant from, Instant to) {
+    //     return events.stream()
+    //             .filter(event -> isWithinDateRange(event.getCreatedTime().toInstant(), from, to))
+    //             .collect(Collectors.toList());
+    // }
 
     private List<EventsDTO> filterEventsByMinutesAgo(List<EventsDTO> events, Instant fromInstant, Instant toInstant) {
         return events.stream()
@@ -80,5 +83,7 @@ public class EventController {
     private boolean isWithinDateRange(Instant targetInstant, Instant from, Instant to) {
         return !targetInstant.isBefore(from) && !targetInstant.isAfter(to);
     }
+
+
 
 }
