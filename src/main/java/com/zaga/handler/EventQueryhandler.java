@@ -52,6 +52,12 @@ public List<EventsDTO> getAllEvent() {
 // }
 
 
+
+public List<EventsDTO> getRecentEvent(String objectKind) {
+    return  
+}
+
+
 }
 
 
