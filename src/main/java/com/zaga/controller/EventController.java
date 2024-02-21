@@ -1,5 +1,6 @@
 package com.zaga.controller;
 
+import java.io.IOException;
 import java.time.Instant;
 
 import java.time.temporal.ChronoUnit;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.zaga.entity.queryentity.events.EventsDTO;
@@ -93,12 +95,7 @@ public class EventController {
 @Path("/recentevent")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public String getFilteredEventsAsJsonString(@QueryParam("minutesAgo") int minutesAgo) throws JsonProcessingException {
-     
-    final ObjectMapper objectMapper = new ObjectMapper();
-
-
-
+public List<EventsDTO> getFilteredEvents(@QueryParam("minutesAgo") int minutesAgo) {
     if (minutesAgo != 30) {
         throw new IllegalArgumentException("Only '30' minutes ago data is allowed");
     }
@@ -111,11 +108,15 @@ public String getFilteredEventsAsJsonString(@QueryParam("minutesAgo") int minute
 
     for (EventsDTO event : events) {
         Instant eventInstant = event.getCreatedTime().toInstant();
+        // Check if the event occurred within the last 30 minutes
         if (eventInstant.isAfter(fromInstant) && eventInstant.isBefore(currentInstant)) {
             matchingEvents.add(event);
         }
     }
 
-    return objectMapper.writeValueAsString(matchingEvents);
+    return matchingEvents;
 }
+
+
+
 }
