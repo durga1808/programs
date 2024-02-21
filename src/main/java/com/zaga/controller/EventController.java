@@ -91,31 +91,46 @@ public class EventController {
 
 
 
-@GET
-@Path("/recentevent")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
-public List<EventsDTO> getFilteredEvents(@QueryParam("minutesAgo") int minutesAgo) {
-    if (minutesAgo != 30) {
-        throw new IllegalArgumentException("Only '30' minutes ago data is allowed");
-    }
-
-    Instant currentInstant = Instant.now();
-    Instant fromInstant = currentInstant.minus(30, ChronoUnit.MINUTES);
-
-    List<EventsDTO> events = handler.getAllEvent();
-    List<EventsDTO> matchingEvents = new ArrayList<>();
-
-    for (EventsDTO event : events) {
-        Instant eventInstant = event.getCreatedTime().toInstant();
-        // Check if the event occurred within the last 30 minutes
-        if (eventInstant.isAfter(fromInstant) && eventInstant.isBefore(currentInstant)) {
-            matchingEvents.add(event);
+    @GET
+    @Path("/recentevent")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response getFilteredEvents(@QueryParam("minutesAgo") int minutesAgo) {
+        if (minutesAgo != 30) {
+            throw new IllegalArgumentException("Only '30' minutes ago data is allowed");
         }
+    
+        Instant currentInstant = Instant.now();
+        Instant fromInstant = currentInstant.minus(30, ChronoUnit.MINUTES);
+    
+        List<EventsDTO> events = handler.getAllEvent();
+        List<EventsDTO> matchingEvents = new ArrayList<>();
+    
+        for (EventsDTO event : events) {
+            Instant eventInstant = event.getCreatedTime().toInstant();
+            // Check if the event occurred within the last 30 minutes
+            if (eventInstant.isAfter(fromInstant) && eventInstant.isBefore(currentInstant)) {
+                matchingEvents.add(event);
+            }
+        }
+    
+        // Convert matchingEvents to JSON
+        ObjectMapper mapper = new ObjectMapper();
+        String json;
+        try {
+            json = mapper.writeValueAsString(matchingEvents);
+        } catch (JsonProcessingException e) {
+            // Handle the exception appropriately
+            e.printStackTrace();
+            // Return an error response
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error processing JSON").build();
+        }
+    
+        // Return the JSON response
+        return Response.ok(json).build();
     }
-
-    return matchingEvents;
-}
+    
+    
 
 
 
