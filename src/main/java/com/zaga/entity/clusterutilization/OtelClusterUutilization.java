@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 @JsonIgnoreProperties("id")
-@MongoEntity(collection = "Cluster_utilization", database = "OtelCluster_utilization")
+@MongoEntity(collection = "ClusterUtilization", database = "OtelClusterUtilization")
 public class OtelClusterUutilization  extends PanacheMongoEntity{
      private List<ResourceMetric> resourceMetrics;
 }
