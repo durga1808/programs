@@ -95,12 +95,21 @@ public class OpenshiftController {
         return loginHandler.viewClusterNetwork(authenticatedClient);
     }
 
-    // @GET
-    // @Path("/viewClusterIP")
-    // @Produces(MediaType.APPLICATION_JSON)
-    // public Response viewClusterIp() {
-    //     return loginHandler.viewClusterConfig(authenticatedClient);
-    // }
+    @GET
+    @Path("/viewClusterIP")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response viewClusterIp() {
+        return loginHandler.viewClusterIP(authenticatedClient);
+    }
+
+    @GET
+    @Path("/viewClusterNodes")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response viewClusterNode() {
+        return loginHandler.viewClusterNodes(authenticatedClient);
+    }
+
+
 
     @POST
     @Path("/instrument/{namespace}/{deploymentName}")

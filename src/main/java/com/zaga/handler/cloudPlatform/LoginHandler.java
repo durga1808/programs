@@ -25,6 +25,8 @@ public interface LoginHandler {
 
     Response viewClusterNetwork(OpenShiftClient authenticatedClient);
 
-    Response viewClusterConfig(OpenShiftClient authenticatedClient);
+    Response viewClusterIP(OpenShiftClient authenticatedClient);
+
+    Response viewClusterNodes(OpenShiftClient authenticatedClient);
 }
 
