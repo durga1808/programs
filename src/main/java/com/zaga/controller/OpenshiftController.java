@@ -7,6 +7,7 @@ import com.zaga.handler.cloudPlatform.LoginHandler;
 import io.fabric8.openshift.client.OpenShiftClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -68,6 +69,7 @@ public class OpenshiftController {
     @GET
     @Path("/viewClusterInfo")
     @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response viewClusterInfo() {
         return loginHandler.viewClusterInfo(authenticatedClient);
     }
@@ -79,7 +81,26 @@ public class OpenshiftController {
         return loginHandler.viewClusterCondition(authenticatedClient);
     }
 
+    @GET
+    @Path("/viewClusterInventory")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response viewClusterInventory() {
+        return loginHandler.viewClusterInventory(authenticatedClient);
+    }
 
+    @GET
+    @Path("/viewClusterNetwork")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response viewClusterNetwork() {
+        return loginHandler.viewClusterNetwork(authenticatedClient);
+    }
+
+    // @GET
+    // @Path("/viewClusterIP")
+    // @Produces(MediaType.APPLICATION_JSON)
+    // public Response viewClusterIp() {
+    //     return loginHandler.viewClusterConfig(authenticatedClient);
+    // }
 
     @POST
     @Path("/instrument/{namespace}/{deploymentName}")
