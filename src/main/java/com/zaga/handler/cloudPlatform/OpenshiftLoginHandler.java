@@ -526,6 +526,14 @@ public class OpenshiftLoginHandler  implements LoginHandler{
 
         @Override
         public Response viewClusterNodes(OpenShiftClient authenticatedClient){
+
+            if (authenticatedClient == null) {
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity("You are not logged in.")
+                        .build();
+            }
+            else{
+                try{
             OpenShiftClient openShiftClient = authenticatedClient.adapt(OpenShiftClient.class);
             int controlPlaneNodeCount = 0;
             int workerNodeCount = 0;
@@ -547,6 +555,14 @@ public class OpenshiftLoginHandler  implements LoginHandler{
         
                     
                     return Response.ok(clusterConfigInfo).build();
+
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                            .entity("You are unauthorized to do this action.")
+                            .build();
+                }}
 }
 
 
