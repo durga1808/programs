@@ -291,8 +291,8 @@ public class OpenshiftLoginHandler  implements LoginHandler{
                 System.out.println("Version " + jsonObject2.get("desired").getAsJsonObject().get("version"));
                 Map<String, String> clusterInfoMap = new HashMap<>();
                 clusterInfoMap.put("clusterID", jsonObject.get("clusterID").getAsString());
-                clusterInfoMap.put("channel " , jsonObject.get("channel").getAsString());
-                clusterInfoMap.put("version " , jsonObject2.get("desired").getAsJsonObject().get("version").getAsString());
+                clusterInfoMap.put("channel" , jsonObject.get("channel").getAsString());
+                clusterInfoMap.put("version" , jsonObject2.get("desired").getAsJsonObject().get("version").getAsString());
                 clusterListInfo.add(clusterInfoMap);
    }
         return Response.ok(clusterListInfo).build();            } 
@@ -548,8 +548,8 @@ public class OpenshiftLoginHandler  implements LoginHandler{
                             workerNodeCount++;
                         }
                     }
-                    clusterConfigInfo.put("Control plane nodes", String.valueOf(controlPlaneNodeCount));
-                    clusterConfigInfo.put("Worker nodes", String.valueOf(workerNodeCount));
+                    clusterConfigInfo.put("controlPlaneNodes", String.valueOf(controlPlaneNodeCount));
+                    clusterConfigInfo.put("workerNodes", String.valueOf(workerNodeCount));
                    
         
         
