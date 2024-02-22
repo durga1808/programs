@@ -21,7 +21,7 @@ public class ClusterUtilizationDTO extends PanacheMongoEntity{
      private Date date;
      private String nodeName;
      private Double cpuUsage;
-     private Long memoryCapacity;
+    //  private Long memoryCapacity;
      private Long memoryUsage;
      private Long memoryAvailable;
      private Long fileSystemCapacity;
