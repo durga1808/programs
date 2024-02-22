@@ -490,13 +490,17 @@ public class OpenshiftLoginHandler  implements LoginHandler{
                 Map<String,String> addressMap = new HashMap<>();
                 for (JsonElement jsonElement2 : jsonArray) {
                     String type = jsonElement2.getAsJsonObject().get("type").getAsString();
-                    String address = jsonElement2.getAsJsonObject().get("address").getAsString();
-                    addressMap.put(type, address);
+                    if(type.equalsIgnoreCase("InternalIP")){
+                    String ipAddress = jsonElement2.getAsJsonObject().get("address").getAsString();
+                    addressMap.put("apiIP", ipAddress);
+                    addressMap.put("ingressIP", ipAddress);
+                    }
                 }
                 clusterConfigInfo.add(addressMap);
             }}
              else if(nodeCount > 1){
             InfrastructureList clusterConfig = openShiftClient.config().infrastructures().list();
+            // System.out.println(clusterConfig);
             // List<Map<String,String>> clusterConfigInfo = new ArrayList<>();
                 Gson gson = new Gson();
                 JsonElement jsonElement = gson.toJsonTree(clusterConfig);
@@ -523,6 +527,8 @@ public class OpenshiftLoginHandler  implements LoginHandler{
         }
     }
  }
+
+
 
         @Override
         public Response viewClusterNodes(OpenShiftClient authenticatedClient){
@@ -572,4 +578,61 @@ private boolean isControlPlaneNode(Node node) {
 
 private boolean isWorkerNode(Node node) {
     return node.getMetadata().getLabels().containsKey("node-role.kubernetes.io/worker");
-}}
+}
+
+@Override
+public Response viewNodeIP(OpenShiftClient authenticatedClient) {
+
+    if (authenticatedClient == null) {
+        return Response.status(Response.Status.UNAUTHORIZED)
+                .entity("You are not logged in.")
+                .build();
+    }
+    else{
+        try{
+
+    OpenShiftClient openShiftClient = authenticatedClient.adapt(OpenShiftClient.class);
+
+   //  NodeList nodeList = openShiftClient.nodes().list();
+   //  Gson nodeGson = new Gson();
+   //  JsonElement nodeJsonElement = nodeGson.toJsonTree(nodeList);
+   //  JsonArray nodeJsonArray = nodeJsonElement.getAsJsonObject().get("items").getAsJsonArray();
+   //  Integer nodeCount = nodeJsonArray.size();
+    List<Map<String,String>> clusterConfigInfo = new ArrayList<>();
+
+    for (Node node : openShiftClient.nodes().list().getItems()) {
+        String nodeType = " ";
+        if (isControlPlaneNode(node)) {
+            nodeType = "master";
+        } else if (isWorkerNode(node)) {
+            nodeType = "worker";
+        }
+   //  if(nodeCount == 1){
+    // List<Node> nodes = openShiftClient.nodes().list().getItems();
+    // Gson gson = new Gson();
+    JsonObject statusObject = (JsonObject) new Gson().toJsonTree(node.getStatus());
+    JsonArray addressesArray = statusObject.getAsJsonArray("addresses");
+    Map<String, String> addressMap = new HashMap<>();
+    
+    for (JsonElement addressElement : addressesArray) {
+        JsonObject addressObject = addressElement.getAsJsonObject();
+        String type = addressObject.get("type").getAsString();
+        String ipAddress = addressObject.get("address").getAsString();
+        addressMap.put(type, ipAddress);
+    }
+        addressMap.put("nodeType", nodeType);
+            clusterConfigInfo.add(addressMap);
+    }
+
+    return Response.ok(clusterConfigInfo).build();}
+
+
+    catch (Exception e) {
+        e.printStackTrace();
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("You are unauthorized to do this action.")
+                .build();
+    }
+}
+}
+}

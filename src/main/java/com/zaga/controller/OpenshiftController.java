@@ -103,6 +103,14 @@ public class OpenshiftController {
     }
 
     @GET
+    @Path("/viewNodeIP")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response viewNodeIp() {
+        return loginHandler.viewNodeIP(authenticatedClient);
+    }
+
+
+    @GET
     @Path("/viewClusterNodes")
     @Produces(MediaType.APPLICATION_JSON)
     public Response viewClusterNode() {
