@@ -89,8 +89,6 @@ public class EventController {
 
 
 
-
-
     @GET
     @Path("/recentevent")
     @Produces(MediaType.APPLICATION_JSON)
@@ -108,25 +106,24 @@ public class EventController {
     
         for (EventsDTO event : events) {
             Instant eventInstant = event.getCreatedTime().toInstant();
-            // Check if the event occurred within the last 30 minutes
             if (eventInstant.isAfter(fromInstant) && eventInstant.isBefore(currentInstant)) {
                 matchingEvents.add(event);
             }
         }
     
-        // Convert matchingEvents to JSON
+        matchingEvents.sort((event1, event2) -> event2.getCreatedTime().compareTo(event1.getCreatedTime()));
+    
         ObjectMapper mapper = new ObjectMapper();
         String json;
         try {
             json = mapper.writeValueAsString(matchingEvents);
         } catch (JsonProcessingException e) {
-            // Handle the exception appropriately
+            
             e.printStackTrace();
-            // Return an error response
+    
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error processing JSON").build();
         }
     
-        // Return the JSON response
         return Response.ok(json).build();
     }
     
