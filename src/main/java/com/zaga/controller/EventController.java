@@ -5,6 +5,7 @@ import java.time.Instant;
 
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,6 +55,10 @@ public class EventController {
 
                 allEvents = filterEventsByMinutesAgo(allEvents, fromInstant, currentInstant);
             }
+// Sort events by createdTime in ascending order
+            allEvents.sort(Comparator.comparing(EventsDTO::getCreatedTime));
+
+
             System.out.println("Number of data in the specified time range: " + allEvents.size());
 
             ObjectMapper objectMapper = new ObjectMapper();
