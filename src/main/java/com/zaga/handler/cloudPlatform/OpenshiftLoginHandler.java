@@ -13,7 +13,6 @@ import com.zaga.entity.queryentity.openshift.ClusterNetwork;
 import com.zaga.entity.queryentity.openshift.ServiceList;
 import com.zaga.repo.ServiceListRepo;
 
-import io.fabric8.kubernetes.api.model.APIServiceList;
 import io.fabric8.kubernetes.api.model.ComponentCondition;
 import io.fabric8.kubernetes.api.model.ComponentStatus;
 import io.fabric8.kubernetes.api.model.Namespace;
@@ -29,12 +28,8 @@ import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.openshift.api.model.config.v1.APIServerList;
 import io.fabric8.openshift.api.model.config.v1.ClusterVersion;
-import io.fabric8.openshift.api.model.config.v1.Infrastructure;
 import io.fabric8.openshift.api.model.config.v1.InfrastructureList;
-import io.fabric8.openshift.api.model.config.v1.InfrastructureSpec;
-import io.fabric8.openshift.api.model.config.v1.InfrastructureStatus;
 import io.fabric8.openshift.client.OpenShiftClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -436,12 +431,6 @@ public class OpenshiftLoginHandler  implements LoginHandler{
                             System.out.println("- Host Prefix: " + hostPrefix);
                         
                         Map<String, String> clusterNetworkMap = new HashMap<>();
-                        // ClusterNetwork clusterNetwork = new ClusterNetwork();
-                        // clusterNetwork.setNetworkType(jsonObject.get("networkType").getAsString());
-                        // clusterNetwork.setServiceNetwork(jsonObject.get("serviceNetwork").getAsString());
-                        // clusterNetwork.setHostPrefix(clusterNetworkObject.get("hostPrefix").getAsString());
-                        // clusterNetwork.setCidr(clusterNetworkObject.get("cidr").getAsString());
-                        // System.out.println("Network Type " + jsonObject.get("networkType"));
                         clusterNetworkMap.put("networkType" , jsonObject.get("networkType").getAsString());
                         clusterNetworkMap.put("serviceNetwork" , jsonObject.get("serviceNetwork").getAsString());
                         clusterNetworkMap.put("cidr" , clusterNetworkObject.get("cidr").getAsString());
@@ -492,7 +481,7 @@ public class OpenshiftLoginHandler  implements LoginHandler{
                     String type = jsonElement2.getAsJsonObject().get("type").getAsString();
                     if(type.equalsIgnoreCase("InternalIP")){
                     String ipAddress = jsonElement2.getAsJsonObject().get("address").getAsString();
-                    addressMap.put("apiIP", ipAddress);
+                    addressMap.put("apiServerInternalIP", ipAddress);
                     addressMap.put("ingressIP", ipAddress);
                     }
                 }
@@ -500,8 +489,6 @@ public class OpenshiftLoginHandler  implements LoginHandler{
             }}
              else if(nodeCount > 1){
             InfrastructureList clusterConfig = openShiftClient.config().infrastructures().list();
-            // System.out.println(clusterConfig);
-            // List<Map<String,String>> clusterConfigInfo = new ArrayList<>();
                 Gson gson = new Gson();
                 JsonElement jsonElement = gson.toJsonTree(clusterConfig);
                 JsonArray jsonArray = jsonElement.getAsJsonObject().get("items").getAsJsonArray();
@@ -543,8 +530,7 @@ public class OpenshiftLoginHandler  implements LoginHandler{
             OpenShiftClient openShiftClient = authenticatedClient.adapt(OpenShiftClient.class);
             int controlPlaneNodeCount = 0;
             int workerNodeCount = 0;
-                    // Retrieve information about nodes
-                    // List<Node> node = openShiftClient.nodes().list().getItems();
+            
                     Map<String,String> clusterConfigInfo = new HashMap<>();
                     for (Node node : openShiftClient.nodes().list().getItems()) {
 
@@ -572,67 +558,84 @@ public class OpenshiftLoginHandler  implements LoginHandler{
 }
 
 
-private boolean isControlPlaneNode(Node node) {
-    return node.getMetadata().getLabels().containsKey("node-role.kubernetes.io/master");
-}
+            private boolean isControlPlaneNode(Node node) {
+                return node.getMetadata().getLabels().containsKey("node-role.kubernetes.io/master");
+            }
 
-private boolean isWorkerNode(Node node) {
-    return node.getMetadata().getLabels().containsKey("node-role.kubernetes.io/worker");
-}
+            private boolean isWorkerNode(Node node) {
+                return node.getMetadata().getLabels().containsKey("node-role.kubernetes.io/worker");
+            }
 
-@Override
-public Response viewNodeIP(OpenShiftClient authenticatedClient) {
+            @Override
+            public Response viewNodeIP(OpenShiftClient authenticatedClient) {
 
-    if (authenticatedClient == null) {
-        return Response.status(Response.Status.UNAUTHORIZED)
-                .entity("You are not logged in.")
-                .build();
-    }
-    else{
-        try{
+                if (authenticatedClient == null) {
+                    return Response.status(Response.Status.UNAUTHORIZED)
+                            .entity("You are not logged in.")
+                            .build();
+                }
+                else{
+                    try{
 
-    OpenShiftClient openShiftClient = authenticatedClient.adapt(OpenShiftClient.class);
+                OpenShiftClient openShiftClient = authenticatedClient.adapt(OpenShiftClient.class);
 
-   //  NodeList nodeList = openShiftClient.nodes().list();
-   //  Gson nodeGson = new Gson();
-   //  JsonElement nodeJsonElement = nodeGson.toJsonTree(nodeList);
-   //  JsonArray nodeJsonArray = nodeJsonElement.getAsJsonObject().get("items").getAsJsonArray();
-   //  Integer nodeCount = nodeJsonArray.size();
-    List<Map<String,String>> clusterConfigInfo = new ArrayList<>();
+                List<Map<String,String>> clusterConfigInfo = new ArrayList<>();
 
-    for (Node node : openShiftClient.nodes().list().getItems()) {
-        String nodeType = " ";
-        if (isControlPlaneNode(node)) {
-            nodeType = "master";
-        } else if (isWorkerNode(node)) {
-            nodeType = "worker";
-        }
-   //  if(nodeCount == 1){
-    // List<Node> nodes = openShiftClient.nodes().list().getItems();
-    // Gson gson = new Gson();
-    JsonObject statusObject = (JsonObject) new Gson().toJsonTree(node.getStatus());
-    JsonArray addressesArray = statusObject.getAsJsonArray("addresses");
-    Map<String, String> addressMap = new HashMap<>();
-    
-    for (JsonElement addressElement : addressesArray) {
-        JsonObject addressObject = addressElement.getAsJsonObject();
-        String type = addressObject.get("type").getAsString();
-        String ipAddress = addressObject.get("address").getAsString();
-        addressMap.put(type, ipAddress);
-    }
-        addressMap.put("nodeType", nodeType);
-            clusterConfigInfo.add(addressMap);
-    }
+                for (Node node : openShiftClient.nodes().list().getItems()) {
+                    String nodeType = " ";
+                    if (isControlPlaneNode(node)) {
+                        nodeType = "master";
+                    } else if (isWorkerNode(node)) {
+                        nodeType = "worker";
+                    }
 
-    return Response.ok(clusterConfigInfo).build();}
+                JsonObject statusObject = (JsonObject) new Gson().toJsonTree(node.getStatus());
+                JsonArray addressesArray = statusObject.getAsJsonArray("addresses");
+                Map<String, String> addressMap = new HashMap<>();
+                
+                for (JsonElement addressElement : addressesArray) {
+                    JsonObject addressObject = addressElement.getAsJsonObject();
+                    String type = addressObject.get("type").getAsString();
+                    String ipAddress = addressObject.get("address").getAsString();
+                    addressMap.put(type, ipAddress);
+                }
+                    addressMap.put("nodeType", nodeType.toString());
+                        clusterConfigInfo.add(addressMap);
+                }
+
+                return Response.ok(clusterConfigInfo).build();}
 
 
-    catch (Exception e) {
-        e.printStackTrace();
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("You are unauthorized to do this action.")
-                .build();
-    }
-}
-}
+                catch (Exception e) {
+                    e.printStackTrace();
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                            .entity("You are unauthorized to do this action.")
+                            .build();
+                }
+            }
+            }
+
+            @Override
+            public Response listNodes(OpenShiftClient authenticatedClient){
+            OpenShiftClient openShiftClient = authenticatedClient.adapt(OpenShiftClient.class);
+            List<Node> node = openShiftClient.nodes().list().getItems();
+            // Gson gson = new Gson();
+            // JsonElement jsonElement = gson.toJsonTree(node);
+            // JsonArray jsonArrayList = jsonElement.getAsJsonArray();
+            // List<Map<String,String>> clusterConfigInfo = new ArrayList<>();
+            // for (JsonElement jsonEle : jsonArrayList) {
+            //     JsonObject jsonObject = (JsonObject) jsonEle.getAsJsonObject().get("status").getAsJsonObject();
+            //     JsonArray jsonArray = jsonObject.get("addresses").getAsJsonArray();
+            //     Map<String,String> addressMap = new HashMap<>();
+            //     for (JsonElement jsonElement2 : jsonArray) {
+            //         String type = jsonElement2.getAsJsonObject().get("type").getAsString();
+            //         if(type.equalsIgnoreCase("HostName")){
+            //         String ipAddress = jsonElement2.getAsJsonObject().get("address").getAsString();
+            //         addressMap.put("Nodename", ipAddress);}
+                    
+            //     }
+            //     clusterConfigInfo.add(addressMap);}
+                return Response.ok(node).build();
+
+            } 
 }

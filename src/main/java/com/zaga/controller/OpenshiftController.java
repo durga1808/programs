@@ -67,6 +67,13 @@ public class OpenshiftController {
     }
 
     @GET
+    @Path("/listAllNodes")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response listAllNodes() {
+        return loginHandler.listNodes(authenticatedClient);
+    }
+
+    @GET
     @Path("/viewClusterInfo")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
