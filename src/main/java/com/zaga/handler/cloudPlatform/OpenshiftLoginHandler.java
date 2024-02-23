@@ -619,23 +619,23 @@ public class OpenshiftLoginHandler  implements LoginHandler{
             public Response listNodes(OpenShiftClient authenticatedClient){
             OpenShiftClient openShiftClient = authenticatedClient.adapt(OpenShiftClient.class);
             List<Node> node = openShiftClient.nodes().list().getItems();
-            // Gson gson = new Gson();
-            // JsonElement jsonElement = gson.toJsonTree(node);
-            // JsonArray jsonArrayList = jsonElement.getAsJsonArray();
-            // List<Map<String,String>> clusterConfigInfo = new ArrayList<>();
-            // for (JsonElement jsonEle : jsonArrayList) {
-            //     JsonObject jsonObject = (JsonObject) jsonEle.getAsJsonObject().get("status").getAsJsonObject();
-            //     JsonArray jsonArray = jsonObject.get("addresses").getAsJsonArray();
-            //     Map<String,String> addressMap = new HashMap<>();
-            //     for (JsonElement jsonElement2 : jsonArray) {
-            //         String type = jsonElement2.getAsJsonObject().get("type").getAsString();
-            //         if(type.equalsIgnoreCase("HostName")){
-            //         String ipAddress = jsonElement2.getAsJsonObject().get("address").getAsString();
-            //         addressMap.put("Nodename", ipAddress);}
+            Gson gson = new Gson();
+            JsonElement jsonElement = gson.toJsonTree(node);
+            JsonArray jsonArrayList = jsonElement.getAsJsonArray();
+            List<Map<String,String>> clusterConfigInfo = new ArrayList<>();
+            for (JsonElement jsonEle : jsonArrayList) {
+                JsonObject jsonObject = (JsonObject) jsonEle.getAsJsonObject().get("status").getAsJsonObject();
+                JsonArray jsonArray = jsonObject.get("addresses").getAsJsonArray();
+                Map<String,String> addressMap = new HashMap<>();
+                for (JsonElement jsonElement2 : jsonArray) {
+                    String type = jsonElement2.getAsJsonObject().get("type").getAsString();
+                    if(type.equalsIgnoreCase("HostName")){
+                    String ipAddress = jsonElement2.getAsJsonObject().get("address").getAsString();
+                    addressMap.put("Nodename", ipAddress);}
                     
-            //     }
-            //     clusterConfigInfo.add(addressMap);}
-                return Response.ok(node).build();
+                }
+                clusterConfigInfo.add(addressMap);}
+                return Response.ok(clusterConfigInfo).build();
 
             } 
 }
