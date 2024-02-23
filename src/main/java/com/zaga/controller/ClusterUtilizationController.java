@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaga.entity.queryentity.cluster_utilization.ClusterUtilizationDTO;
+import com.zaga.entity.queryentity.cluster_utilization.response.ClusterResponse;
 import com.zaga.handler.ClusterUtilizationHandler;
 import com.zaga.repo.ClusterUtilizationDTORepo;
 
@@ -35,8 +36,8 @@ public class ClusterUtilizationController {
     ClusterUtilizationDTORepo clusterUtilizationDTORepo;
 
     @GET
-    @Path("/getAllClusterUtilizationData")
-    public Response getAllClusterUtilizationData(
+    @Path("/getAllClusterUtilization_nodelevelData")
+    public Response getAllClusterUtilization_NodelevelData(
             @QueryParam("from") LocalDate from,
             @QueryParam("to") LocalDate to,
             @QueryParam("minutesAgo") int minutesAgo
@@ -85,4 +86,16 @@ public class ClusterUtilizationController {
     private boolean isWithinDateRange(Instant targetInstant, Instant from, Instant to) {
         return !targetInstant.isBefore(from) && !targetInstant.isAfter(to);
     }
+
+
+     @GET
+    @Path("/all")
+    public List<ClusterResponse> getAllClusterDataByDateAndTime(
+            @QueryParam("from") LocalDate from,
+            @QueryParam("to") LocalDate to,
+            @QueryParam("minutesAgo") int minutesAgo
+            ) {
+        return clusterUtilizationHandler.getAllClusterByDateAndTime(from, to , minutesAgo);
+    }
+  
 }
