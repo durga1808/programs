@@ -55,8 +55,9 @@ public class EventController {
 
                 allEvents = filterEventsByMinutesAgo(allEvents, fromInstant, currentInstant);
             }
-// Sort events by createdTime in ascending order
-            allEvents.sort(Comparator.comparing(EventsDTO::getCreatedTime));
+            // Sort events by createdTime in ascending / descending order
+            // allEvents.sort(Comparator.comparing(EventsDTO::getCreatedTime));
+            allEvents.sort(Comparator.comparing(EventsDTO::getCreatedTime).reversed());
 
 
             System.out.println("Number of data in the specified time range: " + allEvents.size());
