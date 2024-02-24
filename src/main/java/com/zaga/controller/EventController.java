@@ -4,6 +4,7 @@ import java.time.Instant;
 
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,6 +45,9 @@ public class EventController {
 
                 allEvents = filterEventsByMinutesAgo(allEvents, fromInstant, currentInstant);
             }
+            allEvents.sort(Comparator.comparing(EventsDTO::getCreatedTime).reversed());
+
+
             System.out.println("Number of data in the specified time range: " + allEvents.size());
 
             ObjectMapper objectMapper = new ObjectMapper();
@@ -70,8 +74,6 @@ public class EventController {
     private boolean isWithinDateRange(Instant targetInstant, Instant from, Instant to) {
         return !targetInstant.isBefore(from) && !targetInstant.isAfter(to);
     }
-
-
 
 
 
