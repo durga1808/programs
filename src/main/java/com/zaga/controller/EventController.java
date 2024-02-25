@@ -1,7 +1,7 @@
 package com.zaga.controller;
 
 import java.time.Instant;
-
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.zaga.entity.queryentity.events.EventsDTO;
 import com.zaga.handler.EventQueryhandler;
 
@@ -114,5 +113,28 @@ public class EventController {
     
 
 
+
+
+
+    //aggregation api
+    
+    @GET
+    @Path("/getall-Events-aggregation")
+    public Response getAllEventsDataByDateAndTime(
+            @QueryParam("from") LocalDate from,
+            @QueryParam("to") LocalDate to,
+            @QueryParam("minutesAgo") int minutesAgo
+            ) {
+        List<EventsDTO> eventsList = handler.getAllEventsByDateAndTime(from, to, minutesAgo);
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonResult;
+        try {
+            jsonResult = mapper.writeValueAsString(eventsList);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+        return Response.ok(jsonResult).build();
+    }
 
 }

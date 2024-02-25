@@ -88,8 +88,8 @@ public class ClusterUtilizationController {
     }
 
 
-     @GET
-    @Path("/all")
+    @GET
+    @Path("/multi-level_nodeInfo")
     public List<ClusterResponse> getAllClusterDataByDateAndTime(
             @QueryParam("from") LocalDate from,
             @QueryParam("to") LocalDate to,
