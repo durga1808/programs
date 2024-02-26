@@ -1,5 +1,8 @@
 package com.zaga.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.zaga.handler.cloudPlatform.LoginHandler;
@@ -153,6 +156,20 @@ public class OpenshiftController {
         loginHandler.logout(authenticatedClient);
         return "Logged out successfully!";
     }
+
+
+
+
+
+@GET
+@Path("/combinedinfo")
+@Produces(MediaType.APPLICATION_JSON)
+public Response getClusterInformation() {
+    Response response = loginHandler.viewClustersInformation(authenticatedClient); 
+    Object responseData = response.getEntity(); 
+    Object[] responseDataArray = { responseData }; 
+    return Response.ok(responseDataArray).build(); 
+}
 
 
 }

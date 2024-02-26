@@ -1,17 +1,15 @@
 package com.zaga.controller;
 
-import java.io.IOException;
 import java.time.Instant;
-
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.zaga.entity.queryentity.events.EventsDTO;
 import com.zaga.handler.EventQueryhandler;
 
@@ -36,24 +34,19 @@ public class EventController {
     @GET
     @Path("/getAllEvents")
     public Response getAllEvents(
-            // @QueryParam("from") LocalDate from,
-            // @QueryParam("to") LocalDate to,
             @QueryParam("minutesAgo") int minutesAgo) {
         try {
             List<EventsDTO> allEvents = handler.getAllEvent();
 
-            // if (from != null && to != null) {
-            //     Instant fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
-            //     Instant toInstant = to.atStartOfDay(ZoneId.systemDefault()).toInstant().plusSeconds(86399);                                                                   // day
-
-            //     allEvents = filterEventsByDateRange(allEvents, fromInstant, toInstant);
-            // }
-              if (minutesAgo > 0) {
+            if (minutesAgo > 0) {
                 Instant currentInstant = Instant.now();
                 Instant fromInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
 
                 allEvents = filterEventsByMinutesAgo(allEvents, fromInstant, currentInstant);
             }
+            allEvents.sort(Comparator.comparing(EventsDTO::getCreatedTime).reversed());
+
+
             System.out.println("Number of data in the specified time range: " + allEvents.size());
 
             ObjectMapper objectMapper = new ObjectMapper();
@@ -71,13 +64,7 @@ public class EventController {
 
     }
 
-    // private List<EventsDTO> filterEventsByDateRange(List<EventsDTO> events, Instant from, Instant to) {
-    //     return events.stream()
-    //             .filter(event -> isWithinDateRange(event.getCreatedTime().toInstant(), from, to))
-    //             .collect(Collectors.toList());
-    // }
-
-    private List<EventsDTO> filterEventsByMinutesAgo(List<EventsDTO> events, Instant fromInstant, Instant toInstant) {
+   private List<EventsDTO> filterEventsByMinutesAgo(List<EventsDTO> events, Instant fromInstant, Instant toInstant) {
         return events.stream()
                 .filter(event -> isWithinDateRange(event.getCreatedTime().toInstant(), fromInstant, toInstant))
                 .collect(Collectors.toList());
@@ -86,8 +73,6 @@ public class EventController {
     private boolean isWithinDateRange(Instant targetInstant, Instant from, Instant to) {
         return !targetInstant.isBefore(from) && !targetInstant.isAfter(to);
     }
-
-
 
 
 
@@ -108,30 +93,48 @@ public class EventController {
     
         for (EventsDTO event : events) {
             Instant eventInstant = event.getCreatedTime().toInstant();
-            // Check if the event occurred within the last 30 minutes
             if (eventInstant.isAfter(fromInstant) && eventInstant.isBefore(currentInstant)) {
                 matchingEvents.add(event);
             }
         }
     
-        // Convert matchingEvents to JSON
         ObjectMapper mapper = new ObjectMapper();
         String json;
         try {
             json = mapper.writeValueAsString(matchingEvents);
         } catch (JsonProcessingException e) {
-            // Handle the exception appropriately
             e.printStackTrace();
-            // Return an error response
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error processing JSON").build();
         }
     
-        // Return the JSON response
-        return Response.ok(json).build();
+     return Response.ok(json).build();
     }
     
     
 
 
+
+
+
+    //aggregation api
+    
+    @GET
+    @Path("/getall-Events-aggregation")
+    public Response getAllEventsDataByDateAndTime(
+            @QueryParam("from") LocalDate from,
+            @QueryParam("to") LocalDate to,
+            @QueryParam("minutesAgo") int minutesAgo
+            ) {
+        List<EventsDTO> eventsList = handler.getAllEventsByDateAndTime(from, to, minutesAgo);
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonResult;
+        try {
+            jsonResult = mapper.writeValueAsString(eventsList);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+        return Response.ok(jsonResult).build();
+    }
 
 }

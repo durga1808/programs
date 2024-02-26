@@ -33,6 +33,7 @@ public interface LoginHandler {
 
     Response viewNodeIP(OpenShiftClient authenticatedClient);
 
-    Response listNodes(OpenShiftClient authenticatedClient);
+
+    Response viewClustersInformation(OpenShiftClient authenticatedClient);
 }
 
