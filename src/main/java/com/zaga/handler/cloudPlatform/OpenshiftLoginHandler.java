@@ -53,6 +53,40 @@ public class OpenshiftLoginHandler  implements LoginHandler{
     @Inject
     OpenshiftCredsRepo openshiftCredsRepo;
 
+    public Response login(String username, String password, String clusterUrl){
+        try {
+            KubernetesClient kubernetesClient;
+            kubernetesClient = new KubernetesClientBuilder()
+                    .withConfig(new ConfigBuilder()
+                        .withPassword(password)
+                        .withUsername(username)
+                        .withMasterUrl(clusterUrl)
+                        .withTrustCerts(true) 
+                        .build())
+                    .build();
+                    OpenShiftClient openShiftClient = kubernetesClient.adapt(OpenShiftClient.class);
+                    openShiftClient.projects().list();
+                    String successMessage = "Login successful!";
+                    return Response.status(Response.Status.OK).entity(successMessage).build();
+    
+            
+        } 
+
+        catch(KubernetesClientException e){
+            String errorMessage = "Incorrect username or password.";
+                return Response.status(Response.Status.OK).entity(errorMessage).build();
+
+        }
+
+        catch (Exception e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Something went wrong with the system")
+                    .build();
+        }
+
+    }
+
     public OpenShiftClient login(String username, String password, String oauthToken, boolean useOAuthToken, String clusterUrl) {
         try {
             KubernetesClient kubernetesClient;
@@ -797,10 +831,10 @@ for (Node node : nodes.getItems()) {
                 .build();
     }
 }
-    @Override
-    public Response clusterLogin(UserCredentials userCredentials) {
-        return null;
-    }
+    // @Override
+    // public Response clusterLogin(UserCredentials userCredentials) {
+    //     return null;
+    // }
 
     @Override
     public Response getClusterNodeDetails(String username , Integer clusterId){
@@ -829,12 +863,27 @@ for (Node node : nodes.getItems()) {
                 break;
             }
         }
-        OpenShiftClient openshiftLogin = login(CLUSTERUSERNAME,  CLUSTERPASSWORD, "", false, CLUSTERURL);
-        System.out.println(openshiftLogin);
-        System.out.println("---------------------------");
+        Response openshiftLogin = login(CLUSTERUSERNAME,  CLUSTERPASSWORD, CLUSTERURL);  
         
+        // System.out.println("------------ " + openshiftLogin);
         // return Response.ok(viewClustersInformation(openshiftLogin)).build();
-        return viewClustersInformation(openshiftLogin);
+        // JsonElement openshiftElement = gson.toJsonTree(viewClustersInformation(openshiftLogin));
+        // JsonObject openshiftObject = (JsonObject)openshiftElement.getAsJsonObject().get("entity").getAsJsonObject();
+        
+        // JsonElement listNodeElement = gson.toJsonTree(listNodes(openshiftLogin));
+        // JsonArray listNodeObject = (JsonArray)listNodeElement.getAsJsonObject().get("entity").getAsJsonArray();
+
+        // System.out.println("-----------------");
+        // System.out.println(openshiftObject);
+        // System.out.println("-----------------");
+        // System.out.println(listNodeObject);
+        // openshiftObject.addProperty("Nodes", listNodeObject.toString());
+        // System.out.println("-----------------");
+        // System.out.println(openshiftObject);
+
+        // return viewClustersInformation(openshiftLogin);
+        // return Response.ok(openshiftObject).build();
+        return openshiftLogin;
     }
 
 }

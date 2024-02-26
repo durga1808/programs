@@ -38,8 +38,8 @@ public interface LoginHandler {
 
     Response viewClustersInformation(OpenShiftClient authenticatedClient);
 
-    Response clusterLogin(UserCredentials userCredentials);
-    
+    // Response clusterLogin(UserCredentials userCredentials);
+
     public Response getClusterNodeDetails(String username , Integer clusterId);
 }
 
