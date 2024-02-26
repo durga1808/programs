@@ -823,7 +823,7 @@ for (Node node : nodes.getItems()) {
             Integer clusterID = jsonElement2.getAsJsonObject().get("clusterId").getAsInt();
 
             if (clusterID == clusterId) {
-                CLUSTERUSERNAME = clusterPassword;
+                CLUSTERUSERNAME = clusterUserName;
                 CLUSTERPASSWORD = clusterPassword;
                 CLUSTERURL = hostUrl;
                 break;
