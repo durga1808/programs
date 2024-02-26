@@ -13,6 +13,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.zaga.entity.queryentity.openshift.ClusterNetwork;
+import com.zaga.entity.queryentity.openshift.Environments;
 import com.zaga.entity.queryentity.openshift.ServiceList;
 import com.zaga.entity.queryentity.openshift.UserCredentials;
 import com.zaga.repo.OpenshiftCredsRepo;
@@ -53,39 +54,39 @@ public class OpenshiftLoginHandler  implements LoginHandler{
     @Inject
     OpenshiftCredsRepo openshiftCredsRepo;
 
-    public Response login(String username, String password, String clusterUrl){
-        try {
-            KubernetesClient kubernetesClient;
-            kubernetesClient = new KubernetesClientBuilder()
-                    .withConfig(new ConfigBuilder()
-                        .withPassword(password)
-                        .withUsername(username)
-                        .withMasterUrl(clusterUrl)
-                        .withTrustCerts(true) 
-                        .build())
-                    .build();
-                    OpenShiftClient openShiftClient = kubernetesClient.adapt(OpenShiftClient.class);
-                    openShiftClient.projects().list();
-                    String successMessage = "Login successful!";
-                    return Response.status(Response.Status.OK).entity(successMessage).build();
+    // public Response login(String username, String password, String clusterUrl){
+    //     try {
+    //         KubernetesClient kubernetesClient;
+    //         kubernetesClient = new KubernetesClientBuilder()
+    //                 .withConfig(new ConfigBuilder()
+    //                     .withPassword(password)
+    //                     .withUsername(username)
+    //                     .withMasterUrl(clusterUrl)
+    //                     .withTrustCerts(true) 
+    //                     .build())
+    //                 .build();
+    //                 OpenShiftClient openShiftClient = kubernetesClient.adapt(OpenShiftClient.class);
+    //                 openShiftClient.projects().list();
+    //                 String successMessage = "Login successful!";
+    //                 return Response.status(Response.Status.OK).entity(successMessage).build();
     
             
-        } 
+    //     } 
 
-        catch(KubernetesClientException e){
-            String errorMessage = "Incorrect username or password.";
-                return Response.status(Response.Status.OK).entity(errorMessage).build();
+    //     catch(KubernetesClientException e){
+    //         String errorMessage = "Incorrect username or password.";
+    //             return Response.status(Response.Status.OK).entity(errorMessage).build();
 
-        }
+    //     }
 
-        catch (Exception e) {
-            e.printStackTrace();
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Something went wrong with the system")
-                    .build();
-        }
+    //     catch (Exception e) {
+    //         e.printStackTrace();
+    //         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+    //                 .entity("Something went wrong with the system")
+    //                 .build();
+    //     }
 
-    }
+    // }
 
     public OpenShiftClient login(String username, String password, String oauthToken, boolean useOAuthToken, String clusterUrl) {
         try {
@@ -831,13 +832,10 @@ for (Node node : nodes.getItems()) {
                 .build();
     }
 }
-    // @Override
-    // public Response clusterLogin(UserCredentials userCredentials) {
-    //     return null;
-    // }
+
 
     @Override
-    public Response getClusterNodeDetails(String username , Integer clusterId){
+    public Response clusterLogin(String username , Integer clusterId){
         UserCredentials userCredentials = openshiftCredsRepo.getUser(username);
         System.out.println("------user credientals----");
         System.out.println(userCredentials);
@@ -863,27 +861,40 @@ for (Node node : nodes.getItems()) {
                 break;
             }
         }
-        Response openshiftLogin = login(CLUSTERUSERNAME,  CLUSTERPASSWORD, CLUSTERURL);  
+        OpenShiftClient openshiftLogin = login(CLUSTERUSERNAME,  CLUSTERPASSWORD,"", false,  CLUSTERURL);  
         
-        // System.out.println("------------ " + openshiftLogin);
-        // return Response.ok(viewClustersInformation(openshiftLogin)).build();
-        // JsonElement openshiftElement = gson.toJsonTree(viewClustersInformation(openshiftLogin));
-        // JsonObject openshiftObject = (JsonObject)openshiftElement.getAsJsonObject().get("entity").getAsJsonObject();
-        
-        // JsonElement listNodeElement = gson.toJsonTree(listNodes(openshiftLogin));
-        // JsonArray listNodeObject = (JsonArray)listNodeElement.getAsJsonObject().get("entity").getAsJsonArray();
-
-        // System.out.println("-----------------");
-        // System.out.println(openshiftObject);
-        // System.out.println("-----------------");
-        // System.out.println(listNodeObject);
-        // openshiftObject.addProperty("Nodes", listNodeObject.toString());
-        // System.out.println("-----------------");
-        // System.out.println(openshiftObject);
-
-        // return viewClustersInformation(openshiftLogin);
-        // return Response.ok(openshiftObject).build();
-        return openshiftLogin;
+        return viewClustersInformation(openshiftLogin);
     }
 
+
+	@Override
+	public Response listClusters(String username) {
+		UserCredentials userCredentials = openshiftCredsRepo.getUser(username);
+        System.out.println(userCredentials);
+        List<Environments> environments = userCredentials.getEnvironments();
+
+        // Create a list to store cluster names
+        List<String> clusterNames = new ArrayList<>();
+
+        // Iterate through environments to find the cluster names
+        for (Environments environment : environments) {
+            String clusterName = environment.getClusterName();
+            clusterNames.add(clusterName);
+        }
+
+        if (!clusterNames.isEmpty()) {
+            // Return the list of cluster names if found
+            return Response.ok().entity(clusterNames).build();
+        } else {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Clusters not found for username: " + username)
+                    .build();
+        }
+    }
+
+    
 }
+
+
+
+

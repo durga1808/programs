@@ -76,56 +76,56 @@ public class OpenshiftController {
         return loginHandler.listNodes(authenticatedClient);
     }
 
-    @GET
-    @Path("/viewClusterInfo")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response viewClusterInfo() {
-        return loginHandler.viewClusterInfo(authenticatedClient);
-    }
+    // @GET
+    // @Path("/viewClusterInfo")
+    // @Produces(MediaType.APPLICATION_JSON)
+    // @Consumes(MediaType.APPLICATION_JSON)
+    // public Response viewClusterInfo() {
+    //     return loginHandler.viewClusterInfo(authenticatedClient);
+    // }
 
-    @GET
-    @Path("/viewClusterStatus")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response viewClusterCondition() {
-        return loginHandler.viewClusterCondition(authenticatedClient);
-    }
+    // @GET
+    // @Path("/viewClusterStatus")
+    // @Produces(MediaType.APPLICATION_JSON)
+    // public Response viewClusterCondition() {
+    //     return loginHandler.viewClusterCondition(authenticatedClient);
+    // }
 
-    @GET
-    @Path("/viewClusterInventory")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response viewClusterInventory() {
-        return loginHandler.viewClusterInventory(authenticatedClient);
-    }
+    // @GET
+    // @Path("/viewClusterInventory")
+    // @Produces(MediaType.APPLICATION_JSON)
+    // public Response viewClusterInventory() {
+    //     return loginHandler.viewClusterInventory(authenticatedClient);
+    // }
 
-    @GET
-    @Path("/viewClusterNetwork")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response viewClusterNetwork() {
-        return loginHandler.viewClusterNetwork(authenticatedClient);
-    }
+    // @GET
+    // @Path("/viewClusterNetwork")
+    // @Produces(MediaType.APPLICATION_JSON)
+    // public Response viewClusterNetwork() {
+    //     return loginHandler.viewClusterNetwork(authenticatedClient);
+    // }
 
-    @GET
-    @Path("/viewClusterIP")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response viewClusterIp() {
-        return loginHandler.viewClusterIP(authenticatedClient);
-    }
+    // @GET
+    // @Path("/viewClusterIP")
+    // @Produces(MediaType.APPLICATION_JSON)
+    // public Response viewClusterIp() {
+    //     return loginHandler.viewClusterIP(authenticatedClient);
+    // }
 
-    @GET
-    @Path("/viewNodeIP")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response viewNodeIp() {
-        return loginHandler.viewNodeIP(authenticatedClient);
-    }
+    // @GET
+    // @Path("/viewNodeIP")
+    // @Produces(MediaType.APPLICATION_JSON)
+    // public Response viewNodeIp() {
+    //     return loginHandler.viewNodeIP(authenticatedClient);
+    // }
 
 
-    @GET
-    @Path("/viewClusterNodes")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response viewClusterNode() {
-        return loginHandler.viewClusterNodes(authenticatedClient);
-    }
+    // @GET
+    // @Path("/viewClusterNodes")
+    // @Produces(MediaType.APPLICATION_JSON)
+    // public Response viewClusterNode() {
+    //     return loginHandler.viewClusterNodes(authenticatedClient);
+    // }
 
 
 
@@ -177,7 +177,15 @@ public Response getClusterInformation() {
     @Path("/getClusterNodeInformation")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getClusterNodeDetails(@QueryParam("username") String username,@QueryParam("clusterId") Integer clusterId){
-        Response response = loginHandler.getClusterNodeDetails(username, clusterId);
+        Response response = loginHandler.clusterLogin(username, clusterId);
+        return response;
+    }
+
+    @GET
+    @Path("/getAllClusters")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getAllClusters(@QueryParam("username") String username){
+        Response response = loginHandler.listClusters(username);
         return response;
     }
 

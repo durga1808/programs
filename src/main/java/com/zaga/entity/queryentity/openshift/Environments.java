@@ -15,4 +15,5 @@ public class Environments {
     private String hostUrl;
     private String clusterType;
     private long clusterId;
+    private String clusterName;
 }
