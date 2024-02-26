@@ -6,12 +6,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.compress.harmony.pack200.NewAttributeBands.Integral;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.zaga.entity.queryentity.openshift.ClusterNetwork;
 import com.zaga.entity.queryentity.openshift.ServiceList;
+import com.zaga.entity.queryentity.openshift.UserCredentials;
+import com.zaga.repo.OpenshiftCredsRepo;
 import com.zaga.repo.ServiceListRepo;
 
 import io.fabric8.kubernetes.api.model.ComponentCondition;
@@ -45,6 +49,9 @@ public class OpenshiftLoginHandler  implements LoginHandler{
 
     @Inject
     ClusterNetwork clusterNetwork;
+
+    @Inject
+    OpenshiftCredsRepo openshiftCredsRepo;
 
     public OpenShiftClient login(String username, String password, String oauthToken, boolean useOAuthToken, String clusterUrl) {
         try {
@@ -84,6 +91,8 @@ public class OpenshiftLoginHandler  implements LoginHandler{
             return null;
         }
     } 
+
+
     private boolean isLoginSuccessful(OpenShiftClient openShiftClient) {
         // Attempt to list OpenShift projects or perform other verification steps
         try {
@@ -749,5 +758,83 @@ for (Node node : nodes.getItems()) {
                 .build();
     }
 }
+
+    public Response listNodes(OpenShiftClient authenticatedClient){
+
+        if (authenticatedClient == null) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity("You are not logged in.")
+                    .build();
+        }
+    
+        try {
+            OpenShiftClient openShiftClient = authenticatedClient.adapt(OpenShiftClient.class);
+        List<Map<String,String>> clusterConfigInfo = new ArrayList<>();
+        List<Node> node = openShiftClient.nodes().list().getItems();
+        Gson gson = new Gson();
+        JsonElement jsonElement = gson.toJsonTree(node);
+        JsonArray jsonArrayList = jsonElement.getAsJsonArray();
+        for (JsonElement jsonEle : jsonArrayList) {
+            JsonObject jsonObject = (JsonObject) jsonEle.getAsJsonObject().get("status").getAsJsonObject();
+            JsonArray jsonArray = jsonObject.get("addresses").getAsJsonArray();
+            Map<String,String> addressMap = new HashMap<>();
+            for (JsonElement jsonElement2 : jsonArray) {
+                String type = jsonElement2.getAsJsonObject().get("type").getAsString();
+                if(type.equalsIgnoreCase("HostName")){
+                String ipAddress = jsonElement2.getAsJsonObject().get("address").getAsString();
+                addressMap.put("hostname", ipAddress);
+                // addressMap.put("ingressIP", ipAddress);
+                }
+            }
+            clusterConfigInfo.add(addressMap);
+        }
+
+        return Response.ok(clusterConfigInfo).build();
+    }catch (Exception e) {
+        e.printStackTrace();
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("You are unauthorized to do this action.")
+                .build();
+    }
+}
+    @Override
+    public Response clusterLogin(UserCredentials userCredentials) {
+        return null;
+    }
+
+    @Override
+    public Response getClusterNodeDetails(String username , Integer clusterId){
+        UserCredentials userCredentials = openshiftCredsRepo.getUser(username);
+        System.out.println("------user credientals----");
+        System.out.println(userCredentials);
+        System.out.println("---------------------------");
+        Gson gson = new Gson();
+        JsonElement jsonElement = gson.toJsonTree(userCredentials);
+        System.out.println(jsonElement);
+        System.out.println("---------------------------");
+        JsonArray jsonArray = jsonElement.getAsJsonObject().get("environments").getAsJsonArray();
+        String CLUSTERUSERNAME = null;
+        String CLUSTERPASSWORD = null;
+        String CLUSTERURL = null;
+        for (JsonElement jsonElement2 : jsonArray) {
+            String clusterUserName = jsonElement2.getAsJsonObject().get("clusterUsername").getAsString();
+            String clusterPassword = jsonElement2.getAsJsonObject().get("clusterPassword").getAsString();
+            String hostUrl = jsonElement2.getAsJsonObject().get("hostUrl").getAsString();
+            Integer clusterID = jsonElement2.getAsJsonObject().get("clusterId").getAsInt();
+
+            if (clusterID == clusterId) {
+                CLUSTERUSERNAME = clusterPassword;
+                CLUSTERPASSWORD = clusterPassword;
+                CLUSTERURL = hostUrl;
+                break;
+            }
+        }
+        OpenShiftClient openshiftLogin = login(CLUSTERUSERNAME,  CLUSTERPASSWORD, "", false, CLUSTERURL);
+        System.out.println(openshiftLogin);
+        System.out.println("---------------------------");
+        
+        // return Response.ok(viewClustersInformation(openshiftLogin)).build();
+        return viewClustersInformation(openshiftLogin);
+    }
 
 }

@@ -1,6 +1,7 @@
 package com.zaga.handler.cloudPlatform;
 
 import com.google.gson.JsonArray;
+import com.zaga.entity.queryentity.openshift.UserCredentials;
 
 import io.fabric8.openshift.client.OpenShiftClient;
 import jakarta.ws.rs.core.Response;
@@ -33,7 +34,12 @@ public interface LoginHandler {
 
     Response viewNodeIP(OpenShiftClient authenticatedClient);
 
+    Response listNodes(OpenShiftClient authenticatedClient);
 
     Response viewClustersInformation(OpenShiftClient authenticatedClient);
+
+    Response clusterLogin(UserCredentials userCredentials);
+    
+    public Response getClusterNodeDetails(String username , Integer clusterId);
 }
 

@@ -172,4 +172,14 @@ public Response getClusterInformation() {
 }
 
 
+
+    @GET
+    @Path("/getClusterNodeInformation")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getClusterNodeDetails(@QueryParam("username") String username,@QueryParam("clusterId") Integer clusterId){
+        Response response = loginHandler.getClusterNodeDetails(username, clusterId);
+        return response;
+    }
+
+
 }
