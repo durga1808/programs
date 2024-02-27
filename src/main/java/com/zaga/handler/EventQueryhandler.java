@@ -3,10 +3,12 @@ package com.zaga.handler;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -250,6 +252,106 @@ new Document("$project", new Document("_id", 0)
         return result;
        
     }   
+
+
+
+    public List<EventsDTO> getRecentEvents(int minutesAgo) {
+        MongoDatabase database = mongoClient.getDatabase("OtelEvent");
+        MongoCollection<Document> collection = database.getCollection("EventsDTO");
+    
+        List<EventsDTO> result;
+    
+        if (minutesAgo == 30) {
+            result = executeRecentLogic(collection, 30);
+        } else {
+            System.out.println("Invalid parameters. 'minutesAgo' must be 30.");
+            result = Collections.emptyList();
+        }
+    
+        LocalDateTime endTime = LocalDateTime.now();
+        return result;
+    }
+    
+    
+
+
+
+
+  private List<EventsDTO> executeRecentLogic(
+        MongoCollection<Document> collection, Integer minutesAgo) {
+    LocalDateTime currentTime = LocalDateTime.now();
+    LocalDateTime thirtyMinutesAgo = currentTime.minusMinutes(30);
+
+    List<Document> pipeline = Arrays.asList(
+            new Document("$match", new Document("$and", Arrays.asList(
+                    new Document("createdTime", new Document("$gte", Date.from(thirtyMinutesAgo.atZone(ZoneId.systemDefault()).toInstant()))),
+                    new Document("createdTime", new Document("$lte", Date.from(currentTime.atZone(ZoneId.systemDefault()).toInstant())))
+            ))),
+            new Document("$sort", new Document("createdTime", -1)),
+            new Document("$project", new Document("_id", 0)
+                    .append("nodeName", 1)
+                    .append("objectKind", 1)
+                    .append("objectName", 1)
+                    .append("scopeLogs", 1)
+                    .append("severityText", 1)
+                    .append("createdTime", 1)
+            )
+    );
+
+    AggregateIterable<Document> aggregationResult = collection.aggregate(pipeline);
+
+    List<EventsDTO> result = new ArrayList<>();
+    for (Document document : aggregationResult) {
+        EventsDTO eventsDTO = new EventsDTO();
+        eventsDTO.setCreatedTime(document.getDate("createdTime"));
+        eventsDTO.setNodeName(document.getString("nodeName"));
+        eventsDTO.setObjectKind(document.getString("objectKind"));
+        eventsDTO.setObjectName(document.getString("objectName"));
+        eventsDTO.setSeverityText(document.getString("severityText"));
+
+        // Handle scopeLogs field
+        List<Document> scopeLogsDocs = document.get("scopeLogs", List.class);
+        if (scopeLogsDocs != null) {
+            List<ScopeLogs> scopeLogsList = new ArrayList<>();
+            for (Document scopeLogDoc : scopeLogsDocs) {
+                ScopeLogs scopeLogs = new ScopeLogs();
+                scopeLogs.setScope(scopeLogDoc.get("scope", Map.class));
+
+                List<Document> logRecordsDocs = scopeLogDoc.get("logRecords", List.class);
+                if (logRecordsDocs != null) {
+                    List<LogRecords> logRecordsList = new ArrayList<>();
+                    for (Document logRecordDoc : logRecordsDocs) {
+                        LogRecords logRecord = new LogRecords();
+                        logRecord.setTimeUnixNano(logRecordDoc.getString("timeUnixNano"));
+                        logRecord.setSeverityNumber(logRecordDoc.getInteger("severityNumber"));
+                        logRecord.setSeverityText(logRecordDoc.getString("severityText"));
+                        logRecord.setSpanId(logRecordDoc.getString("spanId"));
+                        logRecord.setTraceId(logRecordDoc.getString("traceId"));
+
+                        // Handle Body field
+                        Body body = new Body();
+                        Document bodyDoc = logRecordDoc.get("body", Document.class);
+                        if (bodyDoc != null) {
+                            body.setStringValue(bodyDoc.getString("stringValue"));
+                        }
+                        logRecord.setBody(body);
+
+                        logRecord.setAttributes(logRecordDoc.get("attributes", List.class));
+                        logRecordsList.add(logRecord);
+                    }
+                    scopeLogs.setLogRecords(logRecordsList);
+                }
+                scopeLogsList.add(scopeLogs);
+            }
+            eventsDTO.setScopeLogs(scopeLogsList);
+        }
+
+        result.add(eventsDTO);
+    }
+    System.out.println("----------events data------- " + result.size());
+    return result;
+}
+
 }
 
 

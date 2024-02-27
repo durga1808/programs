@@ -2,6 +2,7 @@ package com.zaga.controller;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -15,6 +16,7 @@ import com.zaga.handler.EventQueryhandler;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
@@ -137,4 +139,20 @@ public class EventController {
         return Response.ok(jsonResult).build();
     }
 
+
+    
+    @GET
+    @Path("/get-recent-events")
+    public Response getRecentEvents(@QueryParam("minutesAgo") @DefaultValue("30") int minutesAgo) {
+        List<EventsDTO> eventsList = handler.getRecentEvents(minutesAgo);
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonResult;
+        try {
+            jsonResult = mapper.writeValueAsString(eventsList);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+        return Response.ok(jsonResult).build();
+    }
 }
